@@ -16,4 +16,15 @@ package Ova_Fmt.Config is
    Underliner    : aliased Character := '=';        -- -u/--underliner
    Subunderliner : aliased Character := ASCII.NUL;  -- -U/--subunderliner; NUL = unset
 
+   --  Same besm2_fmt.Config field/flag, same reasoning (see
+   --  besm2-rst.scm's design-decision notes, ported faithfully):
+   --  negative numbers this program builds itself (Weakness/Ability
+   --  Levels, a Perk/Flaw's negative `cost`, an attack's `roll` when
+   --  negative) use ASCII hyphen-minus by default; -n/--unicode-minus
+   --  switches to Unicode MINUS SIGN (U+2212) instead. Content the
+   --  program doesn't interpret (YAML string fields like `detail`)
+   --  is unaffected either way -- only computed negative-number
+   --  rendering is gated on this.
+   Unicode_Minus : aliased Boolean := False;  -- -n/--unicode-minus
+
 end Ova_Fmt.Config;

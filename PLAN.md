@@ -1147,6 +1147,24 @@ for test data and output-format sequencing:
    reviewed against what's actually wanted before treating it as
    settled, the way the Karis-mockup-covered parts already are.
 
+   **`-n`/`--unicode-minus` added**, same mechanism as
+   `besm2_fmt.Config.Unicode_Minus`/`Text_Layout.Minus_Glyph`: ASCII
+   hyphen-minus by default for a negative number the program builds
+   itself, Unicode MINUS SIGN (U+2212) under `-n`. Applied to every
+   site that actually renders a negative number — Ability/Weakness/
+   Sub_Item/Spell `Signed_Img` (the common case, Weakness Levels), a
+   Perk/Flaw's `cost` when negative (Ai's `Cancel`, Raine's/Yuu's
+   `Requirement`), and an attack's `roll` when negative (Braun's joke
+   attack) — via a `Number_Img` helper distinct from the existing
+   `Trim_Img` (kept for values that are genuinely never negative:
+   Health/Endurance/Threat Value, a Perk/Flaw's `counts-as`). Default
+   stays ASCII, matching `besm2_fmt` exactly — flagged as a deliberate
+   choice, not necessarily final: if `ova_fmt`'s own default output is
+   meant to be Unicode-minus rather than opt-in, that's a one-line
+   change to `Config.Unicode_Minus`'s initial value, not yet made.
+   Verified: `-n` renders `−` in place of `-` for both cases, all
+   twelve `test-data/*.yaml` files still process cleanly with `-n`.
+
    **`GNUmakefile` added**, mirroring `besm2_fmt`'s (`build/.gitignore`
    trick to keep `build/` in git without committing generated
    output): `make`/`make all` builds the `ova_fmt` binary via

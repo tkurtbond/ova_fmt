@@ -52,7 +52,13 @@ private
         (Description => "Character to use for underlining the header.",
          Short_Name  => 'u',
          Long_Name   => "underliner",
-         Handler     => Do_Underliner'Access));
+         Handler     => Do_Underliner'Access),
+      Arg_Parser.Make_Set_Boolean_True_Option
+        (Description => "Use Unicode MINUS SIGN (U+2212) instead of ASCII " &
+                         "hyphen-minus for negative numbers.",
+         Short_Name  => 'n',
+         Long_Name   => "unicode-minus",
+         Variable    => Ova_Fmt.Config.Unicode_Minus'Access));
 
    The_Parser : Arg_Parser.Parser :=
      Arg_Parser.Make_Parser

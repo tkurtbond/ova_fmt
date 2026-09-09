@@ -15,10 +15,28 @@ package body Ova_Fmt.Format_Terse is
 
    function Trim_Img (N : Integer) return String is
      (Ada.Strings.Fixed.Trim (Integer'Image (N), Ada.Strings.Left));
-   --  Plain magnitude, no forced sign: "3", "-2".
+   --  Plain non-negative magnitude: "3", "0". Only for values that
+   --  can never actually be negative (Health/Endurance/Threat Value,
+   --  a Perk/Flaw's `counts-as` repeat count) -- use Number_Img
+   --  below for anything that can.
+
+   function Minus_Glyph return String is
+     (if Config.Unicode_Minus then "−" else "-");
+   --  Same besm2_fmt.Text_Layout.Minus_Glyph design: ASCII
+   --  hyphen-minus by default for a negative number this program
+   --  builds itself, Unicode MINUS SIGN (U+2212) under
+   --  -n/--unicode-minus. Content the program doesn't interpret
+   --  (`detail` text, etc.) is untouched either way.
+
+   function Number_Img (N : Integer) return String is
+     (if N < 0 then Minus_Glyph & Trim_Img (abs N) else Trim_Img (N));
+   --  A magnitude that might legitimately be negative (an attack's
+   --  `roll`, a Perk/Flaw's chosen `cost`) -- unlike Trim_Img, this
+   --  goes through Minus_Glyph instead of relying on Integer'Image's
+   --  own always-ASCII "-".
 
    function Signed_Img (N : Integer) return String is
-     (if N >= 0 then "+" & Trim_Img (N) else Trim_Img (N));
+     (if N >= 0 then "+" & Trim_Img (N) else Number_Img (N));
    --  Ability/Weakness Levels always show an explicit sign, matching
    --  every source (rulebook sheet and the Karis mockup alike).
 
@@ -42,7 +60,7 @@ package body Ova_Fmt.Format_Terse is
          Result := Result & " x" & Trim_Img (PF.Counts_As);
       end if;
       if PF.Has_Cost then
-         Result := Result & " (" & Trim_Img (PF.Cost) & ")";
+         Result := Result & " (" & Number_Img (PF.Cost) & ")";
       end if;
       return To_String (Result);
    end Format_Perk_Flaw;
@@ -172,7 +190,7 @@ package body Ova_Fmt.Format_Terse is
       Line   : Unbounded_String :=
         To_Unbounded_String
           ("  - " & Bold (To_String (A.Name) & ":") & " Roll " &
-           Bold (Trim_Img (A.Roll) & " dice") & " | " &
+           Bold (Number_Img (A.Roll) & " dice") & " | " &
            Bold ("DX " & To_String (A.Dx)) & " | " &
            Bold ("Endurance Cost: " & Trim_Img (A.Endurance)));
    begin
