@@ -1,0 +1,557 @@
+# ova_fmt: porting `ova-rst.scm` (and finishing the design) to Ada
+
+**Status:** planning / not started. This repo
+(`~/Repos/RPG/Tools/ova_fmt`) currently contains only `.git` (no
+commits yet). This file exists so a future session has everything
+needed to pick the work up without re-gathering context.
+
+## 1. Relationship to `besm2_fmt`
+
+This is the second port in the same family as
+[`besm2_fmt`](https://github.com/tkurtbond/besm2_fmt)
+(`~/Repos/RPG/Tools/besm2_fmt`, `PLAN.md` there), which converts a
+YAML BESM 2nd Edition character into reST/terse/h-m-m/raw-ms output
+and is **complete** (all four backends, byte-for-byte verified
+against the original Chicken Scheme `besm2-rst.scm`). `besm2_fmt` is
+the model to follow for tooling, package layout, and lessons already
+learned — but **unlike `besm2_fmt`, this is not a straightforward
+port of a working, finished Scheme program.** The OVA source and its
+test data are both unfinished, and the OVA domain model has real
+structural differences from BESM's that need actual design work, not
+just translation. See §4 and §5.
+
+## 2. Source materials
+
+All of the following are copyrighted works (Dyskami Publishing's
+*OVA: The Anime Role-Playing Game* and its ancillary products); the
+user has the normal personal-use rights to their own purchased/created
+copies, not redistribution rights. Treat text extracted from them as
+private local reference material — don't paste large verbatim excerpts
+into files that get committed to `ova_fmt`'s git repo (which may end
+up with a public remote, as `besm2_fmt` did at
+`github.com/tkurtbond/besm2_fmt`).
+
+Location: `~/Reference/RPG/OVA/`
+
+- `OVA_The_Anime_Role-Playing_Game.pdf` — the full rulebook (170 pages).
+- `ova-rulebook.txt`, `ova-rulebook-not-layout.txt` — text extractions
+  of the rulebook (the `-not-layout` version strips PDF layout
+  artifacts and is easier to `grep`). Useful section anchors found so
+  far (line numbers in `ova-rulebook-not-layout.txt`):
+  - Character creation "fluff" fields: ~line 700.
+  - Limiting-the-character rules (Scaled Cost, Base Zero, Combined
+    Effectiveness, Power Ceiling): ~line 735–805, and again with fuller
+    treatment at "Base Zero" (11141), "Combined Effectiveness" (11190),
+    "Power Ceiling" (11652), "Scaled Cost" (11745).
+  - Sample Characters chapter starts ~line 857 (Raine first).
+- `OVA-Blank-Character-Sheet-Form-Fillable.pdf` — the official blank
+  character sheet. Confirms the canonical field set (see §5).
+- `OVAPlayerBook-Auren-2015-01-29.pdf`,
+  `OVAPlayerBook-Miho-2015-01-29.pdf`,
+  `OVAPlayerBook-Raine-2015-01-29.pdf` — 14-page pregenerated-character
+  booklets (one of the sample characters each). Not yet read in detail;
+  good candidates for additional golden/test fixtures once the YAML
+  schema is settled, since they're full worked characters with combat
+  suites, background, etc. (Auren already has a partial test-data file,
+  see §5.)
+- `ova-ref.pdf` (16KB, 2 pages) — a reference sheet the user made
+  themselves (not a Dyskami product, so no third-party copyright
+  concern on this one specifically). Already read in full. Contents:
+  Abilities index with page numbers and a `(A)`/`(D)`/`(DX)`/`(I)`
+  legend for which roll type each Ability affects; Weaknesses index;
+  Perks and Flaws tables with Endurance cost and page numbers (Perks
+  positive-Endurance-cost, Flaws negative, some marked `/M` = "can be
+  taken multiple times" or `/n` = "can be taken n times"); Affinities
+  page pointer; core mechanics summary (Taking Action, Difficulty
+  Numbers, Initiative, Attack/Defend, Damage, Combat Complications,
+  Drama Dice, Damaging Other Things, Other Combat Actions, Spell
+  Endurance Cost table, Spell Casting Roll formula, NPC tiers). This is
+  the best single condensed source for the game's numeric rules and is
+  worth re-reading closely once designing the "derived stats" /
+  validation side of the tool (if any — see open questions).
+- `abilities.md` (98 lines), `weaknesses.md` (220 lines) — apparently
+  hand-transcribed (or extracted) full-text Markdown of every Ability's
+  and Weakness's rules description, keyed by **bold name** headers.
+  Useful as a name/canonical-spelling reference and for any
+  "look up this ability's description" feature, but not yet cross
+  checked against the ref sheet's page-number index for completeness.
+- `OVA-Combat.odt`/`.pdf`, `OVA-ConversionGuide.pdf`,
+  `OVA-Character-Sheet.ods`/`.pdf`,
+  `OVA-Charsheet-Template-Google-Sheets.pdf`,
+  `OVA-CharacterRecord-A4.pdf`/`-Letter.pdf`, `OVA-CharacterSheet.zip`,
+  `ovasheet-new.pdf` — present in the directory but not yet reviewed;
+  likely more character-sheet variants and a combat-rules cheat sheet.
+  Check these before assuming the blank fillable sheet (§5) is the only
+  layout reference.
+
+## 3. Existing (unfinished) OVA tooling
+
+Location: `~/current/RPG/Tools/OVA/` (Chicken Scheme, same toolchain
+family as `besm2-rst.scm`: `args`, `bindings`, `(schemepunk show)`,
+`loop`, `matchable`, SRFI 1/152, the `yaml` egg over `libyaml`).
+
+- `ova-rst.scm` (204 lines) — the stub. `README.rst` states outright:
+  *"Right now nothing in this repository works. I'm still hashing over
+  ideas for how to represent OVA characters in YAML... The current
+  `ova-rst.scm` is merely a skeleton."* Structurally it already has the
+  CLI/dispatch skeleton (`process-file`/`process-filename`/`main`,
+  `+command-line-options+` for `-h`, `-m`/raw-ms, `-o`/output,
+  `-t`/terse, `-U`/`-u` underline chars) mirroring `besm2-rst.scm`'s
+  shape, but the actual per-entity formatters are stubs:
+  - `process-entity` — returns `#f` immediately, no output at all.
+  - `process-entity-raw-ms` — same, returns `#f` immediately.
+  - `process-entity-terse` — the only one with real logic. It computes
+    `abilities-total`/`weaknesses-total`/`attributes-total` (flat sum of
+    each list's `level` field) and renders `**Attributes:**` /
+    `*Abilities:*` / `*Weaknesses:*` lines. Its own header comment block
+    sketches the intended terse output shape modeled on Azyrus (OVA
+    p. 37, a companion character write-up) — see the comment at
+    `ova-rst.scm:73-91` for the target prose format. **This does not
+    handle nested/linked abilities at all** (e.g. Transformation's own
+    sub-abilities/sub-weaknesses in `Fukiko.yaml`) — it just does
+    `(must-exist "level" ability)` on every top-level item.
+  - No h-m-m backend exists for OVA (unlike besm2-rst.scm's four
+    backends) — not yet decided whether one is wanted.
+- `GNUmakefile` — mirrors `besm2_fmt`'s predecessor pattern: builds
+  `build/ova-rst` via `csc`, generates `.gen.rst`/`-terse.gen.rst`/
+  `-ms.gen.rst` per test-data file, then `pandoc`-based downstream
+  targets (`.ms`/`.ms.pdf` via a custom `tkb` template with
+  `-V twocolumns`, `.stmt.ms`/`.stmt.ms.pdf` via a `statement`
+  template, `.native`, `.html`), plus `yamllint -f parsable` targets
+  and a `lout`-based experiment (`Fukiko-experiment.lout` →
+  `build/Fukiko-experiment.lout.pdf`, via `lout`+`ps2pdf`) that appears
+  to be a parallel, non-Scheme typesetting experiment for the same
+  Fukiko data — worth looking at once layout for nested attributes
+  needs solving (§4), since it may contain earlier attempts at exactly
+  that problem. `RPBHENTITIES` (`FV2021-Coleopteran enyon-boase
+  pawl-cardynham nessa-kitto`) is leftover from `besm2-rst`'s makefile
+  and doesn't correspond to any OVA test-data file — dead/copy-paste
+  cruft, not a hint about OVA content.
+- `columns.scm` (208 lines) — a **scratch/experiment file, not part of
+  the program**, but it records a real, already-discovered design
+  problem (see its own header comment, kept verbatim since it's the
+  clearest statement of the issue):
+
+  > I think this has proved that monadic formatting can't generate the
+  > correct HTML tables... Specifically, for HTML, its columns divide
+  > things into characters and lines, but recursive OVA things like
+  > Magic (Arcane and Witchcraft), Transformation, and so forth need
+  > cells that can contain tables. What I got, rather than one `<tr>`
+  > that contains a table, is one `<tr>` for each line in the subtable.
+  > ... For text output, it has no way to handle subtables, and if you
+  > try to wrap things, the costs get out of sync with the
+  > descriptions, since the wrapping adds extra lines to the
+  > descriptions.
+
+  **Correction (from the user, since this was initially
+  misread):** HTML tables themselves handle nesting fine — a `<td>`
+  can contain a whole `<table>` with no problem. The failure
+  `columns.scm` actually demonstrates is that `(schemepunk show)`'s
+  monadic column combinators (`columnar`/`tabular`/`wrapped`) have no
+  way to *build* a nested table — they only know how to lay out flat
+  rows of already-linearized text, so a sub-table gets flattened to
+  one row per line instead of staying a nested element. The problem is
+  in the formatting library used, not in HTML as a target. This
+  matters for the design: it means **hand-emitting real nested
+  `<table>` markup directly (not through any row/column layout
+  abstraction) is a fully workable answer for HTML** — see §8 for the
+  resulting output-format-by-output-format strategy, which settles
+  this rather than leaving it as an open modeling question.
+
+  For plain fixed-width text output (terse, reST's own table syntax),
+  the underlying problem is real regardless of library: a monospace
+  grid genuinely cannot represent a nested table without breaking
+  either row alignment or the sub-table's own structure. §8 avoids
+  the problem there too, by not using tabular layout for OVA's default
+  text output at all.
+- `x.scm` (71 lines) — scratch REPL exploration of what the `yaml` egg
+  produces for `Fukiko.yaml` and for a couple of hand-written
+  multi-document YAML strings (`yaml<-` vs `yaml-load`, `-1` for "all
+  documents"). Confirms `yaml-load` on a single-document file gives a
+  list of alists as expected; the multi-document exploration is
+  relevant background for the same "does the loader silently collapse
+  multiple documents" question `besm2_fmt`'s `PLAN.md` §"Open
+  questions" already answered for BESM (yes, Chicken's `yaml-load`
+  keeps only the last document — `alibfyaml`'s `Document_Stream`
+  fixes this properly in Ada). No OVA-specific finding beyond
+  confirming the same loader is in play.
+- `interactive.scm` (10 lines) — trivial REPL scratch (loads
+  `Fukiko.yaml`, one `wrapped` call). Nothing to carry forward.
+- `Fukiko-experiment.lout`/`.lout.ld` — a Basser Lout typesetting
+  source, not Scheme; the makefile builds it straight to PDF
+  (`lout -a ... | ps2pdf`), independent of `ova-rst.scm`. **Read in
+  full — it is exactly the worked nested-table example the design
+  needs.** It hand-codes a curved-box character sheet fragment for
+  Fukiko using Lout's `@Tbl` (the `tbl` package), two side-by-side
+  top-level tables (Abilities, Weaknesses, each `aformat`/`bformat`
+  two-column: level-with-trailing-caret `A` | name/description `B`),
+  and — the important part — the Transformation row's `B` cell
+  contains a **complete second `@Tbl { ... }` block** for its four
+  sub-abilities (Attack, Barrier, Combat Expert, Healer) plus the
+  linked Bizarre Appearance sub-weakness, using `{@Sym minus}` for a
+  real minus sign glyph rather than ASCII hyphen. This is a genuine,
+  already-functioning proof that Lout's table model nests cleanly
+  (unlike groff `tbl`, §8), and is the reference to build
+  `ova_fmt`'s eventual Lout emitter's Abilities/Weaknesses table
+  against, rather than reinventing the markup shape from scratch.
+
+## 4. Domain model differences from BESM (why this isn't a 1:1 port)
+
+Reading `Fukiko.yaml`/`Auren.yaml`/`Acacia.yaml`/`template.yaml`
+against the rulebook and `ova-ref.pdf` surfaces these structural
+differences from `besm2_fmt`'s BESM model:
+
+- **Two top-level lists, not three.** OVA has just Abilities and
+  Weaknesses (both just "Attributes" with a signed Level — Abilities
+  positive, Weaknesses negative, per `ova-ref.pdf`'s "Taking Action is
+  Two Dice + Abilities & Bonuses − Weaknesses & Penalties"). No
+  separate Stats list, no separate Skills list, no BESM-style
+  points/CP bookkeeping — OVA "spends" Levels directly (Base
+  Zero/Power Ceiling/Scaled Cost, §2's rulebook pointers), not an
+  abstract point-buy currency the way BESM's `points` field is.
+- **Nesting.** Abilities like Transformation, Magic (Arcane/
+  Witchcraft), Companion, and Vehicle (Mecha) contain their own
+  sub-abilities and sub-weaknesses (see `Fukiko.yaml`'s
+  `Transformation.abilities`/`.weaknesses`, `Auren.yaml`'s `Magic,
+  Arcane.spells`). This is the load-bearing design problem — see §3's
+  `columns.scm` discussion. Not present in BESM's model at all
+  (BESM's enhancements/limiters are flat string/tuple modifiers, never
+  a recursive attribute list).
+- **Perks and Flaws are per-attack, not per-attribute**, and modify
+  Endurance cost (`ova-ref.pdf`'s Perk/Flaw tables — `Accurate/M:
+  ATK+1 +5`, `Elaborate Gestures -5`, etc.) — structurally close to
+  BESM's enhancements/limiters (a name plus a signed numeric effect,
+  sometimes with an applies-to target like `TGT`/`ATK`/`DEF`/`DX`), so
+  `besm2_fmt`'s `format-customizers` dispatch shape (scalar / [name,
+  n] / [name, n, target] / [name, n, targets...]) is a reasonable
+  starting point to adapt here, but note OVA's perks/flaws attach to
+  **attacks** (inside `combat.attacks[]`), and separately OVA's
+  Transformation-style abilities can themselves carry `perks`/`flaws`
+  too (see `Fukiko.yaml`'s Barrier sub-ability) — two different
+  attachment points to design for, not one.
+- **Combat block is its own structured section**, matching the
+  official character sheet's "Combat Stats" box exactly (§5): Defense,
+  Health, Endurance, Threat Value (`tv`), and up to several named
+  Attacks each with Roll, DX (Damage Multiplier), Endurance cost, plus
+  Perks/Flaws/Affinity/Description. BESM has no equivalent — BESM
+  folds combat-relevant numbers into its generic Derived Values list.
+- **A `fluff` block** (concept, birthday, age, gender, height, weight,
+  hair, eyes, association, hobbies, favorite-food, allies, enemies,
+  love-interests) — matches the rulebook's suggested fluff fields
+  (§2, ~line 700) and `fluff.yaml-partial`'s outline exactly. No BESM
+  equivalent (BESM has no fluff section at all).
+- **An `options` block** (`base-zero`, `power-ceiling`, `scaled-cost`,
+  `combined-effectiveness`, `max-abilities-level`) recording which
+  character-creation limiting rule(s) were used and their parameters —
+  metadata about how the character was built, not data to be rendered
+  as part of the character write-up necessarily (open question: does
+  any output format display this at all, or is it purely informational
+  for whoever maintains the YAML?).
+- **Background/Appearance/Personality/Notes** — `Fukiko.yaml` has
+  these as prose blocks plus a `notes` list of `{header, text,
+  attributes}` entries (the `attributes` sub-field holds pre-rendered
+  prose like `"Flight +2, Quick +1, Smart +2..."` for an NPC companion
+  described within a note, not a structured list — see Azyrus in
+  `Fukiko.yaml`'s `notes`). Roughly parallels BESM's
+  `description`/`tagline`, but richer.
+
+## 5. Canonical field set (from the official character sheet)
+
+`OVA-Blank-Character-Sheet-Form-Fillable.pdf` (2 pages) confirms the
+fields any output format should be able to round-trip:
+
+- Header: Character Name, Player Name.
+- Abilities (name + level list), Weaknesses (name + level list) —
+  side by side.
+- Combat Stats: up to 4 named attack rows (Roll / DX / END columns
+  each), then a Defense / Health / Endurance / TV row.
+- Combat Notes / "Damage, Complications, Etc." (free text).
+- Page 2: Background, Appearance, Personality, Other Notes (free
+  text), Character Portrait (image — out of scope for a text
+  formatter).
+
+This matches `Fukiko.yaml`'s shape closely and is a good sanity check
+for whatever YAML schema gets settled on (§6): every one of these
+fields should map onto something in the schema, and nothing essential
+should be sheet-only/YAML-only without a reason.
+
+## 6. Test data assessment — the schema is not settled
+
+`~/current/RPG/Tools/OVA/test-data/` (5 files) does **not** use one
+consistent schema. This is the other major open item before any real
+port work, since `besm2_fmt`'s port strategy (§7 there: diff Ada
+output byte-for-byte against real Scheme-generated golden output)
+depends on having working, schema-valid input and a working reference
+implementation — neither exists yet for OVA.
+
+- `Fukiko.yaml` (177 lines, the most complete) — top-level YAML
+  **mapping** (not a sequence like BESM's/Auren's files): `name`,
+  `abilities`/`weaknesses` (each a list of `{name, level, [detail(s)],
+  [abilities], [weaknesses], [perks], [flaws]}` — nested recursively
+  for Transformation), `combat` (`defense` as a slashed
+  string `"4/5"` — two Defense values? — `health`, `endurance`,
+  `threat-value`, `attacks[]` with `name`/`perks`/`flaws`/`affinity`
+  (note: misspelled `afinity` on the first attack, `affinity`
+  correctly on the rest — a typo to notice, not a schema variant)/
+  `description`/`roll`/`dx`/`endurance`), `background`, `appearance`
+  (empty), `personality`, `notes[]` (`header`/`text`/optional
+  `attributes` prose), `fluff` (mapping of the §4 fields). Uses
+  `details`/`detail` inconsistently (`detail:` singular on the
+  Knowledge ability, `details:` plural on Bizarre Appearance/Focus) —
+  another thing to normalize when settling the schema, not necessarily
+  a meaningful distinction.
+- `Auren.yaml` (98 lines) — top-level YAML **sequence** of one entity
+  (`- name: Auren`, matching BESM's file shape), with an `options`
+  block (§4) not present in `Fukiko.yaml` at all. Abilities/weaknesses
+  use a **different item shape**: each list item's own key names the
+  attribute (`ability: Combat Expert` / `weakness: Ageism`) instead of
+  a fixed `name:` key, and several entries misspell the key itself
+  (`abilty:` ×3, `abiltiy:` ×1) — these items likely fail to parse as
+  intended under either schema as a result (a YAML mapping key typo
+  like `abilty` just becomes a differently-named field, silently, not
+  a YAML syntax error) and would need cleanup regardless of which
+  schema direction is chosen. `label:` appears where `Fukiko.yaml`
+  uses `detail:`/`details:` (also once misspelled `lebel:`). Nested
+  `spells:` under `Magic, Arcane` uses `spell:`/`perks: - perk: ...`
+  (again keying by value-as-key rather than a fixed `name:`), with one
+  outlier (`Breath`'s perk uses `name: Life Support` instead of
+  `perk:`) — so even within this one file the "key names the thing"
+  convention isn't applied consistently. `combat.attacks:` is present
+  but empty (no attacks filled in), and `background`/`appearance`/
+  `personality`/`notes` are all empty.
+- `Acacia.yaml` (12 lines) — top-level sequence, one entity, every
+  field present as a key with no value (`abilities:`, `weaknesses:`,
+  `combat:`, `background:`, `appearance:`, `personality:`, `notes:`).
+  Effectively just a "here are the top-level section names" skeleton;
+  no schema information beyond that.
+- `template.yaml` (36 lines) — **not valid YAML as written**: it mixes
+  a sequence item's mapping with stray `- perks:`/`- flaws:`/
+  `- affinity:` list markers at the wrong indentation inside a
+  mapping value, and uses placeholder tokens (`Ability X`, `Perk Y`,
+  `level: N`, `cost: M`) rather than real data. Read as an aspirational
+  sketch of intended structure (options block fully commented with
+  rulebook page references, a perk/flaw shape with `name`/`level`/
+  `cost`/`description`), not as a working fixture. Its `cost:` field
+  (with a `# Total` comment) hints at wanting per-perk/flaw Endurance
+  cost tracked explicitly, matching `ova-ref.pdf`'s Perk/Flaw End
+  columns.
+- `fluff.yaml-partial` (18 lines, note the `.yaml-partial` extension —
+  deliberately not a complete/loadable file) — just the `fluff:`
+  mapping with every OVA-rulebook-suggested field present as a
+  commented-out-description placeholder. A clean reference for the
+  fluff field list and field order, nothing more.
+
+**Bottom line:** before any Ada work starts, the YAML schema needs to
+be decided and `Fukiko.yaml`/`Auren.yaml`/`Acacia.yaml` brought into
+conformance with it (fixing the `abilty`/`abiltiy`/`lebel` typos along
+the way), the same way `besm2_fmt`'s port could lean on already-valid,
+already-consistent `besm-tools` test-data. Recommend picking
+`Fukiko.yaml`'s style (fixed `name:`/`level:` keys, nesting via
+`abilities:`/`weaknesses:` under a parent item) as the base, since it's
+both the most complete example and the one the stub's own
+`process-entity-terse` already assumes (`must-exist "level" ability}`
+expects a fixed key name, not `Auren.yaml`'s "key names the thing"
+convention).
+
+## 7. Output-format strategy for nested tables (settled by the user)
+
+This resolves what was previously the top open question (§3/§4's
+nested-table problem) with a concrete per-format plan, given directly
+by the user rather than left for later design:
+
+- **reST's own table syntax (grid or simple) is not usable for OVA at
+  all.** Unlike BESM, where a flat attributes/defects/skills list maps
+  fine onto one reST table per section, OVA's nested
+  abilities-within-abilities has no representation in reST tables —
+  reST doesn't support nested tables, and `besm2_fmt`'s grid-table
+  backend (`process-entity`'s STAT/ATTRIBUTE/DEFECT/SKILL tables) is
+  therefore **not** a shape to reuse for OVA's default output.
+- **Default/primary text output should look like BESM's *terse*
+  format instead** — paragraphs of prose (`**Attributes:**` etc.,
+  matching `ova-rst.scm`'s existing `process-entity-terse` sketch,
+  §3), not a tabular grid. This is the one format where nesting is
+  natural: a nested ability's sub-abilities/sub-weaknesses just read
+  as a parenthetical or nested clause within the parent's sentence,
+  the same way `columns.scm`'s Azyrus example in `ova-rst.scm`'s
+  header comment already reads Companion/Attributes/Weaknesses as
+  flowing text. This sidesteps the nested-table problem entirely
+  rather than solving it — there's no grid to keep aligned.
+- **HTML output**: generate a raw HTML block embedded in the generated
+  reST (`.. raw:: html`), the same technique `besm2-rst.scm`/
+  `besm2_fmt` use for groff `tbl` via `.. raw:: ms` (`process-entity-
+  raw-ms`/`Format_Raw_Ms`) — i.e. `ova_fmt` hand-emits literal
+  `<table>`/`<tr>`/`<td>` markup itself (nesting a full `<table>`
+  inside a `<td>` where an ability has sub-abilities), rather than
+  trying to express the table through reST syntax and letting Pandoc
+  render it. This is exactly what `columns.scm`'s correction (§3)
+  establishes as workable: HTML nests tables fine, so hand-written
+  markup is the right level to emit at, bypassing both reST's
+  limitation and `(schemepunk show)`'s inability to build nested
+  layouts.
+- **groff/troff output**: `besm2_fmt`'s raw-ms backend uses classic
+  `tbl` macros (`.TS`/`.TE`, `T{...T}` text blocks) — confirmed **not
+  suitable for OVA**, since `tbl` has no construct for a table nested
+  inside a cell (column/row spanning could maybe fake something
+  visually, but isn't real nesting and wasn't pursued). Instead use
+  groff's **`hd` table macros**, which do support nested tables (and
+  color) — the same `.. raw:: ms` raw-block technique as
+  `besm2_fmt`'s `tbl` approach, just with `hd` macro calls instead of
+  `.TS`/`tbl` syntax, still processed through Pandoc's `ms` writer
+  like the rest of the raw-ms pipeline. **Caveat, and worth flagging
+  early:** `hd` is reportedly not well supported in the groff version
+  the user expects to be current (~1.24) but *is* supported in groff
+  1.23, which is the version actually installed/in use here — check
+  the installed groff version before committing to this path, and
+  re-verify `hd`'s nested-table support against whatever version is
+  actually available when this gets built, since relying on it and
+  then hitting a groff upgrade that dropped/changed `hd` support would
+  be a real regression risk.
+- **Lout/PDF output**: Pandoc has **no Lout backend**, so unlike the
+  reST→(HTML|ms) pipeline, this output can't go through Pandoc at
+  all — `ova_fmt` would need to emit complete, directly-renderable
+  Lout source itself (`lout -a ... | ps2pdf`, matching the existing
+  `GNUmakefile`'s `build/%.lout.pdf` pattern), the same role
+  `Fukiko-experiment.lout` already plays as a hand-written example
+  (§3) — i.e. this becomes a fifth, structurally different output
+  mode, not just another `.. raw::` block inside reST. Lout's `@Tbl`
+  package genuinely nests (proven by `Fukiko-experiment.lout`), so
+  this is the one path with a working existing proof of concept
+  already in the repo.
+
+Net effect on `Ova_Fmt.Text_Layout`/format-backend design: the
+fixed-width pad/wrap/columnar-row machinery `besm2_fmt` built
+(§8-old/now-§9's "reuse directly" bullet) is useful for the
+**terse-prose** format's word-wrapping, but the *tabular row/column
+renderer* part of `besm2_fmt.Text_Layout` (`Put_Row`/`Separator_Line`,
+the reST grid-table specific piece) has **no OVA consumer at all** —
+OVA's tables live only inside raw HTML/`hd`/Lout blocks, each with
+its own native table model, not through a shared Ada-side grid
+renderer.
+
+## 8. Proposed approach, following `besm2_fmt`'s playbook
+
+Not yet decided/committed — for discussion before starting real work:
+
+- **Toolchain:** same as `besm2_fmt` — Ada 2012, `alibfyaml`
+  (`~/Repos/Ada/alibfyaml` / installed under
+  `/usr/local/sw/versions/ada/`, resolved via `GPR_PROJECT_PATH`) for
+  YAML, `arg_parser` for CLI parsing, same `Executable`-renaming
+  `.gpr` trick if the root package ends up needing to be named
+  `Ova_Fmt` (check whether that specific collision even applies here —
+  `besm2_fmt`'s workaround was needed because `BESM2_Fmt` had to be
+  both a procedure name and a parent package name; confirm the same
+  shape before copying the workaround unnecessarily).
+- **Package layout**, mirrored from `besm2_fmt/src/`:
+  `ova_fmt.ads` (root anchor), `ova_fmt-config.ads`,
+  `ova_fmt-text_layout.ads/.adb` (start from `besm2_fmt`'s, but budget
+  real design time for the nested-table problem, §3/§4 — this is
+  **not** a drop-in reuse), `ova_fmt-entities.ads/.adb` (parse each
+  YAML entity into typed Ability/Weakness/Attack/Combat/Fluff records
+  once, matching `besm2_fmt`'s "parse once, four backends consume it"
+  rationale), one package per output format, `ova_fmt-cli.ads/.adb`,
+  `ova_fmt_main.adb`.
+- **Reuse `besm2_fmt`'s already-learned lessons directly**, since
+  they're about YAML/Ada mechanics, not BESM-specific: libfyaml core
+  hands back scalar text needing explicit `Integer_Value`/etc.
+  conversion (already solved generically in `alibfyaml`'s
+  `Libfyaml.Nodes` — no OVA-specific work needed there);
+  `Display_Length`/UTF-8-aware width counting for any fixed-width
+  column layout; `Word_Wrap` needing to treat embedded YAML
+  literal-block newlines as word breaks, not literal content;
+  `Document_Stream` for correct multi-document handling (OVA files so
+  far are single-document, but no reason to special-case that).
+- **Output formats**, per §7's settled per-format strategy: terse-prose
+  as the default/primary text format (no BESM-style reST grid-table
+  default at all — reST tables are off the table, so to speak, for
+  OVA); an HTML backend that emits raw `.. raw:: html` blocks with
+  hand-written (potentially nested) `<table>` markup; a raw-ms backend
+  using groff `hd` macros instead of `tbl` (version caveat noted in
+  §7); and a Lout backend that's a genuinely separate, non-Pandoc
+  output mode producing directly-renderable Lout source. Not yet
+  decided whether an h-m-m outline backend (no OVA attempt exists at
+  all) is also wanted. No golden reference output exists for *any* OVA
+  format yet (unlike BESM, where `besm-tools`' compiled binary and
+  `GNUmakefile` targets served as the oracle) — acceptance testing
+  will have to be built up from scratch (hand-verify the terse format
+  against the rulebook's own Fukiko/Azyrus write-up on p. 36–37, and
+  the Lout backend against `Fukiko-experiment.lout` specifically,
+  since that's now a confirmed real worked example, §3) rather than
+  diffed against a pre-existing working program.
+- **Test data**: fix up `Fukiko.yaml`/`Auren.yaml`/`Acacia.yaml` to a
+  single settled schema (§6) as an early, separate step — probably
+  before writing `Ova_Fmt.Entities` — and consider adding fixtures
+  transcribed from the three player books (Auren/Miho/Raine) once
+  reviewed, for broader coverage (a character with no nested
+  abilities, one with Magic's `spells` nesting, one with a fuller
+  attack suite).
+- **Shared library question**: `besm2_fmt`'s `PLAN.md` already flags
+  "factor `Text_Layout`/customizer logic into a shared library" as an
+  open question for a hypothetical `besm4_fmt`. Worth reconsidering
+  once OVA's `Text_Layout` needs diverge from BESM's (§3/§4) — may turn
+  out OVA's nested-table requirement means less is actually shareable
+  than the BESM4 case would have had, or it may clarify what the truly
+  generic core (`Pad`, plain `Word_Wrap`, `Bold`/`Italics`/emphasis
+  gating) versus per-game layout logic split should be.
+
+## Open questions
+
+- ~~**Nested-table rendering**~~ Resolved (§7): terse-prose for the
+  default text format (sidesteps the problem), hand-written nested
+  `<table>` markup in raw HTML blocks, groff `hd` macros (not `tbl`)
+  in raw-ms blocks, and a genuinely separate directly-rendered Lout
+  backend (no Pandoc involvement) modeled on `Fukiko-experiment.lout`.
+- **YAML schema**: `name:`/`level:`-keyed items (`Fukiko.yaml`-style)
+  vs. "key names the attribute" (`Auren.yaml`-style) — recommend the
+  former (§6) but not yet decided/committed with the user.
+- **`options` block**: character-creation-limit metadata — rendered in
+  any output format, or purely for the YAML author's own reference?
+- **`combat.defense: "4/5"`** in `Fukiko.yaml` — a slash-separated pair
+  of Defense values (two Defense Rolls under different
+  circumstances?) needs a rulebook check; not yet confirmed what the
+  two numbers mean or how a formatter should render them.
+- **Which output formats are actually wanted**: §7/§8 now cover terse,
+  HTML, raw-ms/`hd`, and Lout; still unconfirmed whether an h-m-m
+  outline backend (no OVA attempt exists at all, unlike BESM) is also
+  wanted.
+- **groff version/`hd` support** (§7): the `hd` table macros are
+  reportedly not well supported in groff ~1.24 but are supported in
+  1.23, which is what's actually installed here — confirm the
+  installed version and re-verify `hd`'s nested-table (and color)
+  support directly before committing real implementation time to the
+  raw-ms/`hd` backend.
+- **`tbl` column/row spanning as a fallback**: floated in §7 as a
+  "maybe something could be done" alternative to `hd` if `hd` support
+  turns out to be inadequate — not investigated, likely inferior to
+  real nesting, but worth a quick sanity check before ruling it out
+  entirely if `hd` doesn't pan out.
+- **Other files under `~/Reference/RPG/OVA/`** not yet reviewed
+  (`OVA-Combat.odt`/`.pdf`, `OVA-ConversionGuide.pdf`, the various
+  character-sheet variants, `OVA-CharacterSheet.zip`) — check these
+  before finalizing the field set in §5, in case they show a different
+  or more complete layout than the one fillable-PDF sheet reviewed so
+  far.
+
+## Decisions already made
+
+- Project directory: `~/Repos/RPG/Tools/ova_fmt` (git initialized, no
+  commits yet, no remote configured yet).
+- Program name: **ova_fmt** (following `besm2_fmt`'s naming pattern —
+  not yet confirmed with the user beyond the directory name itself).
+- This is a from-scratch design-and-port effort, not a mechanical
+  translation — the Scheme source is an intentionally-unfinished
+  skeleton (its own `README.rst`: "nothing in this repository works"),
+  so `ova-rst.scm` is a *shape* reference (CLI option table, the
+  general `process-file`/dispatch pattern, the terse-format prose
+  sketch in its header comment) rather than a behavior oracle the way
+  `besm2-rst.scm` was for `besm2_fmt`.
+- **Nested-table output strategy (§7), given directly by the user:**
+  reST's table syntax is unusable for OVA — no default reST
+  grid-table format, unlike BESM. Default/primary text output is
+  terse/prose-style. HTML output uses hand-written raw `<table>`
+  markup (nests natively) inside `.. raw:: html` blocks. groff/`ms`
+  output uses `hd` macros, not `tbl` (`tbl` can't nest tables), still
+  via a `.. raw:: ms` block processed through Pandoc. Lout output is a
+  separate, directly-generated (non-Pandoc) backend, since Pandoc has
+  no Lout writer — `Fukiko-experiment.lout` is a confirmed working
+  proof-of-concept for Lout's native nested-table support to model
+  that backend on.
