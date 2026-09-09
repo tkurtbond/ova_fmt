@@ -923,6 +923,47 @@ for test data and output-format sequencing:
    Magic-using character's spell-mimics-another-Ability shape (§2.2),
    and whichever sample characters (if any) use Companion or Vehicle,
    still unconfirmed as worked examples (§ open questions).
+
+   **Progress: `test-data/Karis.yaml` done** (first of the twelve,
+   transcribed from `ova-rulebook.txt` lines 874–1012 — Karis herself,
+   plus Arasuni as a full nested Companion sub-entity per §2.3).
+   Lives in `ova_fmt/test-data/` (a new directory in *this* repo, not
+   the old Scheme project's `~/current/RPG/Tools/OVA/test-data/`).
+   Established, and needing to be followed consistently in the
+   remaining eleven transcriptions:
+   - **Top-level document is a YAML sequence**, not a bare mapping —
+     `Karis.yaml` uses `- name: Karis ...` even though it's a single
+     entity, matching `Auren.yaml`/`Acacia.yaml`/`besm2_fmt`'s
+     convention and the loader's `for entity in entities` iteration
+     model, *not* `Fukiko.yaml`'s existing bare-mapping style (§6's
+     already-noted inconsistency — `Fukiko.yaml` itself should
+     probably be converted to match at some point, tracked as its own
+     small cleanup rather than done as a side effect here).
+   - **A linked sub-entity nests under the ability list item that
+     grants it**, in a key named after the ability kind (`companion:`
+     under the `Companion` ability item) — the same location
+     Transformation's granted sub-abilities/sub-weaknesses already
+     nest at (`Fukiko.yaml`), so every "this Ability grants linked
+     content" case (Transformation, Magic, Companion, and presumably
+     Vehicle once an example turns up) stays in one consistent place
+     regardless of which Ability it is, rather than each kind
+     inventing its own top-level sibling field.
+   - **Copyright-conscious transcription policy**: game-mechanical
+     data (ability/weakness names and Levels, combat stats, attack
+     Roll/DX/Endurance/Perks/Flaws, fluff fields, `tagline`) is
+     transcribed faithfully; short one-sentence attack flavor
+     descriptions are kept close to the source text (brief captions,
+     low risk); but `background`/`personality` — the substantial
+     narrative prose, the clearest copyrightable creative-expression
+     content in the book — are **short original paraphrases, not
+     verbatim reproductions**, since this repo has a public remote
+     (`git@github.com:tkurtbond/ova_fmt.git`) and §2's copyright note
+     already flagged verbatim narrative as something not to commit
+     there. `summary` (the new author-written field, §4) is original
+     text written for this purpose, not from the book at all. Flagged
+     here explicitly as a judgment call, not a directive from the
+     user — revisit if a different approach (fuller transcription,
+     keeping the repo private, etc.) is actually wanted.
 2. **Terse backend first.** Mirrors `besm2_fmt`'s own build order
    (its `PLAN.md` §8: terse validates CLI + data access + domain
    formatting before touching harder layout code) — and per §7, terse
