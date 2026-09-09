@@ -1020,6 +1020,51 @@ for test data and output-format sequencing:
    were the only examples before this). `affinity:` kept as its own
    field rather than folded into `perks:` as display prose, matching
    `Fukiko.yaml`'s existing convention.
+
+   **Progress: step 1 done — all twelve `ova-rulebook.txt` sample
+   characters now have `test-data/*.yaml`.** The remaining eight,
+   transcribed in one pass after Raine: `Shou.yaml` (p. 26–27, lines
+   769–869 — plain, no new schema wrinkles); `Miho.yaml` (p. 30–31,
+   lines 1013–1132, cross-checked against the player-book excerpt —
+   Transformation stacking an *extra* Level onto an Ability the
+   character already has at top level, Combat Expert +3 base / +2
+   more via Transformation, not previously seen since Fukiko's
+   Transformation only grants wholly new Abilities); `Braun.yaml`
+   (p. 31–33, lines 1136–1246 — a joke attack with a negative `roll`
+   (`-2`) and a fractional `dx` (`"1/2"`, stored as a string like
+   `combat.defense`'s non-integer values; matches Armored's own rules
+   text on reducing DX to ½), and the first Threat Value of `0`; two
+   `notes[]` entries on one character, confirming that's fine);
+   `Natsuki.yaml` (p. 33–35, lines 1249–1358 — a `notes[]` entry
+   ("Malicron Corporation") that describes summonable NPC minion
+   stats in prose rather than structured data, left as prose, no
+   schema for that yet); `Auren.yaml` (p. 38–39, lines ~1475–1591,
+   cross-checked against the player-book excerpt — a **from-scratch**
+   transcription for *this* repo, not a fix of the old Scheme
+   project's inconsistent `Auren.yaml`; introduces the Magic-spell
+   shape resolved in §2.2 — a `spells:` list under the Magic ability,
+   each entry `{name, mimics, level, endurance}`, deliberately
+   different from Transformation/Companion's `abilities:`/
+   `weaknesses:` nesting since a spell isn't itself an Ability);
+   `Yuu.yaml` (p. 42–43, lines 1690–1815 — a second full
+   nested-Companion example, Fenrir, confirming Karis/Arasuni's
+   pattern generalizes; a richer `detail`+`cost` Flaw where `detail`
+   names a specific Level of another Ability as a precondition,
+   `Requirement: Trust +1/+2/+3` at escalating cost; one uncertain
+   transcribed value flagged in-file, Fenrir's Endurance, where the
+   source text has a likely column-extraction artifact);
+   `Daisuke.yaml` (p. 43–45, lines 1819–1911 — an alternate-form
+   stat-delta callout, "Black Bunny!", left as prose since there's no
+   schema yet for "what changes while transformed" as structured
+   data); `Cora.yaml` (p. 45–47, lines 1919–2021, the twelfth and
+   last — confirms `spells:` is specific to Magic, Arcane-style
+   casting: her Magic, *Witchcraft* has no nested spells list at all,
+   consistent with Witchcraft casting Weaknesses onto a target rather
+   than the caster mimicking an Ability). All eight validated with a
+   Python YAML parse and `yamllint`, same as the first three.
+   `Fukiko.yaml` (the pre-existing, differently-shaped legacy file)
+   remains a separate, still-open cleanup item (§6/§9 note above),
+   not touched by this pass.
 2. **Terse backend first.** Mirrors `besm2_fmt`'s own build order
    (its `PLAN.md` §8: terse validates CLI + data access + domain
    formatting before touching harder layout code) — and per §7, terse
