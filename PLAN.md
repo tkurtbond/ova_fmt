@@ -602,6 +602,27 @@ differences from `besm2_fmt`'s BESM model:
   entries should all share the same Perks/Flaws representation),
   parallel to how `besm2_fmt.Entities`' attribute record carries
   `Enhancements`/`Limiters` uniformly rather than per attribute kind.
+  **Endurance-cost arithmetic, confirmed against the rulebook and
+  `ova-ref.pdf`'s Perk/Flaw tables (user check-in, this session):**
+  Perks *add* to an Ability's Endurance cost (*"you must spend the
+  total of Endurance from any Perks it has"*); Flaws *offset*
+  (subtract from) that cost, floored at zero (*"may be reduced to
+  zero, [but] can never become a negative amount"*); per-Perk/Flaw
+  costs vary widely (`ova-ref.pdf`: Perks from `+0`, e.g. Ranged/Will
+  Attack/Fatiguing, up to `+20`, Blinding; Flaws from `−5` up to
+  `−25`, Open to Attack the largest single offset, `−20` No
+  Damage/Concentration close behind); and some Perks/Flaws are
+  explicitly repeatable (`/M` = any number of times, `/n` = up to `n`
+  times, e.g. `Paralyzing/2`, `Ammunition/3`), rendered in finished
+  prose as a `Name X<n>` suffix rather than a separate number — see
+  `Karis.yaml`'s `Paralyzing`/`counts-as: 2` and
+  `Ineffective`/`counts-as: 3` on Flex-Steel Cable, already
+  transcribed this way. This is the arithmetic `Ova_Fmt.Entities`
+  would need if it ever computes/validates an attack's Endurance cost
+  from its Perks/Flaws rather than just displaying the YAML's own
+  `endurance:` field verbatim (not yet decided whether the formatter
+  should do that computation at all, §5's `combat.attacks[].endurance`
+  is currently treated as authored data, not derived).
 - **Combat block is its own structured section**, matching the
   official character sheet's "Combat Stats" box exactly (§5): Defense,
   Health, Endurance, Threat Value (`tv`), and up to several named
