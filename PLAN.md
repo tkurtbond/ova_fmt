@@ -1007,6 +1007,19 @@ for test data and output-format sequencing:
    `Paralyzing`/`Ineffective` `x2`/`x3`, meaning "taken this many
    times"): Ai's Mind Break attack's `Cancel` Flaw (detail `Unliving`,
    cost `-5`) is a single take at a chosen magnitude, not a repeat.
+
+   **Progress: `test-data/Raine.yaml` done** (third of the twelve,
+   `ova-rulebook.txt` lines 652–765, p. 23–25). Chosen to confirm two
+   things: a second `detail`+`cost` Flaw example (Electrical Storm's
+   `Requirement` — also a variable-range Flaw per `ova-ref.pdf`, "`-5
+   to -20`" — with `detail: Must Be Outside`, `cost: -10`), and a new
+   `notes[]` attachment point — Raine's "Nightmares" callout box is
+   keyed to his `Unique Weakness (Nightmares)` entry, so headed
+   callouts attach to notable *Weaknesses* too, not just Abilities
+   (Fukiko's Transformation and Azyrus's Companion, both Abilities,
+   were the only examples before this). `affinity:` kept as its own
+   field rather than folded into `perks:` as display prose, matching
+   `Fukiko.yaml`'s existing convention.
 2. **Terse backend first.** Mirrors `besm2_fmt`'s own build order
    (its `PLAN.md` §8: terse validates CLI + data access + domain
    formatting before touching harder layout code) — and per §7, terse
