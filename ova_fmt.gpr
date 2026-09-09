@@ -1,0 +1,30 @@
+with "arg_parser.gpr";
+with "libfyaml_ada.gpr";
+
+project Ova_Fmt is
+
+   for Languages use ("Ada");
+   for Source_Dirs use ("src");
+   for Object_Dir use "obj";
+   for Exec_Dir use ".";
+   for Main use ("ova_fmt_main.adb");
+
+   package Compiler is
+      for Default_Switches ("Ada") use ("-gnat2012", "-gnatwa", "-g");
+   end Compiler;
+
+   package Builder is
+      --  Same naming wrinkle as besm2_fmt (see its besm2_fmt.gpr and
+      --  PLAN.md): the procedure can't be named Ova_Fmt -- that's the
+      --  parent package of Ova_Fmt.Config/Ova_Fmt.Cli, and a library
+      --  unit can't be both a package (for its children) and a
+      --  procedure. Rename just the produced executable back to the
+      --  program's actual name.
+      for Executable ("ova_fmt_main.adb") use "ova_fmt";
+   end Builder;
+
+   package Install is
+      for Prefix use External ("HOME") & "/local";
+   end Install;
+
+end Ova_Fmt;

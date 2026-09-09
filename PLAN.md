@@ -1099,6 +1099,53 @@ for test data and output-format sequencing:
    write-ups from step 1, not a pre-existing working binary the way
    BESM had — §8's note on acceptance-testing from scratch still
    applies).
+
+   **Progress: done — a working `ova_fmt` binary exists.** Project
+   skeleton mirrors `besm2_fmt` exactly (`ova_fmt.gpr`, `ova_fmt.ads`
+   root anchor, `Ova_Fmt.Config`/`Ova_Fmt.Cli`/`Ova_Fmt_Main`, the
+   same `Executable ("ova_fmt_main.adb") use "ova_fmt"` renaming
+   trick for the same reason). `Ova_Fmt.Entities` implements the full
+   settled schema in one pass — Perk_Flaw (scalar / detail / repeat
+   count / chosen-cost shapes), Attack, Combat_Stats (shared between
+   a main entity and a Companion sub-entity), Sub_Item (Transformation/
+   Companion nested abilities/weaknesses), Spell (Magic), a
+   Companion_Access (an access type, deliberately never freed — see
+   its doc comment: a short-lived batch CLI leaking at exit is fine),
+   Ability, Weakness, Note_Item, Fluff_Block (fixed known fields, not
+   a generic key/value list), Entity. `Ova_Fmt.Format_Terse` renders
+   all of it: header (name + `fluff.concept`, underlined; `tagline`
+   quoted-italic; `summary` italic), Background/Personality as bold-
+   labeled paragraphs, Abilities/Weaknesses/Combat-summary/Attacks as
+   one bulleted list matching the Karis mockup's translated-to-reST
+   structure (§2.3) for the parts it covered, plus this session's own
+   first-pass design (flagged as such in the package's header comment,
+   not yet user-reviewed) for what it didn't: a "linked content"
+   expansion section per Ability with nested Sub_Abilities/
+   Sub_Weaknesses/Spells/a Companion, printed after the main Attacks
+   block (`**Transformation**` / `**Magic, Arcane**` / `**Companion:
+   Name**`, the last recursing through `Print_Combat_And_Attacks` when
+   the companion has its own `combat:` block); Notes as bold-header-
+   em-dash-text pairs; Fluff as one labeled line. Built clean (no
+   warnings) against `alibfyaml`/`arg_parser` via `GPR_PROJECT_PATH`,
+   same as `besm2_fmt`. Ran against all twelve `test-data/*.yaml`
+   files with no crashes; spot-checked Karis, Fukiko, Auren, Ai,
+   Braun, and Cora by eye against their source data and the general
+   rulebook conventions (§2.1/§2.2/§2.3) — output reads correctly for
+   every nesting/modifier shape transcribed so far (paired Defense
+   with the Barrier note both nested and top-level, Magic spells,
+   both Companion shapes, negative `roll`/fractional `dx`, `detail`+
+   `cost` Perks/Flaws). One real bug found and fixed this way: the
+   `fluff:` line's forced trailing period doubled up when a value
+   already ended in one (`enemies: Malicron Corp..`, Braun/Miho) —
+   fixed with an `End_With_Period` helper that checks first, and
+   verified clean across all twelve outputs afterward. `-h`/`-o`/
+   stdin all confirmed working. **Not yet done:** no golden reference
+   exists to diff against (§8's note — there never was one for OVA),
+   so this has only been eyeball-verified, not the byte-for-byte
+   standard `besm2_fmt` held itself to; the linked-content section
+   design in particular is this session's own invention and should be
+   reviewed against what's actually wanted before treating it as
+   settled, the way the Karis-mockup-covered parts already are.
 3. **HTML backend**: raw `.. raw:: html` blocks containing
    hand-written, potentially-nested `<table>` markup (§7), through the
    same reST→Pandoc pipeline `besm2_fmt`'s raw-ms backend already

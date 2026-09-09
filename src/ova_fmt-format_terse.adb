@@ -1,0 +1,435 @@
+with Ada.Strings;
+with Ada.Strings.Fixed;
+with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
+with Ada.Text_IO;
+with Ova_Fmt.Config;
+
+package body Ova_Fmt.Format_Terse is
+
+   package Config renames Ova_Fmt.Config;
+   package IO renames Ada.Text_IO;
+   use type Entities.Companion_Access;
+
+   function Bold (S : String) return String is ("**" & S & "**");
+   function Italic (S : String) return String is ("*" & S & "*");
+
+   function Trim_Img (N : Integer) return String is
+     (Ada.Strings.Fixed.Trim (Integer'Image (N), Ada.Strings.Left));
+   --  Plain magnitude, no forced sign: "3", "-2".
+
+   function Signed_Img (N : Integer) return String is
+     (if N >= 0 then "+" & Trim_Img (N) else Trim_Img (N));
+   --  Ability/Weakness Levels always show an explicit sign, matching
+   --  every source (rulebook sheet and the Karis mockup alike).
+
+   function End_With_Period (S : String) return String is
+     (if S'Length > 0 and then S (S'Last) = '.' then S else S & ".");
+   --  Avoids a doubled "..": free-form author text (a `fluff:` value
+   --  in particular -- "enemies: Malicron Corp.") can legitimately
+   --  already end with a period.
+
+   -----------------------------------------------------------------
+   --  Perks/Flaws.
+   -----------------------------------------------------------------
+
+   function Format_Perk_Flaw (PF : Entities.Perk_Flaw) return String is
+      Result : Unbounded_String := PF.Name;
+   begin
+      if PF.Has_Detail then
+         Result := Result & ": " & PF.Detail;
+      end if;
+      if PF.Has_Counts_As then
+         Result := Result & " x" & Trim_Img (PF.Counts_As);
+      end if;
+      if PF.Has_Cost then
+         Result := Result & " (" & Trim_Img (PF.Cost) & ")";
+      end if;
+      return To_String (Result);
+   end Format_Perk_Flaw;
+
+   function Format_Perk_Flaw_List
+     (Vec : Entities.Perk_Flaw_Vectors.Vector) return String
+   is
+      Result : Unbounded_String;
+   begin
+      for I in Vec.First_Index .. Vec.Last_Index loop
+         if I > Vec.First_Index then
+            Result := Result & ", ";
+         end if;
+         Result := Result & Format_Perk_Flaw (Vec (I));
+      end loop;
+      return To_String (Result);
+   end Format_Perk_Flaw_List;
+
+   --  Perks/Flaws suffix for an Ability/Sub_Item that carries its own
+   --  (e.g. Ai's top-level Barrier, Fukiko's Transformation-nested
+   --  Barrier) -- "[Perks: ...; Flaws: ...]", empty string if neither
+   --  is present.
+   function Format_Modifiers_Bracket
+     (Perks, Flaws : Entities.Perk_Flaw_Vectors.Vector) return String
+   is
+      Parts : Unbounded_String;
+   begin
+      if not Perks.Is_Empty then
+         Parts := Parts & "Perks: " & Format_Perk_Flaw_List (Perks);
+      end if;
+      if not Flaws.Is_Empty then
+         if Length (Parts) > 0 then
+            Parts := Parts & "; ";
+         end if;
+         Parts := Parts & "Flaws: " & Format_Perk_Flaw_List (Flaws);
+      end if;
+      if Length (Parts) = 0 then
+         return "";
+      end if;
+      return " [" & To_String (Parts) & "]";
+   end Format_Modifiers_Bracket;
+
+   --  Affinity/Perks/Flaws clause for one attack -- "(Affinity: ...;
+   --  Perks: ...; Flaws: ...)", each clause present only if
+   --  applicable, "" if none apply at all. Affinity is its own
+   --  labeled clause here (not folded into Perks the way the
+   --  character-sheet layout does, PLAN.md §2.1) since this format
+   --  already labels Perks/Flaws explicitly -- folding Affinity in
+   --  under the "Perks:" label read as misleading rather than
+   --  faithful once that label exists.
+   function Format_Attack_Clause (A : Entities.Attack) return String is
+      Parts : Unbounded_String;
+
+      procedure Add (Label : String; Text : String) is
+      begin
+         if Length (Parts) > 0 then
+            Parts := Parts & "; ";
+         end if;
+         Parts := Parts & Label & ": " & Text;
+      end Add;
+   begin
+      if A.Has_Affinity then
+         Add ("Affinity", To_String (A.Affinity));
+      end if;
+      if not A.Perks.Is_Empty then
+         Add ("Perks", Format_Perk_Flaw_List (A.Perks));
+      end if;
+      if not A.Flaws.Is_Empty then
+         Add ("Flaws", Format_Perk_Flaw_List (A.Flaws));
+      end if;
+      if Length (Parts) = 0 then
+         return "";
+      end if;
+      return "(" & To_String (Parts) & ")";
+   end Format_Attack_Clause;
+
+   -----------------------------------------------------------------
+   --  Ability / Weakness / Sub_Item lines: "Name (detail) Level
+   --  [Perks: ...; Flaws: ...] (note)".
+   -----------------------------------------------------------------
+
+   function Name_Detail (Name : Unbounded_String; Has_Detail : Boolean;
+                          Detail : Unbounded_String) return String is
+     (To_String (Name) &
+      (if Has_Detail then " (" & To_String (Detail) & ")" else ""));
+
+   function Format_Ability_Line (A : Entities.Ability) return String is
+      Result : Unbounded_String :=
+        To_Unbounded_String
+          (Name_Detail (A.Name, A.Has_Detail, A.Detail) & " " & Signed_Img (A.Level));
+   begin
+      Result := Result & Format_Modifiers_Bracket (A.Perks, A.Flaws);
+      if A.Has_Note then
+         Result := Result & " (" & A.Note & ")";
+      end if;
+      return To_String (Result);
+   end Format_Ability_Line;
+
+   function Format_Weakness_Line (W : Entities.Weakness) return String is
+     (Name_Detail (W.Name, W.Has_Detail, W.Detail) & " " & Signed_Img (W.Level));
+
+   function Format_Sub_Item_Line (S : Entities.Sub_Item) return String is
+      Result : Unbounded_String :=
+        To_Unbounded_String
+          (Name_Detail (S.Name, S.Has_Detail, S.Detail) & " " & Signed_Img (S.Level));
+   begin
+      Result := Result & Format_Modifiers_Bracket (S.Perks, S.Flaws);
+      if S.Has_Note then
+         Result := Result & " (" & S.Note & ")";
+      end if;
+      return To_String (Result);
+   end Format_Sub_Item_Line;
+
+   function Format_Spell_Line (S : Entities.Spell) return String is
+     (To_String (S.Name) & " (mimics " & To_String (S.Mimics) & " " &
+      Signed_Img (S.Level) & "; " & To_String (S.Endurance) & " Endurance)");
+
+   -----------------------------------------------------------------
+   --  Combat: Health/Endurance/Defense/TV line, then an Attacks
+   --  bullet with one nested bullet per attack. Shared between the
+   --  main entity and a Companion sub-entity that has its own
+   --  combat: block (Karis's Arasuni, Yuu's Fenrir).
+   -----------------------------------------------------------------
+
+   procedure Print_Attack (A : Entities.Attack) is
+      Clause : constant String := Format_Attack_Clause (A);
+      Line   : Unbounded_String :=
+        To_Unbounded_String
+          ("  - " & Bold (To_String (A.Name) & ":") & " Roll " &
+           Bold (Trim_Img (A.Roll) & " dice") & " | " &
+           Bold ("DX " & To_String (A.Dx)) & " | " &
+           Bold ("Endurance Cost: " & Trim_Img (A.Endurance)));
+   begin
+      if Clause /= "" then
+         Line := Line & " " & Clause;
+      end if;
+      Line := Line & ".";
+      if A.Has_Description then
+         Line := Line & " " & Italic (To_String (A.Description));
+      end if;
+      IO.Put_Line (To_String (Line));
+   end Print_Attack;
+
+   procedure Print_Combat_And_Attacks (C : Entities.Combat_Stats) is
+   begin
+      if not C.Has_Combat then
+         return;
+      end if;
+      IO.Put_Line
+        ("- " & Bold ("Health:") & " " & Trim_Img (C.Health) & " | " &
+         Bold ("Endurance:") & " " & Trim_Img (C.Endurance) & " | " &
+         Bold ("Defense:") & " " & To_String (C.Defense) & " | " &
+         Bold ("Threat Value (TV):") & " " & Trim_Img (C.Threat_Value));
+      IO.New_Line;
+
+      if not C.Attacks.Is_Empty then
+         IO.Put_Line ("- " & Bold ("Attacks:"));
+         IO.New_Line;
+         for A of C.Attacks loop
+            Print_Attack (A);
+         end loop;
+         IO.New_Line;
+      end if;
+   end Print_Combat_And_Attacks;
+
+   -----------------------------------------------------------------
+   --  Linked-content expansion: one section per top-level Ability
+   --  that has Transformation-style nested Abilities/Weaknesses,
+   --  Magic-style Spells, or a Companion -- printed after the main
+   --  entity's own Attacks, in Abilities list order. First-pass
+   --  design (PLAN.md/this package's header comment), not yet
+   --  user-reviewed.
+   -----------------------------------------------------------------
+
+   procedure Print_Linked_Section (A : Entities.Ability) is
+      Has_Transformation : constant Boolean :=
+        not A.Sub_Abilities.Is_Empty or else not A.Sub_Weaknesses.Is_Empty;
+      Has_Spells         : constant Boolean := not A.Spells.Is_Empty;
+      Has_Companion      : constant Boolean := A.Companion /= null;
+   begin
+      if not (Has_Transformation or else Has_Spells or else Has_Companion) then
+         return;
+      end if;
+
+      if Has_Companion then
+         IO.Put_Line
+           (Bold ("Companion: " & Name_Detail (A.Companion.Name, False, Null_Unbounded_String)));
+      else
+         IO.Put_Line (Bold (Name_Detail (A.Name, A.Has_Detail, A.Detail)));
+      end if;
+      IO.New_Line;
+
+      if Has_Transformation then
+         declare
+            Line : Unbounded_String := To_Unbounded_String ("Grants: ");
+         begin
+            for I in A.Sub_Abilities.First_Index .. A.Sub_Abilities.Last_Index loop
+               if I > A.Sub_Abilities.First_Index then
+                  Line := Line & ", ";
+               end if;
+               Line := Line & Format_Sub_Item_Line (A.Sub_Abilities (I));
+            end loop;
+            if not A.Sub_Weaknesses.Is_Empty then
+               if not A.Sub_Abilities.Is_Empty then
+                  Line := Line & "; ";
+               end if;
+               for I in A.Sub_Weaknesses.First_Index .. A.Sub_Weaknesses.Last_Index loop
+                  if I > A.Sub_Weaknesses.First_Index then
+                     Line := Line & ", ";
+                  end if;
+                  Line := Line & Format_Sub_Item_Line (A.Sub_Weaknesses (I));
+               end loop;
+            end if;
+            IO.Put_Line (End_With_Period (To_String (Line)));
+            IO.New_Line;
+         end;
+      end if;
+
+      if Has_Spells then
+         declare
+            Line : Unbounded_String := To_Unbounded_String ("Spells: ");
+         begin
+            for I in A.Spells.First_Index .. A.Spells.Last_Index loop
+               if I > A.Spells.First_Index then
+                  Line := Line & ", ";
+               end if;
+               Line := Line & Format_Spell_Line (A.Spells (I));
+            end loop;
+            IO.Put_Line (End_With_Period (To_String (Line)));
+            IO.New_Line;
+         end;
+      end if;
+
+      if Has_Companion then
+         if not A.Companion.Abilities.Is_Empty then
+            declare
+               Line : Unbounded_String := To_Unbounded_String ("Abilities: ");
+            begin
+               for I in A.Companion.Abilities.First_Index .. A.Companion.Abilities.Last_Index loop
+                  if I > A.Companion.Abilities.First_Index then
+                     Line := Line & ", ";
+                  end if;
+                  Line := Line & Format_Sub_Item_Line (A.Companion.Abilities (I));
+               end loop;
+               IO.Put_Line (End_With_Period (To_String (Line)));
+               IO.New_Line;
+            end;
+         end if;
+         if not A.Companion.Weaknesses.Is_Empty then
+            declare
+               Line : Unbounded_String := To_Unbounded_String ("Weaknesses: ");
+            begin
+               for I in A.Companion.Weaknesses.First_Index .. A.Companion.Weaknesses.Last_Index loop
+                  if I > A.Companion.Weaknesses.First_Index then
+                     Line := Line & ", ";
+                  end if;
+                  Line := Line & Format_Sub_Item_Line (A.Companion.Weaknesses (I));
+               end loop;
+               IO.Put_Line (End_With_Period (To_String (Line)));
+               IO.New_Line;
+            end;
+         end if;
+         Print_Combat_And_Attacks (A.Companion.Combat);
+      end if;
+   end Print_Linked_Section;
+
+   -----------------------------------------------------------------
+   --  Process_Entity.
+   -----------------------------------------------------------------
+
+   procedure Process_Entity (E : Entities.Entity; Entity_No : Positive) is
+   begin
+      if E.Has_Name then
+         declare
+            Title : constant String :=
+              Name_Detail
+                (E.Name,
+                 E.Has_Fluff and then E.Fluff.Has_Concept,
+                 (if E.Has_Fluff then E.Fluff.Concept else Null_Unbounded_String));
+            Underline_Char : constant Character :=
+              (if Entity_No > 1 and then Config.Subunderliner /= ASCII.NUL
+               then Config.Subunderliner
+               else Config.Underliner);
+         begin
+            IO.Put_Line (Title);
+            IO.Put_Line (String'(1 .. Title'Length => Underline_Char));
+            IO.New_Line;
+         end;
+      end if;
+
+      if E.Has_Tagline then
+         IO.Put_Line (Italic ("""" & To_String (E.Tagline) & """"));
+         IO.New_Line;
+      end if;
+
+      if E.Has_Summary then
+         IO.Put_Line (Italic (To_String (E.Summary)));
+         IO.New_Line;
+      end if;
+
+      if E.Has_Background then
+         IO.Put_Line (Bold ("Background"));
+         IO.New_Line;
+         IO.Put_Line (To_String (E.Background));
+         IO.New_Line;
+      end if;
+
+      if E.Has_Personality then
+         IO.Put_Line (Bold ("Personality"));
+         IO.New_Line;
+         IO.Put_Line (To_String (E.Personality));
+         IO.New_Line;
+      end if;
+
+      if not E.Abilities.Is_Empty then
+         IO.Put ("- " & Bold ("Abilities:") & " ");
+         for I in E.Abilities.First_Index .. E.Abilities.Last_Index loop
+            if I > E.Abilities.First_Index then
+               IO.Put (", ");
+            end if;
+            IO.Put (Format_Ability_Line (E.Abilities (I)));
+         end loop;
+         IO.Put_Line (".");
+         IO.New_Line;
+      end if;
+
+      if not E.Weaknesses.Is_Empty then
+         IO.Put ("- " & Bold ("Weaknesses:") & " ");
+         for I in E.Weaknesses.First_Index .. E.Weaknesses.Last_Index loop
+            if I > E.Weaknesses.First_Index then
+               IO.Put (", ");
+            end if;
+            IO.Put (Format_Weakness_Line (E.Weaknesses (I)));
+         end loop;
+         IO.Put_Line (".");
+         IO.New_Line;
+      end if;
+
+      Print_Combat_And_Attacks (E.Combat);
+
+      for A of E.Abilities loop
+         Print_Linked_Section (A);
+      end loop;
+
+      if not E.Notes.Is_Empty then
+         IO.Put_Line (Bold ("Notes"));
+         IO.New_Line;
+         for N of E.Notes loop
+            IO.Put_Line (Bold (To_String (N.Header)) & " -- " & To_String (N.Text));
+            IO.New_Line;
+         end loop;
+      end if;
+
+      if E.Has_Fluff then
+         declare
+            Line  : Unbounded_String := To_Unbounded_String (Bold ("Fluff:") & " ");
+            First : Boolean := True;
+
+            procedure Add (Label : String; Has : Boolean; Value : Unbounded_String) is
+            begin
+               if Has then
+                  if not First then
+                     Line := Line & ", ";
+                  end if;
+                  First := False;
+                  Line := Line & Label & ": " & Value;
+               end if;
+            end Add;
+         begin
+            Add ("concept", E.Fluff.Has_Concept, E.Fluff.Concept);
+            Add ("birthday", E.Fluff.Has_Birthday, E.Fluff.Birthday);
+            Add ("age", E.Fluff.Has_Age, E.Fluff.Age);
+            Add ("gender", E.Fluff.Has_Gender, E.Fluff.Gender);
+            Add ("height", E.Fluff.Has_Height, E.Fluff.Height);
+            Add ("weight", E.Fluff.Has_Weight, E.Fluff.Weight);
+            Add ("hair", E.Fluff.Has_Hair, E.Fluff.Hair);
+            Add ("eyes", E.Fluff.Has_Eyes, E.Fluff.Eyes);
+            Add ("association", E.Fluff.Has_Association, E.Fluff.Association);
+            Add ("hobbies", E.Fluff.Has_Hobbies, E.Fluff.Hobbies);
+            Add ("favorite food", E.Fluff.Has_Favorite_Food, E.Fluff.Favorite_Food);
+            Add ("allies", E.Fluff.Has_Allies, E.Fluff.Allies);
+            Add ("enemies", E.Fluff.Has_Enemies, E.Fluff.Enemies);
+            Add ("love interests", E.Fluff.Has_Love_Interests, E.Fluff.Love_Interests);
+            IO.Put_Line (End_With_Period (To_String (Line)));
+            IO.New_Line;
+         end;
+      end if;
+   end Process_Entity;
+
+end Ova_Fmt.Format_Terse;
