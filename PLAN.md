@@ -284,26 +284,40 @@ of §2.1's/earlier open questions:
   worked Vehicle example was found in any of the 12 sample characters
   or 3 player books to confirm the exact YAML shape this implies —
   still an open item, but now a sharper one (§ open questions).
-- **Resolved (partially): `combat.defense: "4/5"` is real, not a
-  typo.** The rulebook's own printed Fukiko sheet (`ova-rulebook.txt`
-  line 1461: `4/5 30   40 12` under `defense / health / endurance /
-  tv`) matches `Fukiko.yaml`'s `defense: 4/5`/`health: 30`/
-  `endurance: 40`/`threat-value: 12` exactly — so this is an accurate
-  transcription from the source, not test-data corruption. Confirmed
-  **not unique to Fukiko** either: at least one other of the twelve
-  sample characters (the one whose Background starts at line 1693,
-  not yet identified by name) also prints a slash-paired Defense
-  (`4/5 20 ... 40 10`). What the split precisely means is still
-  unconfirmed — the character-creation walkthrough (p. 17–19) never
-  mentions Defense at all (Defense isn't something spent/chosen during
-  creation, it's derived), and Threat Value's rule "If the character
-  has multiple options for a given item, use the best one" hints that
-  a character with more than one Ability that could apply to a
-  Defense Roll in different circumstances might reasonably be shown
-  with two reference numbers rather than one — but this is inference,
-  not a confirmed rule citation. Practical consequence either way:
-  **the schema and formatter need to support Defense as either a
-  single integer or a pair**, not assume it's always scalar.
+- **Resolved: `combat.defense: "4/5"` is real, and the split is the
+  Barrier Ability's alternate Defense Roll, not a main-form/
+  transformed-form split.** The rulebook's own printed Fukiko sheet
+  (`ova-rulebook.txt` line 1461: `4/5 30   40 12` under `defense /
+  health / endurance / tv`) matches `Fukiko.yaml`'s `defense: 4/5`/
+  `health: 30`/`endurance: 40`/`threat-value: 12` exactly — an
+  accurate transcription from the source, not test-data corruption.
+  The user's first hypothesis was that the pair represents Defense in
+  a character's normal form vs. their Transformation-driven form; the
+  rulebook's Barrier Ability entry (`ova-rulebook.txt` ~2129–2152)
+  gives the actual mechanism instead: *"Instead of making a normal
+  Defense Roll in combat, you may roll your Barrier dice"* — i.e. any
+  character with Barrier has **two independent Defense options**
+  available simultaneously (their normal Defense Roll, or their
+  Barrier dice as an alternative), and a paired Defense on a sample
+  sheet is presenting both at once. Confirmed against a second,
+  cleanly separating example: **Ai** (`ova-rulebook.txt` line
+  ~1654, another of the 12 sample characters) has `+3 Barrier (no
+  gesture; 5 end)` as a **plain top-level Ability with no
+  Transformation at all**, and her Defense is *also* printed paired
+  (`4/5`, `ova-rulebook.txt` line ~1691) — so the pairing tracks
+  "has Barrier," not "has a transformed alternate form." Fukiko's
+  case happens to acquire Barrier *through* Transformation (so her
+  two numbers are only both meaningful while transformed), which is
+  presumably what suggested the main-form/transformed-form reading,
+  but Ai's case shows that's a coincidence of how she got Barrier, not
+  the general rule. **Consequence for the schema/formatter:** a
+  paired Defense isn't its own independent fact to store — it's a
+  *derived* presentation of "normal Defense" alongside "Barrier
+  Defense" whenever the character (or their currently-active
+  Transformation/etc.) has the Barrier Ability, so the domain model
+  should probably store Defense as a single value plus recognize
+  Barrier's presence, rather than storing an opaque `"4/5"` string or
+  an unlabeled pair.
 
 ## 3. Existing (unfinished) OVA tooling
 
@@ -728,14 +742,16 @@ Not yet decided/committed — for discussion before starting real work:
   former (§6) but not yet decided/committed with the user.
 - **`options` block**: character-creation-limit metadata — rendered in
   any output format, or purely for the YAML author's own reference?
-- ~~**`combat.defense: "4/5"`**~~ Resolved as far as "is it real"
-  (§2.2): confirmed genuine and present in the primary rulebook for at
-  least 2 of the 12 sample characters (Fukiko and one other, not yet
-  identified by name), not a typo — but *why* some characters get a
-  paired Defense and others don't is still unconfirmed (best guess:
-  more than one applicable Ability for a Defense Roll in different
-  circumstances, per Threat Value's "use the best one" phrasing).
-  Schema/formatter should treat Defense as int-or-pair either way.
+- ~~**`combat.defense: "4/5"`**~~ Resolved (§2.2): the pair is the
+  character's normal Defense Roll alongside their Barrier-Ability
+  Defense Roll (Barrier's rules text: *"Instead of making a normal
+  Defense Roll in combat, you may roll your Barrier dice"*) — present
+  on any sample character with Barrier (confirmed on both Fukiko, who
+  gets Barrier via Transformation, and Ai, who has Barrier as a plain
+  top-level Ability with no Transformation at all), not a main-form/
+  transformed-form split as first guessed. Schema/formatter
+  consequence: derive the second number from "has Barrier," don't
+  store an opaque pair.
 - ~~**Nested-ability rendering may need two distinct shapes, not
   one**~~ Resolved (§2.2): confirmed via the Magic, Arcane rules text.
   A "spell" has no Level of its own — it mimics another Ability at
