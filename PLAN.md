@@ -35,15 +35,36 @@ Location: `~/Reference/RPG/OVA/`
 
 - `OVA_The_Anime_Role-Playing_Game.pdf` — the full rulebook (170 pages).
 - `ova-rulebook.txt`, `ova-rulebook-not-layout.txt` — text extractions
-  of the rulebook (the `-not-layout` version strips PDF layout
-  artifacts and is easier to `grep`). Useful section anchors found so
-  far (line numbers in `ova-rulebook-not-layout.txt`):
+  of the rulebook (`ova-rulebook.txt` preserves the original two-column
+  page layout with page numbers/running headers, so it's slower to
+  read start-to-end but its line numbers correspond to physical pages;
+  `-not-layout` reflows to single-column and is easier to `grep`). Both
+  have now been read/searched for the sections relevant to this plan
+  (see §2.2 for what that turned up). Table of contents (from
+  `ova-rulebook.txt`'s first page), useful for further navigation by
+  either file's page markers: Introduction (9), Creating a Character
+  (17), Sample Characters (23), Abilities & Weaknesses (49), Taking
+  Action (93), Combat, Health, & Endurance (103), Growth & Experience
+  (115), Game Master's Section (119), Sample NPCs (133), Appendix:
+  Telling Anime Stories (148), Index (158), Character sheet (164).
+  Useful section anchors found so far (line numbers in
+  `ova-rulebook-not-layout.txt` unless noted):
   - Character creation "fluff" fields: ~line 700.
   - Limiting-the-character rules (Scaled Cost, Base Zero, Combined
     Effectiveness, Power Ceiling): ~line 735–805, and again with fuller
     treatment at "Base Zero" (11141), "Combined Effectiveness" (11190),
     "Power Ceiling" (11652), "Scaled Cost" (11745).
-  - Sample Characters chapter starts ~line 857 (Raine first).
+  - Sample Characters chapter starts ~line 857 (Raine first; see §2.2
+    for the full chapter's significance for this project).
+  - Magic, Arcane / Magic, Witchcraft rules: `ova-rulebook.txt` lines
+    ~2461–2530 (Spell Endurance Cost table, spell-casting DN formula,
+    the "a spell mimics another Ability's Level" mechanic — see §2.2).
+  - Transformation: `ova-rulebook.txt` lines ~2786–2810. Vehicle
+    (Mecha) and Companion (via `abilities.md`): `ova-rulebook.txt`
+    lines ~2820–2832 for Vehicle — see §2.2 for the separate-Health/
+    Endurance and non-cumulative-Abilities wrinkle.
+  - Threat Value (GM-facing balancing number, `combat.tv`'s
+    derivation): `ova-rulebook.txt` lines ~5684–5736.
 - `OVA-Blank-Character-Sheet-Form-Fillable.pdf` — the official blank
   character sheet. Confirms the canonical field set (see §5).
 - `OVAPlayerBook-Auren-2015-01-29.pdf`,
@@ -179,13 +200,14 @@ copyright note):
   — matches `ova-ref.pdf`'s Flaws table (`Weapon −5`) rather than
   being a separate attack property. After all attacks, one final
   summary row: `DEFENSE` / `HEALTH` / `ENDURANCE` / `TV`, each as one
-  large number — no second Defense value in any of the three finished
-  samples (all show a single plain integer: Auren 4, Miho 5, Raine
-  5), which weighs against `Fukiko.yaml`'s `defense: "4/5"` being a
-  normal/intended two-value convention — see the open question below,
-  now more likely to be either a typo or an actual per-circumstance
-  variant unique to Fukiko rather than a general schema feature.
-  Attacks render in table order *before* the Defense/Health/
+  large number — all three player-book samples show a single plain
+  Defense integer (Auren 4, Miho 5, Raine 5), unlike `Fukiko.yaml`'s
+  paired `defense: "4/5"`; §2.2 (reading the primary rulebook, which
+  includes all 12 sample characters rather than just these 3) confirms
+  the pairing is real and not unique to Fukiko, just apparently
+  optional per-character — see §2.2 and the open questions for what's
+  now confirmed vs. still unexplained about it. Attacks render in
+  table order *before* the Defense/Health/
   Endurance/TV summary — i.e. opposite of the field order
   `Fukiko.yaml`'s `combat:` mapping currently uses
   (`defense`/`health`/`endurance`/`threat-value` first, `attacks:`
@@ -195,6 +217,93 @@ copyright note):
   seen in these three (none of Auren/Miho/Raine's sample sheets uses
   those two linked-ability types) — Transformation and Magic are the
   only two nesting shapes confirmed from primary sources so far.
+
+### 2.2. Rulebook findings: the Sample Characters chapter, and three resolved modeling questions
+
+Reading `ova-rulebook.txt` directly (rather than only the player books
+and `ova-ref.pdf`) turned up one major resource and resolved several
+of §2.1's/earlier open questions:
+
+- **The rulebook's own "Sample Characters" chapter (p. 23–48) contains
+  all twelve pregenerated characters' full write-ups**, in the exact
+  same layout style documented in §2.1 (name/tagline header,
+  Background/Personality prose, Abilities/Weaknesses columns, Other
+  Statistics, Attacks & Combat Stats box) — the three player books
+  (Auren, Miho, Raine) are just standalone excerpts of three of these
+  twelve. **This is a substantially better golden-data source than
+  either the player books or the hand-authored `test-data/*.yaml`
+  files**: it's the original, primary presentation (confirmed
+  byte-identical in content to what the Auren player book excerpts,
+  so the player books are a reliable secondary check, not an
+  independent source), and it covers 12 characters' worth of variety
+  in one place — different combinations of nesting (or none),
+  attack-suite sizes, fluff completeness, etc. — rather than 3. Found
+  by locating each character's `Background` heading
+  (`ova-rulebook.txt` lines 655, 772, 877, 1016, 1139, 1252, 1365,
+  1478 [Fukiko], 1600 [Auren], 1693, 1822, 1922); Fukiko's full spread
+  is at lines 1415–1471, Auren's at 1528–1554+. **Recommend
+  transcribing test/golden fixtures from this chapter directly**
+  (respecting §2's copyright note — transcribe the structured
+  game-mechanical data, i.e. the actual YAML-shaped facts, not the
+  prose Background/Personality paragraphs verbatim beyond what's
+  needed for a realistic fixture) rather than relying solely on the
+  incomplete/inconsistent `test-data/*.yaml` files (§6) or the 3
+  player-book excerpts.
+- **Resolved: why Magic's nested "spells" don't show their own
+  Level** (§2.1's open question). The Magic, Arcane rules text
+  (`ova-rulebook.txt` ~2461–2530) spells this out directly: a "spell"
+  isn't a distinct thing with its own Level at all — casting one means
+  *mimicking another Ability's effect*, at some Level of that mimicked
+  Ability, by spending Endurance looked up from a two-axis "Spell
+  Endurance Cost" table (mimicked Ability's Level across, caster's own
+  Arcane-Magic-or-Witchcraft Level down; e.g. Level-2 Ability × Level-3
+  caster = 10 Endurance). So Auren's `Mana Shield (Barrier +2; 10+
+  Endurance)` reads as: a spell named "Mana Shield," which mimics the
+  Barrier Ability at Level 2, costing 10+ Endurance to cast. **The
+  Level shown belongs to the mimicked Ability field, not to an
+  independent "spell level."** This means `Auren.yaml`'s existing
+  `spell:`/`perks:` shape (§6) was closer to correct than
+  `Fukiko.yaml`'s uniform `abilities:`/`level:` nesting suggests — a
+  Magic-linked "spell" item's schema needs fields for (at least) the
+  spell's own flavor name, the mimicked Ability's name + Level, and
+  the Endurance cost, which is a genuinely different shape from a
+  Transformation-linked sub-ability's plain `{name, level}}`.
+- **New finding: Vehicle (Mecha) doesn't just nest — it can need a
+  wholly separate combat sub-block.** `ova-rulebook.txt` ~2820–2832
+  (Vehicle) states its granted Abilities/Weaknesses are **not
+  necessarily cumulative** with the pilot's own (unlike Transformation
+  and Companion, which explicitly are/imply are), and, more
+  structurally significant: **"Health and Endurance are no longer
+  linked"** — a Vehicle has its own separate Health and Endurance
+  totals, damaged/depleted independently of the pilot's. This means a
+  Vehicle-type linked ability may need to carry its own nested
+  `combat`-shaped sub-block (at least health/endurance, possibly its
+  own Defense/attacks too, if built "with specific attributes much as
+  you would a character" per that same passage), not just a nested
+  abilities/weaknesses list the way Transformation/Magic do. No
+  worked Vehicle example was found in any of the 12 sample characters
+  or 3 player books to confirm the exact YAML shape this implies —
+  still an open item, but now a sharper one (§ open questions).
+- **Resolved (partially): `combat.defense: "4/5"` is real, not a
+  typo.** The rulebook's own printed Fukiko sheet (`ova-rulebook.txt`
+  line 1461: `4/5 30   40 12` under `defense / health / endurance /
+  tv`) matches `Fukiko.yaml`'s `defense: 4/5`/`health: 30`/
+  `endurance: 40`/`threat-value: 12` exactly — so this is an accurate
+  transcription from the source, not test-data corruption. Confirmed
+  **not unique to Fukiko** either: at least one other of the twelve
+  sample characters (the one whose Background starts at line 1693,
+  not yet identified by name) also prints a slash-paired Defense
+  (`4/5 20 ... 40 10`). What the split precisely means is still
+  unconfirmed — the character-creation walkthrough (p. 17–19) never
+  mentions Defense at all (Defense isn't something spent/chosen during
+  creation, it's derived), and Threat Value's rule "If the character
+  has multiple options for a given item, use the best one" hints that
+  a character with more than one Ability that could apply to a
+  Defense Roll in different circumstances might reasonably be shown
+  with two reference numbers rather than one — but this is inference,
+  not a confirmed rule citation. Practical consequence either way:
+  **the schema and formatter need to support Defense as either a
+  single integer or a pair**, not assume it's always scalar.
 
 ## 3. Existing (unfinished) OVA tooling
 
@@ -401,7 +510,9 @@ implementation — neither exists yet for OVA.
   `abilities`/`weaknesses` (each a list of `{name, level, [detail(s)],
   [abilities], [weaknesses], [perks], [flaws]}` — nested recursively
   for Transformation), `combat` (`defense` as a slashed
-  string `"4/5"` — two Defense values? — `health`, `endurance`,
+  string `"4/5"` — confirmed accurate against the primary rulebook's
+  own printed Fukiko sheet, §2.2, not a transcription error — `health`,
+  `endurance`,
   `threat-value`, `attacks[]` with `name`/`perks`/`flaws`/`affinity`
   (note: misspelled `afinity` on the first attack, `affinity`
   correctly on the rest — a typo to notice, not a schema variant)/
@@ -617,22 +728,34 @@ Not yet decided/committed — for discussion before starting real work:
   former (§6) but not yet decided/committed with the user.
 - **`options` block**: character-creation-limit metadata — rendered in
   any output format, or purely for the YAML author's own reference?
-- **`combat.defense: "4/5"`** in `Fukiko.yaml` — a slash-separated pair
-  of Defense values (two Defense Rolls under different
-  circumstances?) still needs a rulebook check to explain; weakened
-  further as a "normal schema feature" hypothesis now that all three
-  player-book samples (§2.1) show a single plain Defense integer with
-  no second value — leaning towards this being either a typo in the
-  test data or a one-off case specific to Fukiko's own build (e.g. a
-  Transformation-driven Defense change), not something every
-  character has.
-- **Nested-ability rendering may need two distinct shapes, not one**
-  (§2.1): Transformation-style sub-abilities keep their own Level in
-  finished output; Magic-style spells don't, rendering instead as a
-  name plus a folded-in perks/Endurance parenthetical. Confirm this
-  against the rulebook's Magic rules (p. 57–58) and decide whether
-  `Ova_Fmt.Entities`' domain model needs a variant type for "linked
-  ability content" rather than one shape reused everywhere.
+- ~~**`combat.defense: "4/5"`**~~ Resolved as far as "is it real"
+  (§2.2): confirmed genuine and present in the primary rulebook for at
+  least 2 of the 12 sample characters (Fukiko and one other, not yet
+  identified by name), not a typo — but *why* some characters get a
+  paired Defense and others don't is still unconfirmed (best guess:
+  more than one applicable Ability for a Defense Roll in different
+  circumstances, per Threat Value's "use the best one" phrasing).
+  Schema/formatter should treat Defense as int-or-pair either way.
+- ~~**Nested-ability rendering may need two distinct shapes, not
+  one**~~ Resolved (§2.2): confirmed via the Magic, Arcane rules text.
+  A "spell" has no Level of its own — it mimics another Ability at
+  that Ability's Level, Endurance cost looked up from a table keyed on
+  (mimicked Ability Level, caster's Magic Level). So Magic-linked
+  items need a `{spell-name, mimicked-ability, mimicked-level,
+  endurance-cost}`-shaped record, structurally different from a
+  Transformation-linked sub-ability's plain `{name, level}`.
+  `Ova_Fmt.Entities`' domain model needs (at least) these two distinct
+  "linked ability content" shapes, not one reused everywhere.
+- **Vehicle (Mecha) may need its own nested `combat` sub-block**
+  (§2.2, new finding): the rulebook states a Vehicle's Health and
+  Endurance are tracked completely separately from its
+  pilot/character's, and its granted Abilities/Weaknesses aren't
+  necessarily cumulative with the pilot's own either — structurally
+  more like an embedded second (partial) character than a simple
+  nested ability list. No worked Vehicle example exists in any of the
+  12 sample characters or 3 player books to confirm the exact shape
+  this implies; needs either a fabricated test fixture or a wait until
+  a Vehicle-using OVA character is available to transcribe from.
 - **Which output formats are actually wanted**: §7/§8 now cover terse,
   HTML, raw-ms/`hd`, and Lout; still unconfirmed whether an h-m-m
   outline backend (no OVA attempt exists at all, unlike BESM) is also
