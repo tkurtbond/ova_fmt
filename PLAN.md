@@ -466,18 +466,35 @@ differences from `besm2_fmt`'s BESM model:
   `columns.scm` discussion. Not present in BESM's model at all
   (BESM's enhancements/limiters are flat string/tuple modifiers, never
   a recursive attribute list).
-- **Perks and Flaws are per-attack, not per-attribute**, and modify
-  Endurance cost (`ova-ref.pdf`'s Perk/Flaw tables — `Accurate/M:
-  ATK+1 +5`, `Elaborate Gestures -5`, etc.) — structurally close to
-  BESM's enhancements/limiters (a name plus a signed numeric effect,
-  sometimes with an applies-to target like `TGT`/`ATK`/`DEF`/`DX`), so
-  `besm2_fmt`'s `format-customizers` dispatch shape (scalar / [name,
-  n] / [name, n, target] / [name, n, targets...]) is a reasonable
-  starting point to adapt here, but note OVA's perks/flaws attach to
-  **attacks** (inside `combat.attacks[]`), and separately OVA's
-  Transformation-style abilities can themselves carry `perks`/`flaws`
-  too (see `Fukiko.yaml`'s Barrier sub-ability) — two different
-  attachment points to design for, not one.
+- **Perks and Flaws customize *any* Ability, not just attacks —
+  corrected from an earlier draft of this plan.** The rulebook is
+  explicit (`ova-rulebook-not-layout.txt` ~5792–5824): *"Ability Perks
+  and Flaws ... provide additional ways to customize your Abilities
+  and are listed as a subset of them. It's sort of like applying
+  Abilities and Weaknesses to the Ability itself... For any Ability
+  you feel can be further individualized through Perks and Flaws,
+  simply go through the list and assign those that fit your mental
+  image. Some Abilities mention the use of Perks and Flaws right in
+  their text, but they can be applied to others as well."* So this is
+  a **general Ability-modifier mechanic** — structurally exactly like
+  BESM's enhancements/limiters (a name plus a signed Endurance-cost
+  effect, `besm2_fmt`'s `format-customizers` dispatch shape is a
+  reasonable starting point), attachable to any Ability whatsoever:
+  a plain top-level Ability (Ai's `Barrier (no gesture; 5 end)`, §2.2,
+  is a top-level Ability with a Flaw on it, not an attack), a
+  Transformation/Magic-linked sub-ability (`Fukiko.yaml`'s Barrier
+  sub-ability), *or* an Attack-Ability-based attack entry in
+  `combat.attacks[]`. Attacks just happen to be where Perks/Flaws are
+  most visible and most often used, since — per the same passage —
+  *"Perks and Flaws that specifically mention attacks are usually best
+  used with the Attack Ability"* (a usage tendency, not a structural
+  restriction). **Design consequence:** `perks`/`flaws` shouldn't be
+  modeled as an attack-specific or nesting-specific field; it belongs
+  on whatever the common "Ability item" record type ends up being
+  (top-level Ability, linked sub-ability, and Attack-typed combat
+  entries should all share the same Perks/Flaws representation),
+  parallel to how `besm2_fmt.Entities`' attribute record carries
+  `Enhancements`/`Limiters` uniformly rather than per attribute kind.
 - **Combat block is its own structured section**, matching the
   official character sheet's "Combat Stats" box exactly (§5): Defense,
   Health, Endurance, Threat Value (`tv`), and up to several named
