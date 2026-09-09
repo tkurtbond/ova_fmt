@@ -310,14 +310,28 @@ of §2.1's/earlier open questions:
   two numbers are only both meaningful while transformed), which is
   presumably what suggested the main-form/transformed-form reading,
   but Ai's case shows that's a coincidence of how she got Barrier, not
-  the general rule. **Consequence for the schema/formatter:** a
-  paired Defense isn't its own independent fact to store — it's a
-  *derived* presentation of "normal Defense" alongside "Barrier
-  Defense" whenever the character (or their currently-active
-  Transformation/etc.) has the Barrier Ability, so the domain model
-  should probably store Defense as a single value plus recognize
-  Barrier's presence, rather than storing an opaque `"4/5"` string or
-  an unlabeled pair.
+  the general rule.
+
+  **Decided (user, following this finding):** still render Defense
+  as printed on the source sheet — `4/5` etc. — verbatim; don't try to
+  relabel it as two separate named fields or derive it purely from
+  "has Barrier" at render time (a character sheet's Defense field
+  stays a simple int-or-slash-pair value in the schema, closer to
+  `Fukiko.yaml`'s existing `defense: "4/5"` than to the
+  Consequence-for-the-schema idea floated in the first draft of this
+  finding). Instead, **the Barrier Ability's own list entry should
+  carry a short explanatory note** when it grants an alternate
+  Defense Roll — e.g. rendering Fukiko's Transformation-nested
+  `Barrier +3` as `Barrier +3 (area effect; elaborate gestures; 5
+  end; alternate Defense Roll)` or similar terse parenthetical, so a
+  reader can connect the sheet's paired Defense number back to the
+  Ability that produces it without the formatter having to compute
+  or explain the relationship structurally. Exact wording/placement
+  of the note (baked into `Text_Layout`'s Barrier-specific rendering
+  vs. a `note`/`detail` field on the ability data itself) is still to
+  be designed once `Ova_Fmt.Entities`/format backends are underway —
+  but the direction is: keep Defense simple and literal, put the
+  explanation on Barrier instead.
 
 ## 3. Existing (unfinished) OVA tooling
 
@@ -749,9 +763,12 @@ Not yet decided/committed — for discussion before starting real work:
   on any sample character with Barrier (confirmed on both Fukiko, who
   gets Barrier via Transformation, and Ai, who has Barrier as a plain
   top-level Ability with no Transformation at all), not a main-form/
-  transformed-form split as first guessed. Schema/formatter
-  consequence: derive the second number from "has Barrier," don't
-  store an opaque pair.
+  transformed-form split as first guessed. **Decided:** still render
+  Defense verbatim as printed (`4/5` etc., an int-or-pair schema
+  value, not two separately-named fields); add a short explanatory
+  note on Barrier's own list entry instead, so the connection is
+  documented where the Ability is, not computed/explained inline at
+  the Defense field.
 - ~~**Nested-ability rendering may need two distinct shapes, not
   one**~~ Resolved (§2.2): confirmed via the Magic, Arcane rules text.
   A "spell" has no Level of its own — it mimics another Ability at
