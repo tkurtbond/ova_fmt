@@ -986,6 +986,27 @@ for test data and output-format sequencing:
      — the repo is believed public right now, so verbatim prose stays
      out of it; this is now settled policy for all remaining
      transcriptions, not a to-revisit item.
+
+   **Progress: `test-data/Ai.yaml` done** (second of the twelve,
+   `ova-rulebook.txt` ~lines 1596–1691, p. 40–41). Chosen specifically
+   to exercise two things `Karis.yaml` didn't: a Perk directly on a
+   plain top-level Ability (Barrier's `No Gesture`) — the concrete
+   real-data case behind this session's "Perks/Flaws customize any
+   Ability, not just attacks" correction (§4) — and a second
+   Barrier-driven paired Defense (`4/5`), which is also the first
+   place the decided design for that pairing (§2.2: render the pair
+   verbatim, add a short explanatory `note:` on the Barrier ability
+   entry) actually gets implemented in test data (`Fukiko.yaml`'s
+   pre-existing Barrier-via-Transformation still lacks this note —
+   small follow-up cleanup, not done as part of this file). Also
+   introduces one new per-item field: a Perk/Flaw list entry can carry
+   `cost` (a chosen Endurance magnitude, for Perks/Flaws whose
+   rulebook cost is a *range* rather than fixed — Cancel is "`-0 to
+   -20`" per `ova-ref.pdf`) alongside or instead of `detail` — kept
+   deliberately distinct from `counts-as` (Karis.yaml's
+   `Paralyzing`/`Ineffective` `x2`/`x3`, meaning "taken this many
+   times"): Ai's Mind Break attack's `Cancel` Flaw (detail `Unliving`,
+   cost `-5`) is a single take at a chosen magnitude, not a repeat.
 2. **Terse backend first.** Mirrors `besm2_fmt`'s own build order
    (its `PLAN.md` §8: terse validates CLI + data access + domain
    formatting before touching harder layout code) — and per §7, terse
