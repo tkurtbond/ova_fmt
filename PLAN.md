@@ -49,11 +49,14 @@ Location: `~/Reference/RPG/OVA/`
 - `OVAPlayerBook-Auren-2015-01-29.pdf`,
   `OVAPlayerBook-Miho-2015-01-29.pdf`,
   `OVAPlayerBook-Raine-2015-01-29.pdf` — 14-page pregenerated-character
-  booklets (one of the sample characters each). Not yet read in detail;
-  good candidates for additional golden/test fixtures once the YAML
-  schema is settled, since they're full worked characters with combat
-  suites, background, etc. (Auren already has a partial test-data file,
-  see §5.)
+  booklets (one of the sample characters each). The character-sheet
+  spread (physical pages 4–5 of each PDF — labeled "2"/"3" in-page,
+  offset by front/back cover pages) has been read for all three and is
+  now the best available reference for what a *finished, laid-out*
+  character write-up looks like — see §2.1. Good candidates for
+  additional golden/test fixtures once the YAML schema is settled,
+  since they're full worked characters with combat suites, background,
+  etc. (Auren already has a partial test-data file, see §6.)
 - `ova-ref.pdf` (16KB, 2 pages) — a reference sheet the user made
   themselves (not a Dyskami product, so no third-party copyright
   concern on this one specifically). Already read in full. Contents:
@@ -83,6 +86,115 @@ Location: `~/Reference/RPG/OVA/`
   likely more character-sheet variants and a combat-rules cheat sheet.
   Check these before assuming the blank fillable sheet (§5) is the only
   layout reference.
+
+### 2.1. Player-book character-sheet layout (read in full)
+
+Physical pages 4–5 of each of the three player-book PDFs (Auren,
+Miho, Raine) show a name/tagline header, two-column
+Background/Personality prose (page 4), then a full character-sheet
+spread (page 5): Abilities/Weaknesses two-column list, an "OTHER
+STATISTICS" fluff block, and an "Attacks & Combat Stats" box. This is
+real, professionally laid-out output for the exact data shape
+`ova_fmt` needs to produce, so it's worth documenting precisely —
+paraphrased/structural notes below, not verbatim prose (per §2's
+copyright note):
+
+- **Header**: character name (large), then a short italicized
+  first-person tagline/catchphrase next to it (matches
+  `Fukiko.yaml`'s `tagline`-shaped field, though the current test data
+  doesn't actually have a `tagline` key — worth adding to the schema).
+- **Background / Personality**: prose sections with bold section
+  headers, laid out in two newspaper columns across the page. Maps
+  directly onto `background`/`personality` in the existing test-data
+  shape.
+- **Abilities / Weaknesses** (two side-by-side columns, one heading
+  each): each entry is a signed Level number in a narrow left column,
+  then the Ability/Weakness name in italics, with a parenthetical
+  detail where relevant (`Attack (Sword & Sorcery)`,
+  `Code of Conduct (Protecting Women... Begrudgingly)`). **Nested
+  items render two different ways depending on the parent ability**,
+  a real finding not obvious from the test data alone:
+  - Miho's `Transformation` ability (+1) has its own sub-abilities
+    indented beneath it, and **each sub-item keeps its own leading
+    signed Level** (`+2 Combat Expert`, `+2 Endurance Reserve`, `−3
+    Unique Weakness (Loss of Control)` — note a Weakness nested inside
+    an Ability's sub-list, not segregated into a separate
+    sub-weaknesses column). This matches `Fukiko.yaml`'s
+    `Transformation.abilities`/`.weaknesses` shape (each sub-item has
+    its own `name`/`level`).
+  - Auren's `Magic, Arcane` ability (+3) has its spells indented
+    beneath it too, but **spells render with no separate leading
+    Level at all** — just the spell name followed by a parenthetical
+    summary folding in its Perks and Endurance cost as plain text
+    (`Mana Shield (Barrier +2; 10+ Endurance)`, `Hasten (Quick +3; 20
+    Endurance)`). This is a genuinely different rendering rule from
+    Transformation's sub-abilities, not just a formatting accident —
+    worth confirming against the rulebook's Magic section (p. 57–58)
+    whether spells even *have* a Level of their own the way
+    Transformation's sub-abilities do, or whether "Ability Level"
+    there is more like a Perk grade. **Design consequence:** the Ada
+    domain model likely needs to distinguish at least two kinds of
+    "linked ability" content (Transformation/Companion/Vehicle-style
+    sub-abilities-with-levels vs. Magic-style spells-with-perks-and-
+    no-own-level), not treat all nesting uniformly — matches
+    `Auren.yaml`'s existing `spell:`/`perks:` shape already looking
+    different from `Fukiko.yaml`'s `Transformation.abilities` shape
+    (§6), so this may not have been an accident/typo after all, but
+    early recognition of this exact distinction.
+- **"OTHER STATISTICS"** (the rendered fluff block): a bold-label
+  colon-value list, one per line — `CONCEPT`, `BIRTHDAY`, `AGE` (Miho's
+  shows a narrative aside: `1 (Appears 18)`, Auren's similarly `44
+  (Appears 16)` — the character sheet's `age` field can carry
+  prose, not just a bare number), `GENDER`, `HEIGHT`, `WEIGHT`,
+  `HAIR`, `EYES` is *omitted* in all three samples (present in the
+  rulebook's suggested field list and `fluff.yaml-partial`, but every
+  finished sample here skips it), `ASSOCIATION`, `HOBBIES`, `FAVE
+  FOOD` (label abbreviated from "Favorite Food" — cross-check against
+  `Fukiko.yaml`'s `favorite-food` key, which spells it out fully;
+  likely just a display-label abbreviation, not a schema difference),
+  `ALLIES` (Auren/Raine: `None`), `ENEMIES`. **None of the three shows
+  a Love Interest(s) line** even though it's in the rulebook's
+  suggested fields and `fluff.yaml-partial` — apparently an
+  omit-if-blank field, consistent with `ALLIES: None` showing rather
+  than being omitted (i.e., the field is shown with an explicit "None"
+  when applicable/known, but dropped entirely rather than shown blank
+  when simply not used for that character — a distinction the schema
+  and formatter should probably support: an explicit "None" value vs.
+  an absent key are different things to render differently).
+- **"Attacks & Combat Stats"** box: each attack is its own row/block,
+  in this shape — bold attack **name**; a line of perks/flaws in
+  small caps, **comma-separated Perks first, then a semicolon, then
+  comma-separated Flaws** (e.g. `AREA EFFECT, ARMOR PIERCING,
+  OVERWHELMING, RANGED, AFFINITY: ICE; FEATHER BLOW, INEFFECTIVE` —
+  Perks before the `;`, Flaws after), with **`AFFINITY: <name>`
+  embedded directly in the Perks list** rather than shown as its own
+  field, and a repeatable perk/flaw's count rendered as a suffix on
+  the name (`EFFECTIVE X2`, `INACCURATE X3`, `ACCURATE X2`) rather
+  than as a separate number — confirms `ova-ref.pdf`'s `/M`
+  ("multiple") perks/flaws use this `Name X<n>` convention in finished
+  prose, not `Name (n)` or `Name: n`; then three large numbers under
+  `ROLL` / `DX` / `END` headers; then one italicized sentence of
+  flavor description. `Weapon` itself shows up as a **Flaw** tag on
+  melee attacks (Raine's `Kaze Satsujinsha`: `ARMOR PIERCING; WEAPON`)
+  — matches `ova-ref.pdf`'s Flaws table (`Weapon −5`) rather than
+  being a separate attack property. After all attacks, one final
+  summary row: `DEFENSE` / `HEALTH` / `ENDURANCE` / `TV`, each as one
+  large number — no second Defense value in any of the three finished
+  samples (all show a single plain integer: Auren 4, Miho 5, Raine
+  5), which weighs against `Fukiko.yaml`'s `defense: "4/5"` being a
+  normal/intended two-value convention — see the open question below,
+  now more likely to be either a typo or an actual per-circumstance
+  variant unique to Fukiko rather than a general schema feature.
+  Attacks render in table order *before* the Defense/Health/
+  Endurance/TV summary — i.e. opposite of the field order
+  `Fukiko.yaml`'s `combat:` mapping currently uses
+  (`defense`/`health`/`endurance`/`threat-value` first, `attacks:`
+  last); purely a presentation-order choice for a formatter to make,
+  not something the YAML's own field order needs to match.
+- **No worked example of Companion or Vehicle (Mecha) nesting** was
+  seen in these three (none of Auren/Miho/Raine's sample sheets uses
+  those two linked-ability types) — Transformation and Magic are the
+  only two nesting shapes confirmed from primary sources so far.
 
 ## 3. Existing (unfinished) OVA tooling
 
@@ -507,8 +619,20 @@ Not yet decided/committed — for discussion before starting real work:
   any output format, or purely for the YAML author's own reference?
 - **`combat.defense: "4/5"`** in `Fukiko.yaml` — a slash-separated pair
   of Defense values (two Defense Rolls under different
-  circumstances?) needs a rulebook check; not yet confirmed what the
-  two numbers mean or how a formatter should render them.
+  circumstances?) still needs a rulebook check to explain; weakened
+  further as a "normal schema feature" hypothesis now that all three
+  player-book samples (§2.1) show a single plain Defense integer with
+  no second value — leaning towards this being either a typo in the
+  test data or a one-off case specific to Fukiko's own build (e.g. a
+  Transformation-driven Defense change), not something every
+  character has.
+- **Nested-ability rendering may need two distinct shapes, not one**
+  (§2.1): Transformation-style sub-abilities keep their own Level in
+  finished output; Magic-style spells don't, rendering instead as a
+  name plus a folded-in perks/Endurance parenthetical. Confirm this
+  against the rulebook's Magic rules (p. 57–58) and decide whether
+  `Ova_Fmt.Entities`' domain model needs a variant type for "linked
+  ability content" rather than one shape reused everywhere.
 - **Which output formats are actually wanted**: §7/§8 now cover terse,
   HTML, raw-ms/`hd`, and Lout; still unconfirmed whether an h-m-m
   outline backend (no OVA attempt exists at all, unlike BESM) is also
