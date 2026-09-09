@@ -1196,6 +1196,35 @@ for test data and output-format sequencing:
 
 ## Open questions
 
+- **TODO: audit which fields are actually optional vs. required, and
+  what happens when a required-looking one is absent.** `tagline` and
+  `summary` are confirmed optional (`Ova_Fmt.Entities`'
+  `Has_Tagline`/`Has_Summary`, checked before rendering — absence
+  just skips that line). But most of `Ova_Fmt.Entities.adb`'s other
+  `Load_*` functions use *required* accessors (`String_Value`/
+  `Integer_Value` with no `Default`, raising `Libfyaml.Missing_Key`
+  if absent) for fields that merely happen to be present in all
+  twelve transcribed `test-data/*.yaml` characters — that's not the
+  same as confirming the game rules actually require them. Worth
+  auditing case by case, e.g.: every Ability/Weakness/Sub_Item's
+  `level`; every Attack's `roll`/`dx`/`endurance` (always present so
+  far, but is it guaranteed — could an NPC stub or an
+  in-progress/template character have some left blank, the way
+  `Acacia.yaml`/`template.yaml` in §6 are mostly empty skeletons?);
+  every Spell's `mimics`/`level`/`endurance`; the `combat:` block's
+  `defense`/`health`/`endurance`/`threat-value` as a set (could a
+  Companion legitimately have Health/Endurance but no meaningful
+  Threat Value?); a Note's `header`/`text` (could one be header-only?).
+  Also worth deciding, not just auditing: when a genuinely required
+  field really is missing, is aborting the *whole file* with a
+  `Missing_Key` error (today's behavior, inherited from
+  `besm2_fmt_main.adb`'s exception handler in `Process_One`) the
+  right failure mode, or should a format backend degrade per-field
+  instead (e.g. omit a blank `Roll` rather than fail the entire
+  character)? No test-data file has exercised an absent-required-
+  field case yet, so this is entirely unverified either way — trying
+  a deliberately incomplete fixture (or re-checking against the
+  rulebook's own field requirements) would settle it.
 - ~~**Terse output format: Markdown or reST?**~~ Resolved (§2.3):
   reST. The user's Karis mockup was written in Markdown for an
   unrelated purpose (a customized game-session write-up, not the
