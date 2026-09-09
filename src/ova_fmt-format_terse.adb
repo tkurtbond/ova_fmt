@@ -22,10 +22,11 @@ package body Ova_Fmt.Format_Terse is
 
    function Minus_Glyph return String is
      (if Config.Unicode_Minus then "−" else "-");
-   --  Same besm2_fmt.Text_Layout.Minus_Glyph design: ASCII
-   --  hyphen-minus by default for a negative number this program
-   --  builds itself, Unicode MINUS SIGN (U+2212) under
-   --  -n/--unicode-minus. Content the program doesn't interpret
+   --  Same besm2_fmt.Text_Layout.Minus_Glyph design (and, per user
+   --  request, the same default-on polarity besm2_fmt uses): Unicode
+   --  MINUS SIGN (U+2212) by default for a negative number this
+   --  program builds itself, ASCII hyphen-minus under
+   --  -n/--no-unicode-minus. Content the program doesn't interpret
    --  (`detail` text, etc.) is untouched either way.
 
    function Number_Img (N : Integer) return String is
