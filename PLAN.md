@@ -341,6 +341,120 @@ of §2.1's/earlier open questions:
   but the direction is: keep Defense simple and literal, put the
   explanation on Barrier instead.
 
+### 2.3. Karis/Arasuni: a full nested-Companion example, and the terse-format target
+
+**Karis** (`ova-rulebook.txt` lines 874–1012, another of the twelve
+sample characters, p. 28–29) settles the "how does a Companion
+write-up actually appear" question left open in §9's original step 1
+— and the user separately supplied a concrete terse-format mockup for
+this same character, so both are captured together here.
+
+- **Companion can get a full nested character sub-block, not just a
+  prose summary.** Unlike Fukiko's Azyrus (§2.1 — a one-line
+  `Attributes: Flight +2, Quick +1, Smart +2; ...` prose summary with
+  no combat stats of its own), Karis's Companion **Arasuni gets his
+  own complete second Abilities/Weaknesses column pair, his own
+  "Attacks & Combat Stats" box, and his own Defense/Health/Endurance/
+  TV row**, laid out right alongside Karis's own on the same spread
+  (explicitly headed "Attacks & Combat Stats (KARIS)" and "Attacks &
+  Combat Stats (ARASUNI)" in the source). Arasuni: Abilities `+2
+  Armored, +1 Attack, +1 Combat Expert, +1 Evasive, +3 Life Support,
+  +3 Strong, +2 Tough, +1 Unique Ability (Computerized Brain)`;
+  Weaknesses `−1 Awkward Size (Large), −2 Bizarre Appearance, −2
+  Emotionless, −1 Quirk (Quoting Earth), −3 Servitude (Karis), −1
+  Slow, −2 Vulnerability (Electricity)`; two attacks (`Iron Knuckle`,
+  `Stun Pulse Rifle`); `defense 2, health 40, endurance 20, tv 10`.
+  Note Arasuni's own `Servitude (Karis)` Weakness — the two entities
+  cross-reference each other by name. **Consequence:** a Companion
+  (and by extension, per §2.2, presumably Vehicle too) needs to
+  support being represented as a **complete embedded sub-entity**
+  (its own abilities/weaknesses/combat, i.e. structurally
+  self-similar to a top-level entity) when it has real
+  game-mechanical presence — not *only* the simpler prose-summary
+  shape `Fukiko.yaml`'s `notes[]` currently models. Both shapes are
+  now confirmed real (Azyrus is prose-only; Arasuni is a full
+  sub-entity), so the schema likely needs to support both, probably
+  as the author's choice depending on how mechanically detailed a
+  given companion needs to be.
+- **The user's terse-format mockup for Karis** (given directly, as "one
+  example of how Karis might appear in terse form"):
+
+  ```markdown
+  # Karis (Hotheaded Space-Trekking Bounty Hunter)
+
+  *The daughter of a legendary GPL hunter, tracking the criminal who killed her father.*
+
+  * **Abilities:** Agile +3, Attack (Boomerang) +3, Combat Expert +1, Companion (Arasuni) +2, Cute! +1, Evasive +1, Intuitive +1, Perceptive +1, Quick +3.
+  * **Weaknesses:** Bizarre Appearance (Strange Alien Ears) −1, Impulsive −1, Obsession (Capture Vandal Drake) −3, Quirk (Stranger in a Strange Land) −2, Sensitivity (Chest Size) −2, Short-Tempered −1, Soft Spot (Stuffed Animals) −1.
+  * **Health:** 40 | **Endurance:** 40 | **Defense:** 6 | **Threat Value (TV):** 14   (-5)
+  * **Attacks:**
+    - **Kinetic Boomerang:** Roll **6 dice** | **DX 4** | **Endurance Cost: 0** (Perks: Armor Piercing, Ranged; Flaws: Weapon).
+    - **Trick Shot:** Roll **6 dice** | **DX 3** | **Endurance Cost: 0** (Perks: Disarming, Ranged; Flaws: Ineffective, Weapon). *Used to disarm opponents.*
+    - **Sweeping Strike:** Roll **6 dice** | **DX 3** | **Endurance Cost: 0** (Perks: Multiple Targets, Ranged; Flaws: Ineffective, Weapon). *Strikes up to 3 close enemies.*
+    - **Flex-Steel Cable:** Roll **6 dice** | **DX 1** | **Endurance Cost: 0** (Perks: Paralyzing x2, Ranged; Flaws: Ineffective x3, Weapon). *Entangles and restrains.*
+  ```
+
+  This is the terse backend's design target (§9 step 2), so it's
+  worth extracting its conventions precisely:
+  - **Markdown, not reST** — `#` ATX heading, `*text*`/`**text**`
+    for italic/bold, `*`/`-` bullet lists. This is a real divergence
+    from `besm2_fmt`/`ova-rst.scm`'s reST-flavored terse output
+    (underline-style headers, but the same `**`/`*` inline markup) —
+    worth confirming explicitly whether `ova_fmt`'s terse output
+    should target Markdown as its "native" text format going forward
+    (feeding a possibly-different downstream pipeline than
+    reST→Pandoc) rather than reST, since that changes the header/
+    list syntax `Ova_Fmt.Format_Terse` needs to emit and possibly
+    which downstream tool consumes it.
+  - Header line: `# Name (concept)` — the parenthetical is the
+    `fluff.concept` field, not a `tagline` quote (contrast the player
+    books' quoted-catchphrase tagline under the name, §2.1) — followed
+    by one italicized sentence that reads like a condensed one-line
+    background summary (not the rulebook's actual Background prose,
+    and not a first-person quote either). Whether this sentence is
+    author-supplied (a new schema field, distinct from `background`)
+    or auto-derived (first sentence of `background`? a synthesized
+    summary?) is open — flag before implementing.
+  - Abilities/Weaknesses: one comma-separated sentence each, `Name
+    (detail) Level` order (detail immediately after name, level last
+    — differs from the character-sheet convention of `Level Name
+    (detail)`, §2.1/§2.2), ended with a period.
+  - Combat summary: one line, `**Health:** N | **Endurance:** N |
+    **Defense:** N | **Threat Value (TV):** N` pipe-separated, plus a
+    trailing parenthetical number whose meaning isn't yet clear (see
+    below).
+  - Attacks: nested bullet list, one per attack: `**Name:** Roll **N
+    dice** | **DX N** | **Endurance Cost: N** (Perks: ...; Flaws:
+    ...).` followed by an optional italicized flavor sentence. Note
+    **Perks/Flaws are explicitly labeled** here (`Perks: ...; Flaws:
+    ...`) — clearer than the character sheet's unlabeled `PERKS...;
+    FLAWS...` convention (§2.1) and worth carrying into the design
+    since it removes the reader's need to already know the
+    Perks-before-semicolon/Flaws-after convention. "Roll **N dice**"
+    spells out "dice" explicitly rather than the sheet's bare number
+    — matches the confirmed mechanic (§2.2/§2.3: `Roll` is a dice
+    *count*, not a flat bonus — `2` base dice `+` applicable Ability
+    Levels, e.g. Kinetic Boomerang's Roll 6 = 2 base + Attack 3 +
+    Combat Expert 1).
+  - **Numbers checked against the rulebook's actual Karis** (lines
+    928–937, 969–975 above) **mostly match exactly** — same
+    Abilities/Levels, same Weakness names/Levels (a couple of detail
+    wordings differ slightly: `Strange Ears` → `Strange Alien Ears`,
+    `Chest` → `Chest Size`), same attack Roll/DX/End numbers and
+    Perks/Flaws — **but two things don't match the primary source and
+    are worth a quick confirm before treating this mockup as
+    literal**: (1) the Obsession target is `Capture Vandal Drake`
+    here vs. the book's `Kill Shadowman` — a different name entirely,
+    not just a rewording (possibly a deliberate substitution to avoid
+    naming the copyrighted villain directly in a file that might get
+    committed, given §2's copyright note — worth asking rather than
+    assuming); (2) Threat Value is `14   (-5)` here vs. the book's
+    plain `16` — the trailing `(-5)` isn't explained by anything
+    found in the rulebook so far (Threat Value's own rules, §2.2, say
+    nothing about a parenthetical adjustment shown alongside it) and
+    doesn't obviously reconcile arithmetically either. Flagged as an
+    open question rather than resolved.
+
 ## 3. Existing (unfinished) OVA tooling
 
 Location: `~/current/RPG/Tools/OVA/` (Chicken Scheme, same toolchain
@@ -777,19 +891,15 @@ for test data and output-format sequencing:
    a parent item), but it needs to generalize to cover what the other
    eleven write-ups actually contain, not just Fukiko's shape:
    - `background`, `personality` — already present in `Fukiko.yaml`.
-   - **NPC companion callouts**: several sample characters (Fukiko's
-     Azyrus is the confirmed example, §2.2/§2.1) have a named
-     companion described in its own boxed section on the sheet,
-     including an inline `Attributes:` summary line (`Flight +2, Quick
-     +1, Smart +2; Awkward Size (Small) −1, Frail −1, Short-Tempered
-     −1`). `Fukiko.yaml`'s existing `notes[]` (`header`/`text`/
-     optional `attributes` prose) already covers this loosely; while
-     transcribing the other eleven, check whether a companion write-up
-     deserves its own dedicated field (e.g. `companion:`) rather than
-     being folded into a generic `notes` list, especially since
-     Companion (§2.2) is itself one of the confirmed
-     linked-ability-with-its-own-sub-Abilities-and-Weaknesses types,
-     distinct from a note.
+   - **NPC companion callouts — now confirmed to need two different
+     shapes, not one** (§2.3): a simple prose-only companion (Fukiko's
+     Azyrus: one `Attributes: Flight +2, Quick +1, Smart +2; ...`
+     summary line, still fine as `notes[]`) *and* a fully-detailed
+     companion with its own Abilities/Weaknesses/Attacks/Combat-stats
+     sub-block (Karis's Arasuni, §2.3) — structurally a nested
+     sub-entity, not a note. Schema needs to support both; probably
+     the character's own choice depending on how mechanically
+     detailed the companion needs to be for play.
    - **Transformation-description callouts**: Fukiko's sheet has a
      separate named box ("Lovely Savior Myu Myu") describing the
      transformation itself — trigger phrase, visual/narrative
@@ -836,6 +946,27 @@ for test data and output-format sequencing:
 
 ## Open questions
 
+- **Terse output format: Markdown or reST?** (§2.3) The user's Karis
+  mockup is Markdown (`#` headings, `*`/`**` inline markup, `*`/`-`
+  bullets), not reST like `besm2_fmt`/`ova-rst.scm`'s terse backends.
+  Confirm which is the actual target before implementing
+  `Ova_Fmt.Format_Terse` — affects heading syntax and whether/how this
+  feeds a reST→Pandoc pipeline the way the other backends do (§7/§9),
+  or something else entirely.
+- **Karis mockup's header tagline sentence**: is the italicized
+  one-line summary under the name/concept (§2.3, "The daughter of a
+  legendary GPL hunter...") a new schema field, or derived/synthesized
+  from `background` somehow? Needs to be a real field with a real
+  source before `Format_Terse` can render it for characters generally
+  (not just hand-written for one mockup).
+- **Karis mockup's two divergences from the primary rulebook text**
+  (§2.3): the Obsession target name (`Capture Vandal Drake` in the
+  mockup vs. `Kill Shadowman` in `ova-rulebook.txt`) and Threat Value
+  (`14 (-5)` in the mockup vs. plain `16` in the book) — confirm
+  whether these are deliberate (e.g. avoiding naming the copyrighted
+  villain directly) or just illustrative approximation, and what the
+  trailing `(-5)` after TV is meant to represent, before treating the
+  mockup as a literal byte-for-byte rendering target.
 - ~~**Nested-table rendering**~~ Resolved (§7): terse-prose for the
   default text format (sidesteps the problem), hand-written nested
   `<table>` markup in raw HTML blocks, groff `hd` macros (not `tbl`)
@@ -870,15 +1001,18 @@ for test data and output-format sequencing:
   `Ova_Fmt.Entities`' domain model needs (at least) these two distinct
   "linked ability content" shapes, not one reused everywhere.
 - **Vehicle (Mecha) may need its own nested `combat` sub-block**
-  (§2.2, new finding): the rulebook states a Vehicle's Health and
-  Endurance are tracked completely separately from its
-  pilot/character's, and its granted Abilities/Weaknesses aren't
-  necessarily cumulative with the pilot's own either — structurally
-  more like an embedded second (partial) character than a simple
-  nested ability list. No worked Vehicle example exists in any of the
-  12 sample characters or 3 player books to confirm the exact shape
-  this implies; needs either a fabricated test fixture or a wait until
-  a Vehicle-using OVA character is available to transcribe from.
+  (§2.2, new finding, strengthened by §2.3): the rulebook states a
+  Vehicle's Health and Endurance are tracked completely separately
+  from its pilot/character's, and its granted Abilities/Weaknesses
+  aren't necessarily cumulative with the pilot's own either —
+  structurally more like an embedded second (partial) character than
+  a simple nested ability list. Karis/Arasuni (§2.3) now confirms
+  exactly this "full nested sub-entity" shape is real for Companion,
+  which makes it likely (not yet certain) Vehicle works the same way.
+  No worked Vehicle example exists in any of the 12 sample characters
+  or 3 player books to confirm the exact shape this implies; needs
+  either a fabricated test fixture or a wait until a Vehicle-using OVA
+  character is available to transcribe from.
 - **Which output formats are actually wanted**: §7/§8 now cover terse,
   HTML, raw-ms/`hd`, and Lout; still unconfirmed whether an h-m-m
   outline backend (no OVA attempt exists at all, unlike BESM) is also
