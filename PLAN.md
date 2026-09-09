@@ -129,9 +129,10 @@ paraphrased/structural notes below, not verbatim prose (per §2's
 copyright note):
 
 - **Header**: character name (large), then a short italicized
-  first-person tagline/catchphrase next to it (matches
-  `Fukiko.yaml`'s `tagline`-shaped field, though the current test data
-  doesn't actually have a `tagline` key — worth adding to the schema).
+  first-person tagline/catchphrase next to it — an in-character quote,
+  now formalized as the `tagline` schema field (decided, §4); the
+  current test data doesn't have a `tagline` key yet, but should once
+  test data is generalized (§9 step 1).
 - **Background / Personality**: prose sections with bold section
   headers, laid out in two newspaper columns across the page. Maps
   directly onto `background`/`personality` in the existing test-data
@@ -632,6 +633,21 @@ differences from `besm2_fmt`'s BESM model:
   condensed synopsis rather than the full prose), rendered italicized
   under the header in terse output. Not derived/auto-generated —
   the author writes it directly, same as `tagline`/`concept`.
+- **`tagline`** (decided) — also a new field, formalizing what §2.1
+  already observed but `Fukiko.yaml`/`Auren.yaml` don't yet have a key
+  for: an *optional, in-character/diegetic quote or saying* — "a
+  saying from the character in game" — usually short and pithy (the
+  player books' quoted catchphrases under each name, §2.1, e.g.
+  Auren's "IT IS MY DUTY TO PROTECT THIS WORLD, EVEN IF ITS FUTURE
+  MAKES ME DOUBT WHY I SHOULD BOTHER…", are exactly this field). Can
+  run much longer occasionally (the user's illustrative example: the
+  Dirty Harry "Do I feel lucky?" speech), so the schema/formatter
+  shouldn't assume a one-line length the way `summary`'s "one
+  sentence" framing does. **Distinct from `summary`**: `tagline` is
+  the character speaking in-world (diegetic, quoted), `summary` is
+  the author describing the character from outside the fiction
+  (non-diegetic, not a quote) — different voice, different purpose,
+  both optional, both can coexist on the same character.
 
 ## 5. Canonical field set (from the official character sheet)
 
