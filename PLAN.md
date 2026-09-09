@@ -376,84 +376,68 @@ this same character, so both are captured together here.
   sub-entity), so the schema likely needs to support both, probably
   as the author's choice depending on how mechanically detailed a
   given companion needs to be.
-- **The user's terse-format mockup for Karis** (given directly, as "one
-  example of how Karis might appear in terse form"):
+- **The user's terse-format mockup for Karis** — given directly, as
+  "one example of how Karis might appear in terse form," then
+  clarified after review: **it was originally written in Markdown for
+  a different purpose (an actual game session) and customized for
+  that session, so it is not the book's Karis and its specific values
+  (names, numbers) are not to be treated as accurate/canonical — use
+  it only for organization and structure.** Two follow-up decisions
+  from that clarification:
+  - **Terse output is reST, not Markdown** — decided, resolving the
+    format-choice open question below. Only the heading/list syntax
+    changes from the mockup as given; the inline `**bold**`/`*italic*`
+    markup is identical in both and needs no translation.
+  - **The italicized one-line summary under the name is a new,
+    author-written schema field**, not derived from `background` —
+    tentatively named `summary` (§ schema below).
 
-  ```markdown
-  # Karis (Hotheaded Space-Trekking Bounty Hunter)
+  Structure only (not the specific names/numbers, per the
+  clarification above), translated to reST:
 
-  *The daughter of a legendary GPL hunter, tracking the criminal who killed her father.*
+  ```rst
+  Karis (Hotheaded Space-Trekking Bounty Hunter)
+  ================================================
 
-  * **Abilities:** Agile +3, Attack (Boomerang) +3, Combat Expert +1, Companion (Arasuni) +2, Cute! +1, Evasive +1, Intuitive +1, Perceptive +1, Quick +3.
-  * **Weaknesses:** Bizarre Appearance (Strange Alien Ears) −1, Impulsive −1, Obsession (Capture Vandal Drake) −3, Quirk (Stranger in a Strange Land) −2, Sensitivity (Chest Size) −2, Short-Tempered −1, Soft Spot (Stuffed Animals) −1.
-  * **Health:** 40 | **Endurance:** 40 | **Defense:** 6 | **Threat Value (TV):** 14   (-5)
-  * **Attacks:**
-    - **Kinetic Boomerang:** Roll **6 dice** | **DX 4** | **Endurance Cost: 0** (Perks: Armor Piercing, Ranged; Flaws: Weapon).
-    - **Trick Shot:** Roll **6 dice** | **DX 3** | **Endurance Cost: 0** (Perks: Disarming, Ranged; Flaws: Ineffective, Weapon). *Used to disarm opponents.*
-    - **Sweeping Strike:** Roll **6 dice** | **DX 3** | **Endurance Cost: 0** (Perks: Multiple Targets, Ranged; Flaws: Ineffective, Weapon). *Strikes up to 3 close enemies.*
-    - **Flex-Steel Cable:** Roll **6 dice** | **DX 1** | **Endurance Cost: 0** (Perks: Paralyzing x2, Ranged; Flaws: Ineffective x3, Weapon). *Entangles and restrains.*
+  *<summary — one author-written sentence>*
+
+  - **Abilities:** Name (detail) Level, Name Level, ... .
+  - **Weaknesses:** Name (detail) Level, Name Level, ... .
+  - **Health:** N | **Endurance:** N | **Defense:** N | **Threat Value (TV):** N
+  - **Attacks:**
+
+    - **Attack Name:** Roll **N dice** | **DX N** | **Endurance Cost: N** (Perks: ...; Flaws: ...). *Optional flavor sentence.*
+    - **Attack Name:** Roll **N dice** | **DX N** | **Endurance Cost: N** (Perks: ...; Flaws: ...). *Optional flavor sentence.*
   ```
 
-  This is the terse backend's design target (§9 step 2), so it's
-  worth extracting its conventions precisely:
-  - **Markdown, not reST** — `#` ATX heading, `*text*`/`**text**`
-    for italic/bold, `*`/`-` bullet lists. This is a real divergence
-    from `besm2_fmt`/`ova-rst.scm`'s reST-flavored terse output
-    (underline-style headers, but the same `**`/`*` inline markup) —
-    worth confirming explicitly whether `ova_fmt`'s terse output
-    should target Markdown as its "native" text format going forward
-    (feeding a possibly-different downstream pipeline than
-    reST→Pandoc) rather than reST, since that changes the header/
-    list syntax `Ova_Fmt.Format_Terse` needs to emit and possibly
-    which downstream tool consumes it.
-  - Header line: `# Name (concept)` — the parenthetical is the
-    `fluff.concept` field, not a `tagline` quote (contrast the player
-    books' quoted-catchphrase tagline under the name, §2.1) — followed
-    by one italicized sentence that reads like a condensed one-line
-    background summary (not the rulebook's actual Background prose,
-    and not a first-person quote either). Whether this sentence is
-    author-supplied (a new schema field, distinct from `background`)
-    or auto-derived (first sentence of `background`? a synthesized
-    summary?) is open — flag before implementing.
+  Conventions worth carrying forward from the mockup's *structure*
+  (independent of its unreliable specific values):
+  - Header: `Name (concept)` as a reST title (underlined, matching
+    `besm2_fmt`/`ova-rst.scm`'s terse-mode convention of an
+    underlined entity header) — the parenthetical is `fluff.concept`,
+    not a quoted `tagline` (contrast the player books' quoted
+    catchphrase under the name, §2.1) — followed by the new `summary`
+    field, italicized.
   - Abilities/Weaknesses: one comma-separated sentence each, `Name
     (detail) Level` order (detail immediately after name, level last
     — differs from the character-sheet convention of `Level Name
     (detail)`, §2.1/§2.2), ended with a period.
-  - Combat summary: one line, `**Health:** N | **Endurance:** N |
-    **Defense:** N | **Threat Value (TV):** N` pipe-separated, plus a
-    trailing parenthetical number whose meaning isn't yet clear (see
-    below).
-  - Attacks: nested bullet list, one per attack: `**Name:** Roll **N
-    dice** | **DX N** | **Endurance Cost: N** (Perks: ...; Flaws:
-    ...).` followed by an optional italicized flavor sentence. Note
-    **Perks/Flaws are explicitly labeled** here (`Perks: ...; Flaws:
-    ...`) — clearer than the character sheet's unlabeled `PERKS...;
-    FLAWS...` convention (§2.1) and worth carrying into the design
-    since it removes the reader's need to already know the
-    Perks-before-semicolon/Flaws-after convention. "Roll **N dice**"
-    spells out "dice" explicitly rather than the sheet's bare number
-    — matches the confirmed mechanic (§2.2/§2.3: `Roll` is a dice
-    *count*, not a flat bonus — `2` base dice `+` applicable Ability
-    Levels, e.g. Kinetic Boomerang's Roll 6 = 2 base + Attack 3 +
-    Combat Expert 1).
-  - **Numbers checked against the rulebook's actual Karis** (lines
-    928–937, 969–975 above) **mostly match exactly** — same
-    Abilities/Levels, same Weakness names/Levels (a couple of detail
-    wordings differ slightly: `Strange Ears` → `Strange Alien Ears`,
-    `Chest` → `Chest Size`), same attack Roll/DX/End numbers and
-    Perks/Flaws — **but two things don't match the primary source and
-    are worth a quick confirm before treating this mockup as
-    literal**: (1) the Obsession target is `Capture Vandal Drake`
-    here vs. the book's `Kill Shadowman` — a different name entirely,
-    not just a rewording (possibly a deliberate substitution to avoid
-    naming the copyrighted villain directly in a file that might get
-    committed, given §2's copyright note — worth asking rather than
-    assuming); (2) Threat Value is `14   (-5)` here vs. the book's
-    plain `16` — the trailing `(-5)` isn't explained by anything
-    found in the rulebook so far (Threat Value's own rules, §2.2, say
-    nothing about a parenthetical adjustment shown alongside it) and
-    doesn't obviously reconcile arithmetically either. Flagged as an
-    open question rather than resolved.
+  - Combat summary: one line/list-item, `**Health:** N | **Endurance:**
+    N | **Defense:** N | **Threat Value (TV):** N` pipe-separated.
+    (The mockup's trailing `(-5)` after TV was part of the
+    session-specific customization the user flagged as unreliable —
+    dropped from the structural template above; no longer treated as
+    a feature to explain or implement.)
+  - Attacks: nested list, one per attack: `**Name:** Roll **N dice** |
+    **DX N** | **Endurance Cost: N** (Perks: ...; Flaws: ...).`
+    followed by an optional italicized flavor sentence. Perks/Flaws
+    are **explicitly labeled** (`Perks: ...; Flaws: ...`) — clearer
+    than the character sheet's unlabeled `PERKS...; FLAWS...`
+    convention (§2.1), worth keeping since it removes the reader's
+    need to already know the Perks-before-semicolon/Flaws-after
+    convention. "Roll **N dice**" spells out "dice" explicitly —
+    matches the confirmed mechanic (§2.2/§2.3: `Roll` is a dice
+    *count*, `2` base dice + applicable Ability Levels).
 
 ## 3. Existing (unfinished) OVA tooling
 
@@ -642,6 +626,12 @@ differences from `besm2_fmt`'s BESM model:
   described within a note, not a structured list — see Azyrus in
   `Fukiko.yaml`'s `notes`). Roughly parallels BESM's
   `description`/`tagline`, but richer.
+- **`summary`** (decided, §2.3) — a new field, not present in
+  `Fukiko.yaml`/`Auren.yaml`/the physical character sheet at all: one
+  short, author-written sentence distinct from `background` (a
+  condensed synopsis rather than the full prose), rendered italicized
+  under the header in terse output. Not derived/auto-generated —
+  the author writes it directly, same as `tagline`/`concept`.
 
 ## 5. Canonical field set (from the official character sheet)
 
@@ -946,27 +936,20 @@ for test data and output-format sequencing:
 
 ## Open questions
 
-- **Terse output format: Markdown or reST?** (§2.3) The user's Karis
-  mockup is Markdown (`#` headings, `*`/`**` inline markup, `*`/`-`
-  bullets), not reST like `besm2_fmt`/`ova-rst.scm`'s terse backends.
-  Confirm which is the actual target before implementing
-  `Ova_Fmt.Format_Terse` — affects heading syntax and whether/how this
-  feeds a reST→Pandoc pipeline the way the other backends do (§7/§9),
-  or something else entirely.
-- **Karis mockup's header tagline sentence**: is the italicized
-  one-line summary under the name/concept (§2.3, "The daughter of a
-  legendary GPL hunter...") a new schema field, or derived/synthesized
-  from `background` somehow? Needs to be a real field with a real
-  source before `Format_Terse` can render it for characters generally
-  (not just hand-written for one mockup).
-- **Karis mockup's two divergences from the primary rulebook text**
-  (§2.3): the Obsession target name (`Capture Vandal Drake` in the
-  mockup vs. `Kill Shadowman` in `ova-rulebook.txt`) and Threat Value
-  (`14 (-5)` in the mockup vs. plain `16` in the book) — confirm
-  whether these are deliberate (e.g. avoiding naming the copyrighted
-  villain directly) or just illustrative approximation, and what the
-  trailing `(-5)` after TV is meant to represent, before treating the
-  mockup as a literal byte-for-byte rendering target.
+- ~~**Terse output format: Markdown or reST?**~~ Resolved (§2.3):
+  reST. The user's Karis mockup was written in Markdown for an
+  unrelated purpose (a customized game-session write-up, not the
+  book's Karis) and translated to reST in the plan — only heading/list
+  syntax differs, inline `**bold**`/`*italic*` markup is unchanged.
+- ~~**Karis mockup's header tagline sentence**~~ Resolved (§2.3): a
+  new, author-written schema field, tentatively named `summary`
+  (§4) — not derived from `background`.
+- ~~**Karis mockup's divergences from the primary rulebook text**~~
+  Resolved/moot (§2.3): the user clarified the mockup was customized
+  for a specific game session and its specific values (names,
+  numbers, the trailing `(-5)` after TV) aren't meant to be accurate
+  or literal — only its *structure* is the design target. No further
+  investigation needed.
 - ~~**Nested-table rendering**~~ Resolved (§7): terse-prose for the
   default text format (sidesteps the problem), hand-written nested
   `<table>` markup in raw HTML blocks, groff `hd` macros (not `tbl`)
@@ -1077,3 +1060,13 @@ for test data and output-format sequencing:
   at render time; instead add a short explanatory note on the
   Barrier Ability's own list entry, since that's the Ability that
   produces the second Defense option.
+- **Terse output is reST** (§2.3), not Markdown — the user's Karis
+  mockup was Markdown but written for an unrelated purpose and
+  clarified as structure-only, not a literal or format-choice
+  reference; a new `summary` field (§4) holds the author-written
+  one-line synopsis under the header.
+- **Companion (and likely Vehicle) can be a full nested sub-entity**
+  (§2.3): confirmed from the primary rulebook (Karis's Arasuni has his
+  own complete Abilities/Weaknesses/Attacks/Combat-stats block), not
+  just the simpler prose-summary shape (Fukiko's Azyrus) — schema
+  needs to support both.
