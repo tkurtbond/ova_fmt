@@ -10,7 +10,13 @@ TEST_DATA=$(wildcard test-data/*.yaml)
 # what the program does.
 TEST_TERSEOUTPUT=$(foreach f,$(notdir $(TEST_DATA)),build/$(addsuffix .gen.rst,$(basename $(f))))
 
-.PHONY: all rst install clean testclean
+# PDF renderings of the above, via pandoc's ms writer -- same
+# pipeline/template besm2_fmt's GNUmakefile uses (reST -> pandoc -r
+# rst -w ms --template=tkb -> groff/ms -> PDF), just with one output
+# variant instead of besm2_fmt's several.
+TEST_PDFOUTPUT=$(foreach f,$(notdir $(TEST_DATA)),build/$(addsuffix .ms.pdf,$(basename $(f))))
+
+.PHONY: all rst pdf install clean testclean
 
 all: $(PROGRAM)
 
@@ -25,15 +31,21 @@ install:
 
 rst: $(PROGRAM) $(TEST_TERSEOUTPUT)
 
+pdf: rst $(TEST_PDFOUTPUT)
+
 build/%.gen.rst : test-data/%.yaml $(PROGRAM)
 	./$(PROGRAM) $< >$@
+
+#MS_COLUMNS=-V twocolumns
+build/%.ms.pdf : build/%.gen.rst
+	pandoc -r rst -w ms --template=tkb $(MS_COLUMNS) -o $@ $<
 
 clean:
 	-rm -f $(PROGRAM)
 
 testclean:
-	-rm -v build/*.gen.rst
+	-rm -v build/*.gen.rst build/*.ms.pdf
 
-.PRECIOUS: build/%.gen.rst
+.PRECIOUS: build/%.gen.rst build/%.ms.pdf
 
 print-%  : ; @echo $* = $($*)

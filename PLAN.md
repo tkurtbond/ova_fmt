@@ -1162,6 +1162,20 @@ for test data and output-format sequencing:
    selector — terse is simply what the program does). Verified: all
    twelve build, `make rst` is a no-op on a second run, `make
    testclean` then `make rst` regenerates cleanly.
+
+   **`make pdf` added**, same reST→pandoc→`ms`→PDF pipeline as
+   `besm2_fmt`'s `build/%.ms.pdf` rule (`pandoc -r rst -w ms
+   --template=tkb -o $@ $<`, the `tkb` template already installed at
+   `~/.pandoc/templates/tkb.ms`) — `make pdf` depends on `rst` and
+   builds one `build/*.ms.pdf` per character. Verified: all twelve
+   render (one page each, ~495KB), and a direct look at
+   `build/Karis.ms.pdf` confirms the whole pipeline round-trips
+   correctly — bold/italic, the Abilities/Weaknesses/Combat/Attacks
+   bulleted list with its nested per-attack sub-bullets, and the
+   `Companion: Arasuni` section all typeset as intended, not silently
+   flattened by pandoc's reST reader (a real risk worth checking,
+   since the nested-bullet structure is whitespace-sensitive).
+   `testclean` now also removes `build/*.ms.pdf`.
 3. **HTML backend**: raw `.. raw:: html` blocks containing
    hand-written, potentially-nested `<table>` markup (§7), through the
    same reST→Pandoc pipeline `besm2_fmt`'s raw-ms backend already
