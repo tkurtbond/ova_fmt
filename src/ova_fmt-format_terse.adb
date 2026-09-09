@@ -398,9 +398,14 @@ package body Ova_Fmt.Format_Terse is
 
       if E.Has_Fluff then
          declare
-            Line  : Unbounded_String := To_Unbounded_String (Bold ("Fluff:") & " ");
+            Line  : Unbounded_String;
             First : Boolean := True;
 
+            --  Label is the capitalized field name ("Concept",
+            --  "Favorite Food", ...) -- bolded here per-item, same as
+            --  a Notes entry's header, rather than only bolding the
+            --  "Fluff" section title and leaving each item's label
+            --  plain.
             procedure Add (Label : String; Has : Boolean; Value : Unbounded_String) is
             begin
                if Has then
@@ -408,24 +413,26 @@ package body Ova_Fmt.Format_Terse is
                      Line := Line & ", ";
                   end if;
                   First := False;
-                  Line := Line & Label & ": " & Value;
+                  Line := Line & Bold (Label & ":") & " " & Value;
                end if;
             end Add;
          begin
-            Add ("concept", E.Fluff.Has_Concept, E.Fluff.Concept);
-            Add ("birthday", E.Fluff.Has_Birthday, E.Fluff.Birthday);
-            Add ("age", E.Fluff.Has_Age, E.Fluff.Age);
-            Add ("gender", E.Fluff.Has_Gender, E.Fluff.Gender);
-            Add ("height", E.Fluff.Has_Height, E.Fluff.Height);
-            Add ("weight", E.Fluff.Has_Weight, E.Fluff.Weight);
-            Add ("hair", E.Fluff.Has_Hair, E.Fluff.Hair);
-            Add ("eyes", E.Fluff.Has_Eyes, E.Fluff.Eyes);
-            Add ("association", E.Fluff.Has_Association, E.Fluff.Association);
-            Add ("hobbies", E.Fluff.Has_Hobbies, E.Fluff.Hobbies);
-            Add ("favorite food", E.Fluff.Has_Favorite_Food, E.Fluff.Favorite_Food);
-            Add ("allies", E.Fluff.Has_Allies, E.Fluff.Allies);
-            Add ("enemies", E.Fluff.Has_Enemies, E.Fluff.Enemies);
-            Add ("love interests", E.Fluff.Has_Love_Interests, E.Fluff.Love_Interests);
+            IO.Put_Line (Bold ("Fluff"));
+            IO.New_Line;
+            Add ("Concept", E.Fluff.Has_Concept, E.Fluff.Concept);
+            Add ("Birthday", E.Fluff.Has_Birthday, E.Fluff.Birthday);
+            Add ("Age", E.Fluff.Has_Age, E.Fluff.Age);
+            Add ("Gender", E.Fluff.Has_Gender, E.Fluff.Gender);
+            Add ("Height", E.Fluff.Has_Height, E.Fluff.Height);
+            Add ("Weight", E.Fluff.Has_Weight, E.Fluff.Weight);
+            Add ("Hair", E.Fluff.Has_Hair, E.Fluff.Hair);
+            Add ("Eyes", E.Fluff.Has_Eyes, E.Fluff.Eyes);
+            Add ("Association", E.Fluff.Has_Association, E.Fluff.Association);
+            Add ("Hobbies", E.Fluff.Has_Hobbies, E.Fluff.Hobbies);
+            Add ("Favorite Food", E.Fluff.Has_Favorite_Food, E.Fluff.Favorite_Food);
+            Add ("Allies", E.Fluff.Has_Allies, E.Fluff.Allies);
+            Add ("Enemies", E.Fluff.Has_Enemies, E.Fluff.Enemies);
+            Add ("Love Interests", E.Fluff.Has_Love_Interests, E.Fluff.Love_Interests);
             IO.Put_Line (End_With_Period (To_String (Line)));
             IO.New_Line;
          end;
