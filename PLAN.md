@@ -960,10 +960,11 @@ for test data and output-format sequencing:
      (`git@github.com:tkurtbond/ova_fmt.git`) and §2's copyright note
      already flagged verbatim narrative as something not to commit
      there. `summary` (the new author-written field, §4) is original
-     text written for this purpose, not from the book at all. Flagged
-     here explicitly as a judgment call, not a directive from the
-     user — revisit if a different approach (fuller transcription,
-     keeping the repo private, etc.) is actually wanted.
+     text written for this purpose, not from the book at all.
+     **Confirmed by the user** (not just this session's judgment call)
+     — the repo is believed public right now, so verbatim prose stays
+     out of it; this is now settled policy for all remaining
+     transcriptions, not a to-revisit item.
 2. **Terse backend first.** Mirrors `besm2_fmt`'s own build order
    (its `PLAN.md` §8: terse validates CLI + data access + domain
    formatting before touching harder layout code) — and per §7, terse
@@ -1127,3 +1128,10 @@ for test data and output-format sequencing:
   own complete Abilities/Weaknesses/Attacks/Combat-stats block), not
   just the simpler prose-summary shape (Fukiko's Azyrus) — schema
   needs to support both.
+- **No verbatim book prose in `background`/`personality`, confirmed by
+  the user** (§9 step 1): this repo is believed public right now, so
+  every sample-character transcription keeps those two fields as
+  short original paraphrases, never the book's actual sentences —
+  settled policy, not a per-file judgment call. Game-mechanical data,
+  fluff, `tagline`, and short attack captions are still transcribed
+  faithfully.
