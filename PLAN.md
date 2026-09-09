@@ -1146,6 +1146,22 @@ for test data and output-format sequencing:
    design in particular is this session's own invention and should be
    reviewed against what's actually wanted before treating it as
    settled, the way the Karis-mockup-covered parts already are.
+
+   **`GNUmakefile` added**, mirroring `besm2_fmt`'s (`build/.gitignore`
+   trick to keep `build/` in git without committing generated
+   output): `make`/`make all` builds the `ova_fmt` binary via
+   `gprbuild`, `make rst` additionally runs it over every
+   `test-data/*.yaml` into `build/*.gen.rst`, `make install` installs
+   via `gprinstall` (same `$HOME/local` prefix as `besm2_fmt.gpr`),
+   `make testclean` removes the generated `.gen.rst` files. Simpler
+   than `besm2_fmt`'s (`TEST_OUTPUT`/`TEST_TBLOUTPUT`/unicode-minus/
+   pdf variants, `-s`/`-t`/`-m`/`-n` flag combinations): `ova_fmt` has
+   only one backend and no flags yet that change its output, so
+   there's only one `.gen.rst` target per character, generated with
+   no flags at all (not even `-t`, since `Ova_Fmt.Cli` has no format
+   selector — terse is simply what the program does). Verified: all
+   twelve build, `make rst` is a no-op on a second run, `make
+   testclean` then `make rst` regenerates cleanly.
 3. **HTML backend**: raw `.. raw:: html` blocks containing
    hand-written, potentially-nested `<table>` markup (§7), through the
    same reST→Pandoc pipeline `besm2_fmt`'s raw-ms backend already
