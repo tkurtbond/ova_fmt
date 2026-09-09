@@ -377,6 +377,20 @@ this same character, so both are captured together here.
   sub-entity), so the schema likely needs to support both, probably
   as the author's choice depending on how mechanically detailed a
   given companion needs to be.
+
+  **Refined** (while fixing up `test-data/Fukiko.yaml` to match the
+  settled schema, §9): this isn't really two unrelated shapes — it's
+  **one shape with optional depth**. Every Companion now gets a
+  `companion:` sub-block with `abilities:`/`weaknesses:` (Azyrus's
+  book sheet does give him exact Levels — `Flight +2, Quick +1, Smart
+  +2; Awkward Size (Small) −1, Frail −1, Short-Tempered −1` — even
+  though the old `Fukiko.yaml` only stored them as prose); a
+  `combat:` block is added only when the source actually gives the
+  companion its own attacks/Defense/Health/Endurance/TV (Arasuni,
+  Fenrir), which Azyrus's sheet doesn't. So there's no "prose-only
+  vs. full sub-entity" branch in the schema after all — just whether
+  `combat:` is present, same as how a main entity's own `combat:`
+  presumably isn't strictly mandatory either.
 - **The user's terse-format mockup for Karis** — given directly, as
   "one example of how Karis might appear in terse form," then
   clarified after review: **it was originally written in Markdown for
@@ -1062,9 +1076,20 @@ for test data and output-format sequencing:
    consistent with Witchcraft casting Weaknesses onto a target rather
    than the caster mimicking an Ability). All eight validated with a
    Python YAML parse and `yamllint`, same as the first three.
-   `Fukiko.yaml` (the pre-existing, differently-shaped legacy file)
-   remains a separate, still-open cleanup item (§6/§9 note above),
-   not touched by this pass.
+
+   **Progress: `test-data/Fukiko.yaml` fixed up to match the settled
+   schema** (its own transcription, superseding the old Scheme
+   project's original — left untouched there — with a full header
+   comment listing every change). Closes the last open cleanup item
+   from §6/earlier in this section. Notable: gave Azyrus a real
+   `companion:` sub-block instead of prose-only `attributes:` text,
+   which prompted the "one shape with optional depth" refinement to
+   the Companion finding (§2.3, "Refined" paragraph); finally applied
+   the decided Barrier `note:` (§2.2) to the original character whose
+   paired Defense motivated that design in the first place, closing
+   the loop `Ai.yaml`'s header comment had flagged as outstanding.
+   **All twelve `test-data/*.yaml` files now follow one consistent
+   schema.**
 2. **Terse backend first.** Mirrors `besm2_fmt`'s own build order
    (its `PLAN.md` §8: terse validates CLI + data access + domain
    formatting before touching harder layout code) — and per §7, terse
