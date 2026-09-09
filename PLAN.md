@@ -99,6 +99,14 @@ Location: `~/Reference/RPG/OVA/`
   Useful as a name/canonical-spelling reference and for any
   "look up this ability's description" feature, but not yet cross
   checked against the ref sheet's page-number index for completeness.
+- `~/Reference/Document-Tools/lout/` — Basser Lout documentation, not
+  OVA-specific: `design.pdf` (design rationale), `expert.pdf`
+  (advanced/extension-level reference), `slides.pdf` (overview slide
+  deck), `user.pdf` (the main user guide). Not yet read; earmarked for
+  step 5 of §9's build order (the direct-to-Lout backend) —
+  `user.pdf` is the likely primary reference for `@Doc`/`@Tbl` usage,
+  `expert.pdf` for anything `Fukiko-experiment.lout` (§3) does that
+  needs deeper explanation than the user guide covers.
 - `OVA-Combat.odt`/`.pdf`, `OVA-ConversionGuide.pdf`,
   `OVA-Character-Sheet.ods`/`.pdf`,
   `OVA-Charsheet-Template-Google-Sheets.pdf`,
@@ -745,13 +753,8 @@ Not yet decided/committed — for discussion before starting real work:
   the Lout backend against `Fukiko-experiment.lout` specifically,
   since that's now a confirmed real worked example, §3) rather than
   diffed against a pre-existing working program.
-- **Test data**: fix up `Fukiko.yaml`/`Auren.yaml`/`Acacia.yaml` to a
-  single settled schema (§6) as an early, separate step — probably
-  before writing `Ova_Fmt.Entities` — and consider adding fixtures
-  transcribed from the three player books (Auren/Miho/Raine) once
-  reviewed, for broader coverage (a character with no nested
-  abilities, one with Magic's `spells` nesting, one with a fuller
-  attack suite).
+- **Test data and build order**: see §9 — now a decided sequence
+  rather than an open item.
 - **Shared library question**: `besm2_fmt`'s `PLAN.md` already flags
   "factor `Text_Layout`/customizer logic into a shared library" as an
   open question for a hypothetical `besm4_fmt`. Worth reconsidering
@@ -760,6 +763,76 @@ Not yet decided/committed — for discussion before starting real work:
   than the BESM4 case would have had, or it may clarify what the truly
   generic core (`Pad`, plain `Word_Wrap`, `Bold`/`Italics`/emphasis
   gating) versus per-game layout logic split should be.
+
+## 9. Build order (decided)
+
+Given directly by the user, superseding §8's "not yet decided" framing
+for test data and output-format sequencing:
+
+1. **YAML test data for all twelve sample characters** (§2.2), not
+   just the existing `Fukiko.yaml`/`Auren.yaml`/`Acacia.yaml`/
+   `template.yaml`. Base the schema on `Fukiko.yaml`'s existing
+   structure wherever it already fits (§6's recommendation — fixed
+   `name:`/`level:` keys, nesting via `abilities:`/`weaknesses:` under
+   a parent item), but it needs to generalize to cover what the other
+   eleven write-ups actually contain, not just Fukiko's shape:
+   - `background`, `personality` — already present in `Fukiko.yaml`.
+   - **NPC companion callouts**: several sample characters (Fukiko's
+     Azyrus is the confirmed example, §2.2/§2.1) have a named
+     companion described in its own boxed section on the sheet,
+     including an inline `Attributes:` summary line (`Flight +2, Quick
+     +1, Smart +2; Awkward Size (Small) −1, Frail −1, Short-Tempered
+     −1`). `Fukiko.yaml`'s existing `notes[]` (`header`/`text`/
+     optional `attributes` prose) already covers this loosely; while
+     transcribing the other eleven, check whether a companion write-up
+     deserves its own dedicated field (e.g. `companion:`) rather than
+     being folded into a generic `notes` list, especially since
+     Companion (§2.2) is itself one of the confirmed
+     linked-ability-with-its-own-sub-Abilities-and-Weaknesses types,
+     distinct from a note.
+   - **Transformation-description callouts**: Fukiko's sheet has a
+     separate named box ("Lovely Savior Myu Myu") describing the
+     transformation itself — trigger phrase, visual/narrative
+     description — distinct from the Transformation Ability's own
+     numeric list entry. Also currently folded into `notes[]`; check
+     the other Transformation-using sample characters for the same
+     convention.
+   - Any further headed callout types turned up while transcribing the
+     remaining eight characters not yet read closely (only Fukiko,
+     Auren, Ai, and one other paired-Defense character have had their
+     full spreads read so far, §2.2/§2.1).
+   Deliberately use this pass to get schema coverage for every
+   nesting/modifier shape already identified from primary sources:
+   Ai's plain-Ability Perk/Flaw (§ Perks/Flaws correction above), a
+   Magic-using character's spell-mimics-another-Ability shape (§2.2),
+   and whichever sample characters (if any) use Companion or Vehicle,
+   still unconfirmed as worked examples (§ open questions).
+2. **Terse backend first.** Mirrors `besm2_fmt`'s own build order
+   (its `PLAN.md` §8: terse validates CLI + data access + domain
+   formatting before touching harder layout code) — and per §7, terse
+   is the one OVA format that needs no table-layout code at all, so
+   it's both the natural first target and the one with a ready-made
+   reference to hand-verify against (the rulebook's own printed
+   write-ups from step 1, not a pre-existing working binary the way
+   BESM had — §8's note on acceptance-testing from scratch still
+   applies).
+3. **HTML backend**: raw `.. raw:: html` blocks containing
+   hand-written, potentially-nested `<table>` markup (§7), through the
+   same reST→Pandoc pipeline `besm2_fmt`'s raw-ms backend already
+   demonstrates the shape of (reST→Pandoc→`ms` there; reST→Pandoc→HTML
+   here).
+4. **`hd`-table raw-ms backend**: groff `hd` macros, not `tbl` (§7),
+   in a `.. raw:: ms` block, through Pandoc's `ms` writer. Sequenced
+   after HTML deliberately — `hd`'s actual nested-table support still
+   needs hands-on confirmation against the installed groff version
+   (§ open questions), and having a working HTML nested-table
+   reference in hand first gives something concrete to compare `hd`'s
+   real rendered output against while sorting that out.
+5. **Direct-to-Lout backend last.** No Pandoc involvement (§7) — a
+   structurally separate output mode from the other three, modeled on
+   the existing `Fukiko-experiment.lout` worked example (§3), using
+   `~/Reference/Document-Tools/lout/`'s `user.pdf`/`expert.pdf` (§2)
+   as needed for anything beyond what that one example already shows.
 
 ## Open questions
 
@@ -830,8 +903,9 @@ Not yet decided/committed — for discussion before starting real work:
 
 ## Decisions already made
 
-- Project directory: `~/Repos/RPG/Tools/ova_fmt` (git initialized, no
-  commits yet, no remote configured yet).
+- Project directory: `~/Repos/RPG/Tools/ova_fmt` (git initialized,
+  `origin` set to `git@github.com:tkurtbond/ova_fmt.git`, `main`
+  tracking `origin/main`).
 - Program name: **ova_fmt** (following `besm2_fmt`'s naming pattern —
   not yet confirmed with the user beyond the directory name itself).
 - This is a from-scratch design-and-port effort, not a mechanical
@@ -852,3 +926,20 @@ Not yet decided/committed — for discussion before starting real work:
   no Lout writer — `Fukiko-experiment.lout` is a confirmed working
   proof-of-concept for Lout's native nested-table support to model
   that backend on.
+- **Build order (§9), given directly by the user:** (1) YAML test data
+  for all twelve rulebook sample characters first, generalizing
+  `Fukiko.yaml`'s schema to cover companion and transformation-
+  description callouts seen on other characters' sheets; (2) terse
+  backend; (3) HTML-raw-block backend; (4) `hd`-table raw-ms backend;
+  (5) direct-to-Lout backend last, using
+  `~/Reference/Document-Tools/lout/`'s docs alongside
+  `Fukiko-experiment.lout`.
+- **Perks/Flaws are a general Ability modifier, not attack-specific**
+  (correction, §4): attachable to any Ability — top-level, linked
+  sub-ability, or Attack-typed combat entry alike — so the domain
+  model represents them uniformly rather than per attachment point.
+- **`combat.defense`'s slash-paired values (e.g. `4/5`) render
+  verbatim** (§2.2, refined by the user): don't split or derive them
+  at render time; instead add a short explanatory note on the
+  Barrier Ability's own list entry, since that's the Ability that
+  produces the second Defense option.
