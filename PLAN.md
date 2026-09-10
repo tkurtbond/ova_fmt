@@ -1226,10 +1226,29 @@ for test data and output-format sequencing:
   `Integer_Value` with no `Default`, raising `Libfyaml.Missing_Key`
   if absent) for fields that merely happen to be present in all
   twelve transcribed `test-data/*.yaml` characters — that's not the
-  same as confirming the game rules actually require them. Worth
-  auditing case by case, e.g.: every Ability/Weakness/Sub_Item's
-  `level`; every Attack's `roll`/`dx`/`endurance` (always present so
-  far, but is it guaranteed — could an NPC stub or an
+  same as confirming the game rules actually require them.
+
+  ~~Every Ability/Weakness/Sub_Item/Spell's `level`~~ Resolved (per
+  the user, prompted by the analogous BESM question — see
+  `besm2_fmt`'s `PLAN.md`, where Defects turned out to have *no*
+  Level at all, unlike Attributes/Skills): **there's no OVA analog to
+  that BESM asymmetry.** BESM splits "Points" (always present, the
+  point-buy currency) from "Level" (present on Attributes, sometimes
+  absent; present on Skills, always; absent entirely on Defects) —
+  three different fields serving three different roles depending on
+  category. OVA has no such split: an Ability's Level *is* its Bonus,
+  a Weakness's Level *is* its Penalty, with no separate points-style
+  currency underneath at all — so both Abilities and Weaknesses (and
+  every linked shape that carries a Level: `Sub_Item`, `Spell`) always
+  require it structurally, not just in the twelve transcribed
+  fixtures. Confirmed by checking the code: all four `Load_*` call
+  sites that read `"level"` (`Load_Sub_Item`, `Load_Spell`,
+  `Load_Ability`, `Load_Weakness`) already use the required accessor,
+  correctly, with no optional/`Has_Key`-guarded case anywhere — this
+  part of the audit needed no code change, only confirming the
+  reasoning holds. Still worth auditing case by case: every Attack's
+  `roll`/`dx`/`endurance` (always present so far, but is it
+  guaranteed — could an NPC stub or an
   in-progress/template character have some left blank, the way
   `Acacia.yaml`/`template.yaml` in §6 are mostly empty skeletons?);
   every Spell's `mimics`/`level`/`endurance`; the `combat:` block's
