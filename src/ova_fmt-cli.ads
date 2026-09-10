@@ -28,6 +28,7 @@ private
    function Do_Help return Boolean;
    function Do_Gemtext return Boolean;
    function Do_Html return Boolean;
+   function Do_Hmm return Boolean;
    function Do_Subunderliner (Arg : String) return Boolean;
    function Do_Underliner (Arg : String) return Boolean;
    function Do_Argument (Start_With : Positive; Arg : String) return Boolean;
@@ -89,7 +90,29 @@ private
                          "off by default.",
          Short_Name  => 'O',
          Long_Name   => "options",
-         Variable    => Ova_Fmt.Config.Show_Options'Access));
+         Variable    => Ova_Fmt.Config.Show_Options'Access),
+      Arg_Parser.Make_Option
+        (Description => "Output a tab-indented h-m-m outline instead of " &
+                         "reST.",
+         Short_Name  => 'm',
+         Long_Name   => "hmm",
+         Handler     => Do_Hmm'Access),
+      Arg_Parser.Make_Set_Natural_Option
+        (Description => "With -m/--hmm, indentation baseline (in tab " &
+                         "stops) for the outline, so it can be embedded " &
+                         "under an existing outline node elsewhere. " &
+                         "Default 0 (left margin).",
+         Short_Name  => 'L',
+         Long_Name   => "hmm-depth",
+         Variable    => Ova_Fmt.Config.Hmm_Depth'Access),
+      Arg_Parser.Make_Set_Boolean_True_Option
+        (Description => "With -m/--hmm, fold each of Abilities/Weaknesses " &
+                         "onto one node (""Abilities: Ability1 +1 [...], " &
+                         "..."") instead of a header node with one child " &
+                         "node per item. Off by default.",
+         Short_Name  => 'c',
+         Long_Name   => "hmm-compact-lists",
+         Variable    => Ova_Fmt.Config.Hmm_Compact_Lists'Access));
 
    The_Parser : Arg_Parser.Parser :=
      Arg_Parser.Make_Parser

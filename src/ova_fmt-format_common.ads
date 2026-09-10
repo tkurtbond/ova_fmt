@@ -64,6 +64,43 @@ package Ova_Fmt.Format_Common is
    --  "(Affinity: ...; Perks: ...; Flaws: ...)", "" if none apply.
    --  Public: Format_Rst's Html_In_Rst Attacks table needs this too.
 
+   --  Per-item line formatters ("Name (detail) Level [Perks: ...;
+   --  Flaws: ...] (note)" and its Fragment/Sub_Item/Spell variants) --
+   --  public so Ova_Fmt.Format_Hmm can reuse the same field
+   --  formatting for its own per-node text without duplicating it;
+   --  none of these depend on Config.Format (no Bold/Section_Header/
+   --  Bullet involved), so they're safe to share as-is.
+   function Format_Ability_Line (A : Entities.Ability) return String;
+   function Format_Weakness_Line (W : Entities.Weakness) return String;
+   function Format_Fragment_Ability_Line (A : Entities.Ability) return String;
+   function Format_Fragment_Weakness_Line (W : Entities.Weakness) return String;
+   function Format_Sub_Item_Line (S : Entities.Sub_Item) return String;
+   function Format_Spell_Line (S : Entities.Spell) return String;
+
+   function Format_Attack_Line (A : Entities.Attack) return String;
+   --  "**Name:** Roll **N dice** | **DX d** | **Endurance Cost: c** " &
+   --  "(clause). *Description*" -- the content of one Attack, with no
+   --  leading bullet/indent of its own (Print_Attack below adds
+   --  Terse/Gemtext's; Ova_Fmt.Format_Hmm adds its own tab indent).
+
+   function Format_Combat_Summary_Line (C : Entities.Combat_Stats) return String;
+   --  "**Health:** H | **Endurance:** E | **Defense:** D | **Threat
+   --  Value (TV):** T" -- the content of Combat_Stats' own summary
+   --  line, with no leading bullet/indent of its own, same reuse
+   --  reason as Format_Attack_Line.
+
+   --  Comma-joined item lists (no label, no surrounding punctuation) --
+   --  public so a caller (Ova_Fmt.Format_Hmm, this package's own
+   --  Process_Entity/Print_Linked_Section/Print_Fragment_Attributes)
+   --  can build its own labeled line/sentence around the join without
+   --  duplicating the loop.
+   function Join_Abilities (Vec : Entities.Ability_Vectors.Vector) return String;
+   function Join_Weaknesses (Vec : Entities.Weakness_Vectors.Vector) return String;
+   function Join_Fragment_Abilities (Vec : Entities.Ability_Vectors.Vector) return String;
+   function Join_Fragment_Weaknesses (Vec : Entities.Weakness_Vectors.Vector) return String;
+   function Join_Sub_Items (Vec : Entities.Sub_Item_Vectors.Vector) return String;
+   function Join_Spells (Vec : Entities.Spell_Vectors.Vector) return String;
+
    procedure Print_Header_And_Prose (E : Entities.Entity; Entity_No : Positive);
    --  Title/tagline/summary/Background/Personality -- byte-identical
    --  across Terse, Gemtext, and Html_In_Rst. Public: Format_Rst's

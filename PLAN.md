@@ -1308,19 +1308,94 @@ for test data and output-format sequencing:
    `TEST_HTMLRENDEROUTPUT`/`html` (`build/%.html.gen.rst` via `-H`,
    `build/%.html` via Pandoc), following the same wildcard-derived-
    from-`TEST_DATA` convention as every other output-list variable.
-5. **h-m-m outline backend** (`Ova_Fmt.Format_Hmm`), per the user —
+5. ~~**h-m-m outline backend** (`Ova_Fmt.Format_Hmm`)~~ Done —
    sequenced here, right after HTML-in-reST: needs no table-layout
-   work at all (like terse, unlike HTML-in-reST/groff-in-reST), so
-   there's no reason to make it wait for the harder nested-table
-   backends below, and having it land right after terse/HTML-in-reST
-   keeps the two simplest backends' lessons fresh while designing it.
-   Modeled on `besm2_fmt.Format_Hmm`'s tab-indented-outline shape (its
-   `PLAN.md` §8 item 5), but needs its own design pass against OVA's
-   specific nesting shapes — Transformation/Companion/Magic-spell
-   linked content, Perks/Flaws, paired Defense — the way terse's own
-   outline already got (§ "Decisions already made" below has no
-   h-m-m-specific entries yet; this is genuinely unstarted, not just
-   unsequenced).
+   work at all (like terse, unlike HTML-in-reST/groff-in-reST).
+   Modeled on `besm2_fmt.Format_Hmm`'s tab-indented-outline shape/
+   mechanics (`Indent`/`All_One_Line`, depth bands) but a genuine new
+   design pass for OVA's own nesting, not a port — confirmed with the
+   user before implementing (a full worked shape, same as
+   HTML-in-reST's table structure was): D1 the entity's own line
+   (`Name (Concept)`), D2 section headers (Background/Personality/
+   Abilities/Weaknesses/Combat/each linked-Ability's own
+   header/Notes/Fluff), D3 that section's content (prose, Combat's
+   stats-summary line and "Attacks" header, a linked Ability's
+   "Grants:"/"Spells:" line, each Note). OVA's Transformation/Magic/
+   Companion/Vehicle linked content maps onto h-m-m's recursion more
+   naturally than Terse's flat "Abilities: ..." line ever could: a
+   Companion/Vehicle's own Abilities/Weaknesses/Combat/Attacks simply
+   nest one level deeper than its own header node, via the same
+   `Print_Sub_Item_Section`/`Print_Combat` procedures called
+   recursively with `Header_Depth + 1` — besm2 (flat Attributes/
+   Defects/Skills, nothing nested) never needed this.
+
+   **`-c`/`--hmm-compact-lists`**, per the user, requested specifically
+   during this session's design discussion (not from the besm2_fmt
+   model, which has no equivalent): instead of an "Abilities"/
+   "Weaknesses" header node with one child node per item (the
+   default), fold the label and the whole comma-joined item list onto
+   one node — `**Abilities:** Ability1 +1 [...], Ability2 ...` — the
+   same content Terse's own `Abilities:` line already builds, just as
+   an h-m-m node instead of a bullet. Applies wherever an Abilities/
+   Weaknesses section prints, including a Companion/Vehicle's own
+   (same section-printer, called recursively) — confirmed with the
+   user rather than assumed. Off by default, matching every other
+   opt-in rendering choice (`-e`/`--gemtext-emphasis`, `-O`/
+   `--options`).
+
+   Deliberately its own package, not built on `Ova_Fmt.Format_Common`'s
+   `Print_Header_And_Prose`/`Print_Tail`/`Process_Entity` — those are
+   structurally reST/Gemtext-specific (bullets, section headers with
+   no depth parameter) and don't fit an indentation-tracked outline,
+   matching how `besm2_fmt.Format_Hmm` is independent of
+   `besm2_fmt.Format_Terse` too. It does reuse `Format_Common`'s
+   per-item line formatters (`Format_Ability_Line`/`Format_Weakness_Line`/
+   `Format_Sub_Item_Line`/`Format_Spell_Line`/`Format_Attack_Line`/
+   `Format_Combat_Summary_Line`, the last two newly extracted from
+   `Print_Attack`/`Print_Combat_And_Attacks` for this reuse) and the
+   comma-join helpers (`Join_Abilities`/`Join_Weaknesses`/
+   `Join_Fragment_Abilities`/`Join_Fragment_Weaknesses`/`Join_Sub_Items`/
+   `Join_Spells`, also newly added — `Format_Common`'s own
+   `Process_Entity`/`Print_Linked_Section`/`Print_Fragment_Attributes`
+   were refactored to call them too, removing several near-duplicate
+   inline loops there in the process) — none of these depend on
+   `Config.Format`, so they're safe to share as-is. `Bold`/`Italic`/
+   `Section_Header` are reused directly too (`Section_Header` degrades
+   to `Bold` for any non-Gemtext `Config.Format`, which Hmm always is).
+
+   `-L`/`--hmm-depth` (indentation baseline, `Config.Hmm_Depth`, resets
+   per entity — doesn't accumulate across entities in one file, same
+   as `besm2_fmt.Config.Hmm_Depth`) is included for parity with
+   `besm2_fmt`'s own flag, since it needed no new design (a mechanical
+   offset); `-R`/`--hmm-root`/`-S`/`--hmm-separate` (besm2_fmt's other
+   two hmm-specific flags) are deliberately NOT ported — neither was
+   discussed for OVA, and porting them without a design pass would be
+   assuming rather than confirming, the opposite of how this backend's
+   other choices were made.
+
+   Fragments render the same minimal way as every other backend
+   (`Is_Fragment`, deliberately untouched by `Config.Format`): one
+   `Background`-or-bold-`Name` D1 line, one `Attributes: ...` D2 line
+   (always compact, regardless of `-c`/`--hmm-compact-lists` — a
+   Fragment's whole point is being flat/minimal), Combat/linked
+   sections as normal.
+
+   `GNUmakefile` gained `TEST_HMMOUTPUT`/`TEST_HMM_COMPACT_OUTPUT`/
+   `hmm` (`build/%.hmm` via `-m`, `build/%.compact.hmm` via `-m -c`),
+   following the established wildcard-derived-from-`TEST_DATA`
+   convention. No PDF rendering, same reason as Gemtext: not a Pandoc
+   reader, meant to be read/loaded into an outline viewer as-is.
+
+   Verified: a pre-change/post-change binary diff of Terse/Gemtext/
+   Html_In_Rst output across every `test-data/*.yaml` fixture is
+   byte-identical (the `Format_Common` extraction/reuse refactor this
+   needed touches only how that shared code is factored, not what it
+   produces); `-m` and `-m -c` on every fixture (Karis/Yuu's nested
+   Companion, Fukiko's Transformation, Auren's Magic spells,
+   Fragment.yaml, Vehicle.yaml) produce correctly nested, valid
+   tab-indented outlines with no crashes; `-L`/`-n`/`-O` all confirmed
+   working in `-m` mode too. `make rst pdf gemtext html hmm` all
+   rebuild clean with no warnings.
 6. **groff-in-reST backend** (`hd` table macros, not `tbl` — §7), in a
    `.. raw:: ms` block, through Pandoc's `ms` writer — same "reST
    document with one raw block spliced in for nested tables" shape as

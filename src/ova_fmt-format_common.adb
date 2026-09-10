@@ -228,6 +228,78 @@ package body Ova_Fmt.Format_Common is
      (To_String (S.Name) & " (" & To_String (S.Ability) & " " &
       Signed_Img (S.Level) & "; " & To_String (S.Endurance) & " Endurance)");
 
+   function Join_Abilities (Vec : Entities.Ability_Vectors.Vector) return String is
+      Result : Unbounded_String;
+   begin
+      for I in Vec.First_Index .. Vec.Last_Index loop
+         if I > Vec.First_Index then
+            Result := Result & ", ";
+         end if;
+         Result := Result & Format_Ability_Line (Vec (I));
+      end loop;
+      return To_String (Result);
+   end Join_Abilities;
+
+   function Join_Weaknesses (Vec : Entities.Weakness_Vectors.Vector) return String is
+      Result : Unbounded_String;
+   begin
+      for I in Vec.First_Index .. Vec.Last_Index loop
+         if I > Vec.First_Index then
+            Result := Result & ", ";
+         end if;
+         Result := Result & Format_Weakness_Line (Vec (I));
+      end loop;
+      return To_String (Result);
+   end Join_Weaknesses;
+
+   function Join_Fragment_Abilities (Vec : Entities.Ability_Vectors.Vector) return String is
+      Result : Unbounded_String;
+   begin
+      for I in Vec.First_Index .. Vec.Last_Index loop
+         if I > Vec.First_Index then
+            Result := Result & ", ";
+         end if;
+         Result := Result & Format_Fragment_Ability_Line (Vec (I));
+      end loop;
+      return To_String (Result);
+   end Join_Fragment_Abilities;
+
+   function Join_Fragment_Weaknesses (Vec : Entities.Weakness_Vectors.Vector) return String is
+      Result : Unbounded_String;
+   begin
+      for I in Vec.First_Index .. Vec.Last_Index loop
+         if I > Vec.First_Index then
+            Result := Result & ", ";
+         end if;
+         Result := Result & Format_Fragment_Weakness_Line (Vec (I));
+      end loop;
+      return To_String (Result);
+   end Join_Fragment_Weaknesses;
+
+   function Join_Sub_Items (Vec : Entities.Sub_Item_Vectors.Vector) return String is
+      Result : Unbounded_String;
+   begin
+      for I in Vec.First_Index .. Vec.Last_Index loop
+         if I > Vec.First_Index then
+            Result := Result & ", ";
+         end if;
+         Result := Result & Format_Sub_Item_Line (Vec (I));
+      end loop;
+      return To_String (Result);
+   end Join_Sub_Items;
+
+   function Join_Spells (Vec : Entities.Spell_Vectors.Vector) return String is
+      Result : Unbounded_String;
+   begin
+      for I in Vec.First_Index .. Vec.Last_Index loop
+         if I > Vec.First_Index then
+            Result := Result & ", ";
+         end if;
+         Result := Result & Format_Spell_Line (Vec (I));
+      end loop;
+      return To_String (Result);
+   end Join_Spells;
+
    -----------------------------------------------------------------
    --  Combat: Health/Endurance/Defense/TV line, then an Attacks
    --  bullet with one nested bullet per attack. Shared between the
@@ -235,16 +307,11 @@ package body Ova_Fmt.Format_Common is
    --  combat: block (Karis's Arasuni, Yuu's Fenrir).
    -----------------------------------------------------------------
 
-   procedure Print_Attack (A : Entities.Attack) is
+   function Format_Attack_Line (A : Entities.Attack) return String is
       Clause : constant String := Format_Attack_Clause (A);
-      --  Terse indents this as a sub-bullet of the "- **Attacks:**"
-      --  line above it; gemtext has no nested lists at all, so this
-      --  is just Bullet's own top-level "* ", no indentation implied.
-      Attack_Prefix : constant String :=
-        (if Config.Format = Config.Gemtext then Bullet else "  - ");
       Line   : Unbounded_String :=
         To_Unbounded_String
-          (Attack_Prefix & Bold (To_String (A.Name) & ":") & " Roll " &
+          (Bold (To_String (A.Name) & ":") & " Roll " &
            Bold (Number_Img (A.Roll) & " dice") & " | " &
            Bold ("DX " & To_String (A.Dx)) & " | " &
            Bold ("Endurance Cost: " & Trim_Img (A.Endurance)));
@@ -256,7 +323,24 @@ package body Ova_Fmt.Format_Common is
       if A.Has_Description then
          Line := Line & " " & Italic (To_String (A.Description));
       end if;
-      IO.Put_Line (To_String (Line));
+      return To_String (Line);
+   end Format_Attack_Line;
+
+   function Format_Combat_Summary_Line (C : Entities.Combat_Stats) return String is
+     (Bold ("Health:") & " " & Trim_Img (C.Health) & " | " &
+      Bold ("Endurance:") & " " & Trim_Img (C.Endurance) & " | " &
+      Bold ("Defense:") & " " & To_String (C.Defense) & " | " &
+      Bold ("Threat Value (TV):") & " " &
+      (if C.Has_Threat_Value then Trim_Img (C.Threat_Value) else "—"));
+
+   procedure Print_Attack (A : Entities.Attack) is
+      --  Terse indents this as a sub-bullet of the "- **Attacks:**"
+      --  line above it; gemtext has no nested lists at all, so this
+      --  is just Bullet's own top-level "* ", no indentation implied.
+      Attack_Prefix : constant String :=
+        (if Config.Format = Config.Gemtext then Bullet else "  - ");
+   begin
+      IO.Put_Line (Attack_Prefix & Format_Attack_Line (A));
    end Print_Attack;
 
    procedure Print_Combat_And_Attacks (C : Entities.Combat_Stats) is
@@ -264,12 +348,7 @@ package body Ova_Fmt.Format_Common is
       if not C.Has_Combat then
          return;
       end if;
-      IO.Put_Line
-        (Bullet & Bold ("Health:") & " " & Trim_Img (C.Health) & " | " &
-         Bold ("Endurance:") & " " & Trim_Img (C.Endurance) & " | " &
-         Bold ("Defense:") & " " & To_String (C.Defense) & " | " &
-         Bold ("Threat Value (TV):") & " " &
-         (if C.Has_Threat_Value then Trim_Img (C.Threat_Value) else "—"));
+      IO.Put_Line (Bullet & Format_Combat_Summary_Line (C));
       IO.New_Line;
 
       if not C.Attacks.Is_Empty then
@@ -313,71 +392,31 @@ package body Ova_Fmt.Format_Common is
          declare
             Line : Unbounded_String := To_Unbounded_String ("Grants: ");
          begin
-            for I in A.Sub_Abilities.First_Index .. A.Sub_Abilities.Last_Index loop
-               if I > A.Sub_Abilities.First_Index then
-                  Line := Line & ", ";
-               end if;
-               Line := Line & Format_Sub_Item_Line (A.Sub_Abilities (I));
-            end loop;
-            if not A.Sub_Weaknesses.Is_Empty then
-               if not A.Sub_Abilities.Is_Empty then
-                  Line := Line & "; ";
-               end if;
-               for I in A.Sub_Weaknesses.First_Index .. A.Sub_Weaknesses.Last_Index loop
-                  if I > A.Sub_Weaknesses.First_Index then
-                     Line := Line & ", ";
-                  end if;
-                  Line := Line & Format_Sub_Item_Line (A.Sub_Weaknesses (I));
-               end loop;
+            Line := Line & Join_Sub_Items (A.Sub_Abilities);
+            if not A.Sub_Abilities.Is_Empty and then not A.Sub_Weaknesses.Is_Empty then
+               Line := Line & "; ";
             end if;
+            Line := Line & Join_Sub_Items (A.Sub_Weaknesses);
             IO.Put_Line (End_With_Period (To_String (Line)));
             IO.New_Line;
          end;
       end if;
 
       if Has_Spells then
-         declare
-            Line : Unbounded_String := To_Unbounded_String ("Spells: ");
-         begin
-            for I in A.Spells.First_Index .. A.Spells.Last_Index loop
-               if I > A.Spells.First_Index then
-                  Line := Line & ", ";
-               end if;
-               Line := Line & Format_Spell_Line (A.Spells (I));
-            end loop;
-            IO.Put_Line (End_With_Period (To_String (Line)));
-            IO.New_Line;
-         end;
+         IO.Put_Line (End_With_Period ("Spells: " & Join_Spells (A.Spells)));
+         IO.New_Line;
       end if;
 
       if Has_Sub_Entity then
          if not A.Sub_Entity.Abilities.Is_Empty then
-            declare
-               Line : Unbounded_String := To_Unbounded_String ("Abilities: ");
-            begin
-               for I in A.Sub_Entity.Abilities.First_Index .. A.Sub_Entity.Abilities.Last_Index loop
-                  if I > A.Sub_Entity.Abilities.First_Index then
-                     Line := Line & ", ";
-                  end if;
-                  Line := Line & Format_Sub_Item_Line (A.Sub_Entity.Abilities (I));
-               end loop;
-               IO.Put_Line (End_With_Period (To_String (Line)));
-               IO.New_Line;
-            end;
+            IO.Put_Line
+              (End_With_Period ("Abilities: " & Join_Sub_Items (A.Sub_Entity.Abilities)));
+            IO.New_Line;
          end if;
          if not A.Sub_Entity.Weaknesses.Is_Empty then
-            declare
-               Line : Unbounded_String := To_Unbounded_String ("Weaknesses: ");
-            begin
-               for I in A.Sub_Entity.Weaknesses.First_Index .. A.Sub_Entity.Weaknesses.Last_Index loop
-                  if I > A.Sub_Entity.Weaknesses.First_Index then
-                     Line := Line & ", ";
-                  end if;
-                  Line := Line & Format_Sub_Item_Line (A.Sub_Entity.Weaknesses (I));
-               end loop;
-               IO.Put_Line (End_With_Period (To_String (Line)));
-               IO.New_Line;
-            end;
+            IO.Put_Line
+              (End_With_Period ("Weaknesses: " & Join_Sub_Items (A.Sub_Entity.Weaknesses)));
+            IO.New_Line;
          end if;
          Print_Combat_And_Attacks (A.Sub_Entity.Combat);
       end if;
@@ -410,27 +449,18 @@ package body Ova_Fmt.Format_Common is
    --  Fragment shape, e.g. "Attributes: Art of Invisibility +2,
    --  Perceptive +2, Smart +3; Absent-Minded -1, Quirk -1 (...)".
    procedure Print_Fragment_Attributes (E : Entities.Entity) is
+      Line : Unbounded_String;
    begin
       if E.Abilities.Is_Empty and then E.Weaknesses.Is_Empty then
          return;
       end if;
-      IO.Put (Bold ("Attributes:") & " ");
-      for I in E.Abilities.First_Index .. E.Abilities.Last_Index loop
-         if I > E.Abilities.First_Index then
-            IO.Put (", ");
-         end if;
-         IO.Put (Format_Fragment_Ability_Line (E.Abilities (I)));
-      end loop;
+      Line := To_Unbounded_String (Bold ("Attributes:") & " ") &
+        Join_Fragment_Abilities (E.Abilities);
       if not E.Abilities.Is_Empty and then not E.Weaknesses.Is_Empty then
-         IO.Put ("; ");
+         Line := Line & "; ";
       end if;
-      for I in E.Weaknesses.First_Index .. E.Weaknesses.Last_Index loop
-         if I > E.Weaknesses.First_Index then
-            IO.Put (", ");
-         end if;
-         IO.Put (Format_Fragment_Weakness_Line (E.Weaknesses (I)));
-      end loop;
-      IO.Put_Line (".");
+      Line := Line & Join_Fragment_Weaknesses (E.Weaknesses);
+      IO.Put_Line (To_String (Line) & ".");
       IO.New_Line;
    end Print_Fragment_Attributes;
 
@@ -605,26 +635,14 @@ package body Ova_Fmt.Format_Common is
          Print_Header_And_Prose (E, Entity_No);
 
          if not E.Abilities.Is_Empty then
-            IO.Put (Bullet & Bold ("Abilities:") & " ");
-            for I in E.Abilities.First_Index .. E.Abilities.Last_Index loop
-               if I > E.Abilities.First_Index then
-                  IO.Put (", ");
-               end if;
-               IO.Put (Format_Ability_Line (E.Abilities (I)));
-            end loop;
-            IO.Put_Line (".");
+            IO.Put_Line
+              (Bullet & Bold ("Abilities:") & " " & Join_Abilities (E.Abilities) & ".");
             IO.New_Line;
          end if;
 
          if not E.Weaknesses.Is_Empty then
-            IO.Put (Bullet & Bold ("Weaknesses:") & " ");
-            for I in E.Weaknesses.First_Index .. E.Weaknesses.Last_Index loop
-               if I > E.Weaknesses.First_Index then
-                  IO.Put (", ");
-               end if;
-               IO.Put (Format_Weakness_Line (E.Weaknesses (I)));
-            end loop;
-            IO.Put_Line (".");
+            IO.Put_Line
+              (Bullet & Bold ("Weaknesses:") & " " & Join_Weaknesses (E.Weaknesses) & ".");
             IO.New_Line;
          end if;
 

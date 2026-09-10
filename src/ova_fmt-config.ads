@@ -26,10 +26,36 @@ package Ova_Fmt.Config is
    --  and Html_In_Rst are both handled by Ova_Fmt.Format_Rst; Gemtext
    --  by Ova_Fmt.Format_Gemini -- see Ova_Fmt.Format_Common's header
    --  comment for why the split runs this way (by output pipeline,
-   --  not by how much code happens to be shared).
-   type Output_Format is (Terse, Gemtext, Html_In_Rst);
+   --  not by how much code happens to be shared). Hmm: a tab-indented
+   --  outline (Ova_Fmt.Format_Hmm, modeled on besm2_fmt.Format_Hmm's
+   --  shape, PLAN.md §9 item 5) -- its own package, since it's neither
+   --  reST nor Gemtext and shares no content-assembly code with either
+   --  (Ova_Fmt.Format_Common is specifically the reST/Gemtext
+   --  bulleted-list family).
+   type Output_Format is (Terse, Gemtext, Html_In_Rst, Hmm);
 
-   Format : aliased Output_Format := Terse;  -- -g/--gemtext or -H/--html
+   Format : aliased Output_Format := Terse;  -- -g/--gemtext, -H/--html, or -m/--hmm
+
+   --  Indentation baseline for -m/--hmm output, in tab stops -- lets
+   --  the output be embedded under an existing outline node elsewhere
+   --  rather than always starting at the left margin, same purpose as
+   --  besm2_fmt.Config.Hmm_Depth/-L/--hmm-depth. Resets to this value
+   --  for every entity (does not accumulate across entities in one
+   --  file), same as besm2_fmt's.
+   Hmm_Depth : aliased Natural := 0;  -- -L/--hmm-depth
+
+   --  Per the user: an alternative Abilities/Weaknesses shape for
+   --  -m/--hmm output -- instead of an "Abilities"/"Weaknesses" header
+   --  node with each item as its own child node (the default), fold
+   --  the label and the whole comma-joined item list onto one node,
+   --  "Abilities: Ability1 +1 [...], Ability2 ...", matching how Terse
+   --  mode already presents the same content on one line. Applies
+   --  wherever an Abilities/Weaknesses section is printed, including a
+   --  Companion/Vehicle sub-entity's own -- it's the same section
+   --  printer, called recursively. Off by default (matches every
+   --  other opt-in rendering choice: -e/--gemtext-emphasis,
+   --  -O/--options).
+   Hmm_Compact_Lists : aliased Boolean := False;  -- -c/--hmm-compact-lists
 
    --  Gemtext's spec has no inline emphasis at all (no bold/italic) --
    --  confirmed against <https://geminiprotocol.net/docs/gemtext.gmi>

@@ -37,7 +37,17 @@ TEST_GEMTEXT_EMPHASIS_OUTPUT=$(foreach f,$(notdir $(TEST_DATA)),build/$(addsuffi
 TEST_HTMLOUTPUT=$(foreach f,$(notdir $(TEST_DATA)),build/$(addsuffix .html.gen.rst,$(basename $(f))))
 TEST_HTMLRENDEROUTPUT=$(foreach f,$(notdir $(TEST_DATA)),build/$(addsuffix .html,$(basename $(f))))
 
-.PHONY: all rst pdf gemtext html install clean testclean
+# h-m-m output (-m/--hmm, PLAN.md §9 step 5) -- a tab-indented outline,
+# .hmm files. No PDF rendering, same reason as Gemtext: not a Pandoc
+# reader, meant to be read (or loaded into an outline viewer) as-is.
+TEST_HMMOUTPUT=$(foreach f,$(notdir $(TEST_DATA)),build/$(addsuffix .hmm,$(basename $(f))))
+
+# Same, with -c/--hmm-compact-lists on -- Abilities/Weaknesses folded
+# onto one node each, for comparison against the plain .hmm output
+# above.
+TEST_HMM_COMPACT_OUTPUT=$(foreach f,$(notdir $(TEST_DATA)),build/$(addsuffix .compact.hmm,$(basename $(f))))
+
+.PHONY: all rst pdf gemtext html hmm install clean testclean
 
 all: $(PROGRAM)
 
@@ -58,6 +68,8 @@ gemtext: $(PROGRAM) $(TEST_GEMTEXTOUTPUT) $(TEST_GEMTEXT_EMPHASIS_OUTPUT)
 
 html: $(PROGRAM) $(TEST_HTMLOUTPUT) $(TEST_HTMLRENDEROUTPUT)
 
+hmm: $(PROGRAM) $(TEST_HMMOUTPUT) $(TEST_HMM_COMPACT_OUTPUT)
+
 build/%.gen.rst : test-data/%.yaml $(PROGRAM)
 	./$(PROGRAM) $< >$@
 
@@ -73,6 +85,12 @@ build/%.html.gen.rst : test-data/%.yaml $(PROGRAM)
 build/%.html : build/%.html.gen.rst
 	pandoc -r rst -w html --standalone -o $@ $<
 
+build/%.hmm : test-data/%.yaml $(PROGRAM)
+	./$(PROGRAM) -m $< >$@
+
+build/%.compact.hmm : test-data/%.yaml $(PROGRAM)
+	./$(PROGRAM) -m -c $< >$@
+
 #MS_COLUMNS=-V twocolumns
 build/%.ms.pdf : build/%.gen.rst
 	pandoc -r rst -w ms --template=tkb $(MS_COLUMNS) -o $@ $<
@@ -81,8 +99,8 @@ clean:
 	-rm -f $(PROGRAM)
 
 testclean:
-	-rm -v build/*.gen.rst build/*.ms.pdf build/*.gmi build/*.html
+	-rm -v build/*.gen.rst build/*.ms.pdf build/*.gmi build/*.html build/*.hmm
 
-.PRECIOUS: build/%.gen.rst build/%.ms.pdf build/%.gmi build/%.emp.gmi build/%.html.gen.rst build/%.html
+.PRECIOUS: build/%.gen.rst build/%.ms.pdf build/%.gmi build/%.emp.gmi build/%.html.gen.rst build/%.html build/%.hmm build/%.compact.hmm
 
 print-%  : ; @echo $* = $($*)

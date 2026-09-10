@@ -21,6 +21,12 @@ package body Ova_Fmt.Cli is
       return True;
    end Do_Html;
 
+   function Do_Hmm return Boolean is
+   begin
+      Config.Format := Config.Hmm;
+      return True;
+   end Do_Hmm;
+
    function Do_Subunderliner (Arg : String) return Boolean is
    begin
       if Arg'Length /= 1 then

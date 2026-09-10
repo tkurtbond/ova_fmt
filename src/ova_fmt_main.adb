@@ -1,9 +1,10 @@
 --  ova_fmt - convert a YAML OVA character file into reST/Gemtext/
---  HTML-in-reST. Dispatches to Ova_Fmt.Format_Rst (Terse, Html_In_Rst)
---  or Ova_Fmt.Format_Gemini (Gemtext) by Config.Format -- see
---  Ova_Fmt.Format_Common's header comment for why those are split
---  this way. h-m-m/groff-in-reST/Lout are still unimplemented
---  (PLAN.md §9 steps 5-7). Structure mirrors besm2_fmt_main.adb.
+--  HTML-in-reST/h-m-m. Dispatches to Ova_Fmt.Format_Rst (Terse,
+--  Html_In_Rst), Ova_Fmt.Format_Gemini (Gemtext), or Ova_Fmt.Format_Hmm
+--  (Hmm) by Config.Format -- see Ova_Fmt.Format_Common's header
+--  comment for why those are split this way. groff-in-reST/Lout are
+--  still unimplemented (PLAN.md §9 steps 6-7). Structure mirrors
+--  besm2_fmt_main.adb.
 
 with Ada.Command_Line;
 with Ada.Exceptions;
@@ -19,6 +20,7 @@ with Ova_Fmt.Cli;
 with Ova_Fmt.Config;
 with Ova_Fmt.Entities;
 with Ova_Fmt.Format_Gemini;
+with Ova_Fmt.Format_Hmm;
 with Ova_Fmt.Format_Rst;
 
 procedure Ova_Fmt_Main is
@@ -132,11 +134,14 @@ procedure Ova_Fmt_Main is
          Had_Errors := True;
       else
          for I in Loaded.First_Index .. Loaded.Last_Index loop
-            if Ova_Fmt.Config.Format = Ova_Fmt.Config.Gemtext then
-               Ova_Fmt.Format_Gemini.Process_Entity (Loaded (I), I);
-            else
-               Ova_Fmt.Format_Rst.Process_Entity (Loaded (I), I);
-            end if;
+            case Ova_Fmt.Config.Format is
+               when Ova_Fmt.Config.Gemtext =>
+                  Ova_Fmt.Format_Gemini.Process_Entity (Loaded (I), I);
+               when Ova_Fmt.Config.Hmm =>
+                  Ova_Fmt.Format_Hmm.Process_Entity (Loaded (I), I);
+               when Ova_Fmt.Config.Terse | Ova_Fmt.Config.Html_In_Rst =>
+                  Ova_Fmt.Format_Rst.Process_Entity (Loaded (I), I);
+            end case;
          end loop;
       end if;
    exception
