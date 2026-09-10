@@ -2,7 +2,13 @@ SHELL=bash
 
 PROGRAM=ova_fmt
 
-TEST_DATA=$(wildcard test-data/*.yaml)
+#  Broken.yaml is deliberately invalid (missing required fields, to
+#  exercise Ova_Fmt.Entities' error-collection -- see its own header
+#  comment), so it's excluded from the normal golden-output targets:
+#  ova_fmt correctly exits non-zero on it, which would otherwise abort
+#  `make rst`/`make pdf` before every other, well-formed fixture gets
+#  (re)built.
+TEST_DATA=$(filter-out test-data/Broken.yaml,$(wildcard test-data/*.yaml))
 
 # Terse (reST) output -- the only backend implemented so far (PLAN.md
 # §9 step 2: HTML/raw-ms/Lout are steps 3-5, not yet built). Unlike

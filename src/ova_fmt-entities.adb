@@ -1,7 +1,9 @@
 with Ada.Characters.Handling;
+with Ada.Exceptions;
 with Ada.Strings;
 with Ada.Strings.Fixed;
 with Ada.Strings.Maps;
+with Libfyaml;
 
 package body Ova_Fmt.Entities is
 
@@ -16,6 +18,89 @@ package body Ova_Fmt.Entities is
 
    function Trim_Whitespace (S : String) return String is
      (Ada.Strings.Fixed.Trim (S, Whitespace, Whitespace));
+
+   -----------------------------------------------------------------
+   --  Required-field error collection (Ova_Fmt.Entities.Load_Error,
+   --  Reset_Errors/Error_Count/Errors). See the .ads for the design
+   --  rationale; this is the accumulator and the two typed accessors
+   --  (Require_String/Require_Integer) every required-field call
+   --  site below goes through instead of a bare String_Value/
+   --  Integer_Value.
+   -----------------------------------------------------------------
+
+   Recorded_Errors : Load_Error_Vectors.Vector;
+
+   procedure Reset_Errors is
+   begin
+      Recorded_Errors.Clear;
+   end Reset_Errors;
+
+   function Error_Count return Natural is (Natural (Recorded_Errors.Length));
+
+   function Errors return Load_Error_Vectors.Vector is (Recorded_Errors);
+
+   --  Approximates a source position for N -- a mapping node, which
+   --  never has a Location of its own (Libfyaml.Nodes.Location is
+   --  scalar-only) -- via its own "name" field, when that exists and
+   --  is itself a plain scalar with a real position. Every schema
+   --  mapping Require_String/Require_Integer are called against has a
+   --  "name" field in practice (Ability/Weakness/Attack/Sub_Item/
+   --  Spell/Companion/Perk_Flaw all do), so this covers every real
+   --  case; a mapping with no "name" of its own just gets no
+   --  approximate Location, only a Path (still always exact).
+   function Approximate_Location
+     (N : Nod.Node; Loc : out Nod.Node_Location) return Boolean
+   is
+      Sibling : constant Nod.Node := N.Value ("name");
+   begin
+      if Sibling.Is_Valid and then Sibling.Is_Scalar
+        and then Sibling.Has_Location
+      then
+         Loc := Sibling.Location;
+         return True;
+      end if;
+      return False;
+   end Approximate_Location;
+
+   procedure Record_Error (N : Nod.Node; Key : String; Message : String) is
+      Err : Load_Error;
+      Loc : Nod.Node_Location;
+   begin
+      Err.Message := To_Unbounded_String (Message);
+      Err.Path := To_Unbounded_String (N.Path & "/" & Key);
+      if Approximate_Location (N, Loc) then
+         Err.Has_Location := True;
+         Err.Line := Loc.Line;
+         Err.Column := Loc.Column;
+      end if;
+      Recorded_Errors.Append (Err);
+   end Record_Error;
+
+   function Require_String (N : Nod.Node; Key : String) return Unbounded_String is
+   begin
+      if not N.Has_Key (Key) then
+         Record_Error (N, Key, "missing required key """ & Key & """");
+         return Null_Unbounded_String;
+      end if;
+      return To_Unbounded_String (N.String_Value (Key));
+   exception
+      when E : Libfyaml.Data_Error =>
+         Record_Error (N, Key, Ada.Exceptions.Exception_Message (E));
+         return Null_Unbounded_String;
+   end Require_String;
+
+   function Require_Integer (N : Nod.Node; Key : String) return Integer is
+   begin
+      if not N.Has_Key (Key) then
+         Record_Error (N, Key, "missing required key """ & Key & """");
+         return 0;
+      end if;
+      return N.Integer_Value (Key);
+   exception
+      when E : Libfyaml.Data_Error =>
+         Record_Error (N, Key, Ada.Exceptions.Exception_Message (E));
+         return 0;
+   end Require_Integer;
 
    --  Abilities, Weaknesses, Perks, and Flaws are each independently
    --  alphabetized in the rulebook's own presentation (full character
@@ -85,7 +170,7 @@ package body Ova_Fmt.Entities is
       if N.Is_Scalar then
          Result.Name := To_Unbounded_String (N.Scalar_Value);
       elsif N.Is_Mapping then
-         Result.Name := To_Unbounded_String (N.String_Value ("name"));
+         Result.Name := Require_String (N, "name");
          if N.Has_Key ("detail") then
             Result.Has_Detail := True;
             Result.Detail := To_Unbounded_String (N.String_Value ("detail"));
@@ -125,7 +210,7 @@ package body Ova_Fmt.Entities is
       Perks_Node   : constant Nod.Node := N.Value ("perks");
       Flaws_Node   : constant Nod.Node := N.Value ("flaws");
    begin
-      Result.Name := To_Unbounded_String (N.String_Value ("name"));
+      Result.Name := Require_String (N, "name");
       if Perks_Node.Is_Valid then
          Result.Perks := Load_Perk_Flaw_List (Perks_Node);
       end if;
@@ -141,9 +226,9 @@ package body Ova_Fmt.Entities is
          Result.Description :=
            To_Unbounded_String (Trim_Whitespace (N.String_Value ("description")));
       end if;
-      Result.Roll := N.Integer_Value ("roll");
-      Result.Dx := To_Unbounded_String (N.String_Value ("dx"));
-      Result.Endurance := N.Integer_Value ("endurance");
+      Result.Roll := Require_Integer (N, "roll");
+      Result.Dx := Require_String (N, "dx");
+      Result.Endurance := Require_Integer (N, "endurance");
       return Result;
    end Load_Attack;
 
@@ -156,9 +241,12 @@ package body Ova_Fmt.Entities is
       end Add;
    begin
       Result.Has_Combat := True;
-      Result.Defense := To_Unbounded_String (N.String_Value ("defense"));
-      Result.Health := N.Integer_Value ("health");
-      Result.Endurance := N.Integer_Value ("endurance");
+      --  N (a combat: block) has no "name" field of its own to
+      --  approximate a Location from -- these three errors, if any,
+      --  get Path only (e.g. "/2/combat/health"), still exact.
+      Result.Defense := Require_String (N, "defense");
+      Result.Health := Require_Integer (N, "health");
+      Result.Endurance := Require_Integer (N, "endurance");
       if N.Has_Key ("threat-value") then
          Result.Has_Threat_Value := True;
          Result.Threat_Value := N.Integer_Value ("threat-value");
@@ -179,8 +267,8 @@ package body Ova_Fmt.Entities is
       Perks_Node : constant Nod.Node := N.Value ("perks");
       Flaws_Node : constant Nod.Node := N.Value ("flaws");
    begin
-      Result.Name := To_Unbounded_String (N.String_Value ("name"));
-      Result.Level := N.Integer_Value ("level");
+      Result.Name := Require_String (N, "name");
+      Result.Level := Require_Integer (N, "level");
       if N.Has_Key ("detail") then
          Result.Has_Detail := True;
          Result.Detail := To_Unbounded_String (N.String_Value ("detail"));
@@ -215,10 +303,18 @@ package body Ova_Fmt.Entities is
    end Load_Sub_Item_List;
 
    function Load_Spell (N : Nod.Node) return Spell is
-     (Name      => To_Unbounded_String (N.String_Value ("name")),
-      Ability   => To_Unbounded_String (N.String_Value ("ability")),
-      Level     => N.Integer_Value ("level"),
-      Endurance => To_Unbounded_String (N.String_Value ("endurance")));
+      --  A sequential function body, not an aggregate expression:
+      --  Ada doesn't guarantee left-to-right evaluation of a record
+      --  aggregate's components, and these calls have the side effect
+      --  of recording errors in field-declaration order.
+      Result : Spell;
+   begin
+      Result.Name := Require_String (N, "name");
+      Result.Ability := Require_String (N, "ability");
+      Result.Level := Require_Integer (N, "level");
+      Result.Endurance := Require_String (N, "endurance");
+      return Result;
+   end Load_Spell;
 
    function Load_Companion (N : Nod.Node) return Companion_Access is
       Result           : constant Companion_Access := new Companion_Record;
@@ -226,7 +322,7 @@ package body Ova_Fmt.Entities is
       Weaknesses_Node  : constant Nod.Node := N.Value ("weaknesses");
       Combat_Node      : constant Nod.Node := N.Value ("combat");
    begin
-      Result.Name := To_Unbounded_String (N.String_Value ("name"));
+      Result.Name := Require_String (N, "name");
       if Abilities_Node.Is_Valid then
          Result.Abilities := Load_Sub_Item_List (Abilities_Node);
       end if;
@@ -256,8 +352,8 @@ package body Ova_Fmt.Entities is
          Result.Spells.Append (Load_Spell (Item));
       end Add_Spell;
    begin
-      Result.Name := To_Unbounded_String (N.String_Value ("name"));
-      Result.Level := N.Integer_Value ("level");
+      Result.Name := Require_String (N, "name");
+      Result.Level := Require_Integer (N, "level");
       if N.Has_Key ("detail") then
          Result.Has_Detail := True;
          Result.Detail := To_Unbounded_String (N.String_Value ("detail"));
@@ -294,8 +390,8 @@ package body Ova_Fmt.Entities is
    function Load_Weakness (N : Nod.Node) return Weakness is
       Result : Weakness;
    begin
-      Result.Name := To_Unbounded_String (N.String_Value ("name"));
-      Result.Level := N.Integer_Value ("level");
+      Result.Name := Require_String (N, "name");
+      Result.Level := Require_Integer (N, "level");
       if N.Has_Key ("detail") then
          Result.Has_Detail := True;
          Result.Detail := To_Unbounded_String (N.String_Value ("detail"));
@@ -304,8 +400,17 @@ package body Ova_Fmt.Entities is
    end Load_Weakness;
 
    function Load_Note (N : Nod.Node) return Note_Item is
-     (Header => To_Unbounded_String (N.String_Value ("header")),
-      Text   => To_Unbounded_String (Trim_Whitespace (N.String_Value ("text"))));
+      --  Sequential body, not an aggregate (same reasoning as
+      --  Load_Spell). A Note has no "name" field of its own, so
+      --  Approximate_Location never finds a sibling to anchor a
+      --  Location to here -- Path only, still exact.
+      Result : Note_Item;
+   begin
+      Result.Header := Require_String (N, "header");
+      Result.Text :=
+        To_Unbounded_String (Trim_Whitespace (To_String (Require_String (N, "text"))));
+      return Result;
+   end Load_Note;
 
    -----------------------------------------------------------------
    --  fluff:

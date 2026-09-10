@@ -1342,16 +1342,91 @@ for test data and output-format sequencing:
   list comes out alphabetical, Attacks/Spells preserve their given
   (non-alphabetical) order.
 
-  Also worth deciding, not just auditing: when a genuinely required
+  ~~Also worth deciding, not just auditing: when a genuinely required
   field really is missing, is aborting the *whole file* with a
-  `Missing_Key` error (today's behavior, inherited from
-  `besm2_fmt_main.adb`'s exception handler in `Process_One`) the
-  right failure mode, or should a format backend degrade per-field
-  instead (e.g. omit a blank `Roll` rather than fail the entire
-  character)? No test-data file has exercised an absent-required-
-  field case yet, so this is entirely unverified either way — trying
-  a deliberately incomplete fixture (or re-checking against the
-  rulebook's own field requirements) would settle it.
+  `Missing_Key` error... the right failure mode?~~ Resolved, per the
+  user: **every `Spell` field (`ability`/`level`/`endurance`) is
+  confirmed required**, same as Attack's fields — no code change
+  needed there, `Load_Spell` already used required accessors
+  correctly. And the failure mode itself is settled too, a genuine
+  design change from before: **collect every problem in the file and
+  report them all, produce no output at all, exit non-zero** — not
+  abort on the first one found, and not silently degrade per-field
+  either.
+
+  Implemented as a real architectural change, not just a message-text
+  tweak. `Ova_Fmt.Entities` gained `Require_String`/`Require_Integer`
+  (every previously-bare `String_Value`/`Integer_Value` required-field
+  call site across `Load_Perk_Flaw`/`Load_Attack`/`Load_Combat`/
+  `Load_Sub_Item`/`Load_Spell`/`Load_Companion`/`Load_Ability`/
+  `Load_Weakness`/`Load_Note` now goes through one of these instead):
+  each records a `Load_Error` (message, structural `Path`, and an
+  optional approximate `Location`) and returns a placeholder value
+  rather than raising, so loading keeps going and can turn up every
+  other problem in the same entity/file rather than stopping at the
+  first. `Load_Spell`/`Load_Note` were converted from aggregate
+  expression-functions to sequential function bodies for this, since
+  Ada doesn't guarantee a record aggregate's components evaluate in
+  field-declaration order and these calls have the side effect of
+  recording errors in that order. `Ova_Fmt_Main.Process_One` now loads
+  every entity in a file into an `Entity_Vectors.Vector` (`Load_Entity`
+  itself no longer renders inline) *before* checking `Error_Count`
+  once — rendering only happens if it's zero — so a problem discovered
+  in, say, the third entity of a file no longer leaves the first two
+  already written to stdout/the output file; confirmed live with a
+  synthetic file whose first entity is well-formed and second isn't
+  (`test-data/Broken.yaml`), stdout genuinely empty (0 bytes) either
+  way. Also fixed a real pre-existing gap while touching this: the
+  `Process_One` exception handler (still used for hard parse errors,
+  which stay a whole-file abort — reasonable, there's no tree to keep
+  walking) never actually set a non-zero exit status before; it does
+  now, same as the new required-field-error path.
+
+  Two independent location primitives, per the user, added to
+  `alibfyaml` first (`~/Repos/Ada/alibfyaml`, commit `a5ad89d`) rather
+  than assumed to already exist: `Libfyaml.Nodes.Location` (pre-
+  existing, scalar-only, a real source line/column) and the new
+  `Libfyaml.Nodes.Path` (works on a node of any kind, mapping/sequence
+  included — the inverse of the pre-existing `By_Path`). `ova_fmt`
+  uses both together, per the user: every error's `Path` is exact
+  (`N.Path & "/" & Key`, always available even when the missing key
+  itself has no node/token of its own); `Location` is only ever an
+  *approximation* here, via the problem's enclosing item's own "name"
+  field (when present and itself a plain scalar with a real position)
+  — `combat:` blocks and `Note`s have no "name" sibling to anchor to,
+  so their errors get Path only, documented at each such call site
+  rather than treated as a bug. Reported gcc-style
+  (`file:line:column: error: path: message`) when a Location is
+  available, `file: error: path: message` otherwise, followed by a
+  `N error(s) in <file>; no output produced` summary line, all to
+  standard error.
+
+  One known, accepted cosmetic limitation, not chased further: with
+  `-o`, the destination file still gets *created* (and, per a
+  pre-existing GNAT `Ada.Text_IO` quirk unrelated to this feature, ends
+  up 1 byte -- a bare trailing newline, confirmed live -- rather than
+  0) even when errors suppress all real rendering, since `Ada.Text_IO.
+  Create`/`Set_Output` happen before `Process_All` runs and there's no
+  way to know yet whether any input file will error. Achieving a
+  literal "file never created at all" guarantee would need buffering
+  every file's rendered output in memory before ever touching the
+  real output file/stdout, a bigger change not attempted here — "no
+  character output was produced" already holds exactly either way.
+
+  `test-data/Broken.yaml` added: a synthetic (non-rulebook) fixture,
+  one well-formed entity followed by one with five distinct missing-
+  required-field problems spread across top-level Abilities/
+  Weaknesses and a nested Attack, verifying every one is reported
+  together with the right Path/Location combination and that nothing
+  renders for either entity. Excluded from `GNUmakefile`'s `TEST_DATA`
+  (and so from `make rst`/`make pdf`) since it's supposed to fail --
+  left in, it aborted those targets before every other, well-formed
+  fixture got its turn.
+
+  Verified: all `Require_String`/`Require_Integer` conversions are
+  behavior-preserving when nothing's actually missing -- a
+  pre-change/post-change binary diff across every real `test-data/
+  *.yaml` fixture is byte-identical.
 - ~~**Terse output format: Markdown or reST?**~~ Resolved (§2.3):
   reST. The user's Karis mockup was written in Markdown for an
   unrelated purpose (a customized game-session write-up, not the

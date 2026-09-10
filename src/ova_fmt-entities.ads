@@ -249,4 +249,53 @@ package Ova_Fmt.Entities is
    function Load_Entity (N : Libfyaml.Nodes.Node) return Entity
      with Pre => N.Is_Valid and then N.Is_Mapping;
 
+   package Entity_Vectors is new Ada.Containers.Vectors
+     (Index_Type => Positive, Element_Type => Entity);
+   --  Lets a caller (Ova_Fmt_Main) load every entity in a file first,
+   --  checking Error_Count only once the whole file's been walked,
+   --  before rendering any of it -- so a problem discovered in, say,
+   --  the third entity doesn't leave the first two already written to
+   --  stdout/the output file. See Reset_Errors/Error_Count/Errors
+   --  below.
+
+   -----------------------------------------------------------------
+   --  Required-field error collection.
+   --
+   --  A genuinely required field that's missing or malformed no
+   --  longer raises Libfyaml.Missing_Key/Data_Error straight through
+   --  Load_Entity (which would abort the whole file on the first
+   --  problem found) -- it's recorded here instead, with a
+   --  placeholder value substituted so loading keeps going and can
+   --  turn up every other problem in the same file, per the user.
+   --
+   --  Two independent ways to say *where*, both from alibfyaml's
+   --  Libfyaml.Nodes: Path (e.g. "/1/abilities/2/level") always
+   --  works, since it's purely structural; Location (a source
+   --  line/column) is only ever an approximation here, via the
+   --  problem's enclosing item's own "name" field, since the missing
+   --  key itself has no scalar/token of its own to report a real
+   --  position for (see alibfyaml's example_missing_field.adb, the
+   --  worked example this mirrors).
+   -----------------------------------------------------------------
+
+   type Load_Error is record
+      Message      : Unbounded_String;
+      Path         : Unbounded_String;
+      Has_Location : Boolean := False;
+      Line, Column : Positive := 1;
+   end record;
+
+   package Load_Error_Vectors is new Ada.Containers.Vectors
+     (Index_Type => Positive, Element_Type => Load_Error);
+
+   procedure Reset_Errors;
+   --  Clear all recorded errors. Call before loading each new file --
+   --  errors accumulate across every Load_Entity call otherwise, per
+   --  the user wanting every problem in a file collected together,
+   --  not just the first entity's.
+
+   function Error_Count return Natural;
+
+   function Errors return Load_Error_Vectors.Vector;
+
 end Ova_Fmt.Entities;

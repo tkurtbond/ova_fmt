@@ -6,6 +6,7 @@
 with Ada.Command_Line;
 with Ada.Exceptions;
 with Ada.Text_IO;
+with Ada.Strings.Fixed;
 with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
 with Arg_Parser;
 with Libfyaml;
@@ -25,6 +26,11 @@ procedure Ova_Fmt_Main is
 
    use type Arg_Parser.String_Reference;
 
+   --  Set once, for the whole run, the first time any input source
+   --  turns out to have a required-field problem or a hard parse
+   --  error -- read at the very end to pick the process exit status.
+   Had_Errors : Boolean := False;
+
    function Read_All_Standard_Input return String is
       Buffer : Unbounded_String;
    begin
@@ -35,21 +41,62 @@ procedure Ova_Fmt_Main is
       return To_String (Buffer);
    end Read_All_Standard_Input;
 
+   function Trimmed (N : Positive) return String is
+     (Ada.Strings.Fixed.Trim (N'Image, Ada.Strings.Left));
+
+   --  Prints every error collected for Source (Ova_Fmt.Entities.
+   --  Errors) plus a summary line, all to standard error -- gcc-style
+   --  "source:line:column: error: message" when an error has an
+   --  (approximate) Location, "source: error: message" when it only
+   --  has a Path (Ova_Fmt.Entities.Load_Error's own doc comment
+   --  explains why a Location isn't always available). Per the user:
+   --  this replaces raising Libfyaml.Missing_Key/Data_Error straight
+   --  through and aborting on the first problem found -- every
+   --  problem in the file is reported together, and (since the
+   --  caller only calls this after loading finishes, before rendering
+   --  anything) no partial output is produced for a file with any.
+   procedure Report_Errors (Source : String) is
+      use Ova_Fmt.Entities;
+   begin
+      for Err of Errors loop
+         if Err.Has_Location then
+            Ada.Text_IO.Put_Line
+              (Ada.Text_IO.Standard_Error,
+               Source & ":" & Trimmed (Err.Line) & ":" & Trimmed (Err.Column) &
+               ": error: " & To_String (Err.Path) & ": " & To_String (Err.Message));
+         else
+            Ada.Text_IO.Put_Line
+              (Ada.Text_IO.Standard_Error,
+               Source & ": error: " & To_String (Err.Path) & ": " &
+               To_String (Err.Message));
+         end if;
+      end loop;
+      Ada.Text_IO.Put_Line
+        (Ada.Text_IO.Standard_Error,
+         "ova_fmt: " & Trimmed (Error_Count) & " error(s) in " & Source &
+         "; no output produced");
+   end Report_Errors;
+
    --  Count is threaded across every document in the file: Entity_No
    --  is 1 for the first entity in a *file*, 2 for the second, etc.,
    --  regardless of how many "---"-separated YAML documents that file
    --  is split into (same convention as besm2_fmt_main.adb).
+   --
+   --  Loaded, not rendered, here: Load_Entity now records a required-
+   --  field problem instead of raising through it (Ova_Fmt.Entities'
+   --  Require_String/Require_Integer), so Process_One below needs
+   --  every entity in the file loaded and Error_Count checked once,
+   --  before rendering any of them -- see Report_Errors' own comment.
    procedure Process_Entities
-     (D : Doc.Document; Source : String; Count : in out Natural)
+     (D      : Doc.Document; Source : String; Count : in out Natural;
+      Loaded : in out Ova_Fmt.Entities.Entity_Vectors.Vector)
    is
       Root : constant Nod.Node := D.Root;
 
       procedure Visit (Item : Nod.Node) is
-         E : constant Ova_Fmt.Entities.Entity :=
-           Ova_Fmt.Entities.Load_Entity (Item);
       begin
          Count := Count + 1;
-         Ova_Fmt.Format_Terse.Process_Entity (E, Count);
+         Loaded.Append (Ova_Fmt.Entities.Load_Entity (Item));
       end Visit;
    begin
       if not Root.Is_Valid or else not Root.Is_Sequence then
@@ -62,7 +109,9 @@ procedure Ova_Fmt_Main is
    procedure Process_One (Filename : String; Use_Stdin : Boolean) is
       Source : constant String := (if Use_Stdin then "(stdin)" else Filename);
       Count  : Natural := 0;
+      Loaded : Ova_Fmt.Entities.Entity_Vectors.Vector;
    begin
+      Ova_Fmt.Entities.Reset_Errors;
       declare
          Stream : Streams.Document_Stream :=
            (if Use_Stdin
@@ -70,9 +119,18 @@ procedure Ova_Fmt_Main is
             else Streams.Open_File (Filename));
       begin
          while Streams.Has_Next (Stream) loop
-            Process_Entities (Streams.Next (Stream), Source, Count);
+            Process_Entities (Streams.Next (Stream), Source, Count, Loaded);
          end loop;
       end;
+
+      if Ova_Fmt.Entities.Error_Count > 0 then
+         Report_Errors (Source);
+         Had_Errors := True;
+      else
+         for I in Loaded.First_Index .. Loaded.Last_Index loop
+            Ova_Fmt.Format_Terse.Process_Entity (Loaded (I), I);
+         end loop;
+      end if;
    exception
       when E : Libfyaml.Parse_Error | Libfyaml.Missing_Key | Libfyaml.Data_Error |
                Program_Error =>
@@ -80,6 +138,7 @@ procedure Ova_Fmt_Main is
            (Ada.Text_IO.Standard_Error,
             "ova_fmt: error processing " & Source & ": " &
             Ada.Exceptions.Exception_Message (E));
+         Had_Errors := True;
    end Process_One;
 
    procedure Process_All is
@@ -109,6 +168,10 @@ begin
       end;
    else
       Process_All;
+   end if;
+
+   if Had_Errors then
+      Ada.Command_Line.Set_Exit_Status (Ada.Command_Line.Failure);
    end if;
 
 exception
