@@ -214,7 +214,8 @@ package body Ova_Fmt.Format_Terse is
         ("- " & Bold ("Health:") & " " & Trim_Img (C.Health) & " | " &
          Bold ("Endurance:") & " " & Trim_Img (C.Endurance) & " | " &
          Bold ("Defense:") & " " & To_String (C.Defense) & " | " &
-         Bold ("Threat Value (TV):") & " " & Trim_Img (C.Threat_Value));
+         Bold ("Threat Value (TV):") & " " &
+         (if C.Has_Threat_Value then Trim_Img (C.Threat_Value) else "—"));
       IO.New_Line;
 
       if not C.Attacks.Is_Empty then

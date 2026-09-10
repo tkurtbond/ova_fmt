@@ -90,6 +90,10 @@ package Ova_Fmt.Entities is
       Defense       : Unbounded_String;
       Health        : Integer;
       Endurance     : Integer;
+      --  Unlike Defense/Health/Endurance, Threat Value is the one
+      --  combat stat an author may skip -- render an em dash when
+      --  absent, per the user (PLAN.md, optional-vs-required audit).
+      Has_Threat_Value : Boolean := False;
       Threat_Value  : Integer;
       Attacks       : Attack_Vectors.Vector;
    end record;

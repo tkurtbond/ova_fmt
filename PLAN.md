@@ -1246,15 +1246,47 @@ for test data and output-format sequencing:
   `Load_Ability`, `Load_Weakness`) already use the required accessor,
   correctly, with no optional/`Has_Key`-guarded case anywhere — this
   part of the audit needed no code change, only confirming the
-  reasoning holds. Still worth auditing case by case: every Attack's
-  `roll`/`dx`/`endurance` (always present so far, but is it
-  guaranteed — could an NPC stub or an
-  in-progress/template character have some left blank, the way
-  `Acacia.yaml`/`template.yaml` in §6 are mostly empty skeletons?);
-  every Spell's `mimics`/`level`/`endurance`; the `combat:` block's
-  `defense`/`health`/`endurance`/`threat-value` as a set (could a
-  Companion legitimately have Health/Endurance but no meaningful
-  Threat Value?); a Note's `header`/`text` (could one be header-only?).
+  reasoning holds.
+
+  ~~Every Attack's `roll`/`dx`/`endurance` (always present so far, but
+  is it guaranteed...)~~ Resolved, in the same answer that settled the
+  `combat:` block below: an Attacks *list* can be entirely absent
+  (some NPCs have no Attacks at all — already handled, `Load_Combat`
+  only iterates `attacks:` when the key is present), but once an
+  Attack *is* present, all of its parts — `roll`/`dx`/`endurance`
+  included, unlike `combat:`'s Threat Value — should be available.
+  `Load_Attack`'s existing required accessors for all three are
+  correct as-is; no code change needed.
+
+  Still worth auditing: every Spell's `mimics`/`level`/`endurance`.
+
+  ~~The `combat:` block's `defense`/`health`/`endurance`/`threat-value`
+  as a set (could a Companion legitimately have Health/Endurance but
+  no meaningful Threat Value?)~~ Resolved, per the user: an entity or
+  Companion's `combat:` block itself stays fully optional (some NPCs
+  have no combat stats or Attacks at all — `Load_Entity`/`Load_Companion`
+  already only call `Load_Combat` when the `combat:` key is present).
+  But once a `combat:` block *is* present, `defense`/`health`/
+  `endurance` stay required — only `threat-value` may legitimately be
+  left out (an author who didn't bother assigning one), rendered as an
+  em dash ("—") rather than left blank or erroring. Implemented:
+  `Combat_Stats` gained a `Has_Threat_Value` flag (mirroring
+  `Has_Combat`'s own optionality pattern), `Load_Combat` now guards
+  `threat-value` with `Has_Key` instead of a bare `Integer_Value`, and
+  `Format_Terse.Print_Combat_And_Attacks` prints "—" when it's absent.
+  Verified: all 12 `test-data/*.yaml` fixtures already carry
+  `threat-value`, so a pre-change/post-change binary diff is
+  byte-identical across all of them; a synthetic no-`threat-value`
+  fixture renders `**Threat Value (TV):** —` as intended, with
+  Health/Endurance/Defense unaffected.
+
+  ~~A Note's `header`/`text` (could one be header-only?)~~ Resolved,
+  per the user: a Note always has both `header` and `text` when
+  present — `Load_Note`'s current required accessors for both are
+  correct as-is. (The *list* of notes is separately, and already
+  correctly, optional: `Load_Entity` only iterates `notes:` when the
+  key is present at all, via `Notes_Node.Is_Valid`.)
+
   Also worth deciding, not just auditing: when a genuinely required
   field really is missing, is aborting the *whole file* with a
   `Missing_Key` error (today's behavior, inherited from

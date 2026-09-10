@@ -99,7 +99,10 @@ package body Ova_Fmt.Entities is
       Result.Defense := To_Unbounded_String (N.String_Value ("defense"));
       Result.Health := N.Integer_Value ("health");
       Result.Endurance := N.Integer_Value ("endurance");
-      Result.Threat_Value := N.Integer_Value ("threat-value");
+      if N.Has_Key ("threat-value") then
+         Result.Has_Threat_Value := True;
+         Result.Threat_Value := N.Integer_Value ("threat-value");
+      end if;
       if Attacks_Node.Is_Valid then
          Attacks_Node.Iterate (Add'Access);
       end if;
