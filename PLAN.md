@@ -1304,6 +1304,46 @@ format automatically.
 
 ## Open questions
 
+- **`Format_Terse`'s name is stretched thin, and there are two
+  different things future backends might mean by "HTML"/"groff."**
+  Raised by the user right after the Gemtext backend landed. Terse and
+  Gemtext share `Ova_Fmt.Format_Terse`'s content-assembly logic because
+  they're both members of the same family: plain-text lines with a
+  sigil for emphasis/headings/bullets (`**bold**`/`*bold*` vs. no
+  emphasis at all, reST's underline vs. `#`, `- ` vs. `* `) — the
+  `Bold`/`Section_Header`/`Bullet` parameterization (this session's
+  Gemtext work) fits that family cleanly, and would fit Markdown too
+  if that were ever wanted. But "Terse" was originally BESM's name for
+  one specific content *style* (as opposed to besm2_fmt's grid-table
+  style) — stretching it to also mean "the whole reST/Gemtext
+  plain-text-markup family" is already a bit of a reach, confirmed
+  worth flagging rather than living with silently.
+
+  Separately: **the HTML and `hd`-table raw-ms backends already
+  planned (§7/§9) are not "direct to HTML/groff" at all** — as
+  designed, both are reST documents with one raw block spliced in
+  (`.. raw:: html`/`.. raw:: ms`) for the one thing reST tables can't
+  do (nesting), still run through Pandoc. That means they're
+  extensions of the same reST/Gemtext family `Format_Terse` already
+  covers (same headers, same emphasis, same bullets, just one extra
+  block type for tables) — implementing them doesn't require
+  reorganizing anything, just adding a third/fourth
+  `Config.Output_Format` value.
+
+  A **genuinely different** kind of backend — standalone HTML (real
+  `<h1>`/`<strong>`/`<table>` tags) or raw groff/`ms` source, generated
+  directly without going through reST/Pandoc at all — would NOT fit
+  `Format_Terse`'s model, since HTML/groff are tag-or-macro-based, not
+  plain-text-lines-with-a-sigil the way reST/Gemtext both are. That
+  would need its own package(s), sharing only `Ova_Fmt.Entities`'s
+  typed data underneath, not `Format_Terse`'s emphasis/heading/bullet
+  helpers.
+
+  **Decided, per the user: hold off on renaming `Format_Terse` for
+  now** — revisit when a third member of the plain-text-markup family
+  (Markdown?) or an actual direct-to-HTML/direct-to-groff backend
+  (as opposed to the Pandoc-embedded kind already planned) makes the
+  name actually wrong rather than just a little strained.
 - **TODO: audit which fields are actually optional vs. required, and
   what happens when a required-looking one is absent.** `tagline` and
   `summary` are confirmed optional (`Ova_Fmt.Entities`'
