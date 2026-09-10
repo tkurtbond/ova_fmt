@@ -855,9 +855,9 @@ fixed-width pad/wrap/columnar-row machinery `besm2_fmt` built
 **terse-prose** format's word-wrapping, but the *tabular row/column
 renderer* part of `besm2_fmt.Text_Layout` (`Put_Row`/`Separator_Line`,
 the reST grid-table specific piece) has **no OVA consumer at all** —
-OVA's tables live only inside raw HTML/`hd`/Lout blocks, each with
-its own native table model, not through a shared Ada-side grid
-renderer.
+OVA's tables live only inside HTML-in-reST/groff-in-reST/Lout blocks,
+each with its own native table model, not through a shared Ada-side
+grid renderer.
 
 ## 8. Proposed approach, following `besm2_fmt`'s playbook
 
@@ -894,11 +894,11 @@ Not yet decided/committed — for discussion before starting real work:
 - **Output formats**, per §7's settled per-format strategy: terse-prose
   as the default/primary text format (no BESM-style reST grid-table
   default at all — reST tables are off the table, so to speak, for
-  OVA); an HTML backend that emits raw `.. raw:: html` blocks with
-  hand-written (potentially nested) `<table>` markup; a raw-ms backend
-  using groff `hd` macros instead of `tbl` (version caveat noted in
-  §7); and a Lout backend that's a genuinely separate, non-Pandoc
-  output mode producing directly-renderable Lout source. Not yet
+  OVA); an HTML-in-reST backend that emits raw `.. raw:: html` blocks
+  with hand-written (potentially nested) `<table>` markup; a
+  groff-in-reST backend using `hd` macros instead of `tbl` (version
+  caveat noted in §7); and a Lout backend that's a genuinely separate,
+  non-Pandoc output mode producing directly-renderable Lout source. Not yet
   decided whether an h-m-m outline backend (no OVA attempt exists at
   all) is also wanted. No golden reference output exists for *any* OVA
   format yet (unlike BESM, where `besm-tools`' compiled binary and
@@ -1256,33 +1256,41 @@ for test data and output-format sequencing:
    author-written `**Shady Teacher**` inside its `background:` prose
    renders unchanged either way, since that's raw author text passed
    through verbatim, not something `Bold`/`Italic` generate.
-4. **HTML backend**: raw `.. raw:: html` blocks containing
+4. **HTML-in-reST backend**: raw `.. raw:: html` blocks containing
    hand-written, potentially-nested `<table>` markup (§7), through the
    same reST→Pandoc pipeline `besm2_fmt`'s raw-ms backend already
-   demonstrates the shape of (reST→Pandoc→`ms` there; reST→Pandoc→HTML
-   here).
+   demonstrates the shape of (reST→Pandoc→`ms` there;
+   reST→Pandoc→HTML here). Named "HTML-in-reST," not just "HTML," per
+   the user — it's a reST document with one raw HTML block spliced in
+   for nested tables, still run through Pandoc, not a standalone HTML
+   document generated directly (§ open questions has the full
+   reasoning for this naming).
 5. **h-m-m outline backend** (`Ova_Fmt.Format_Hmm`), per the user —
-   sequenced here, right after HTML: needs no table-layout work at all
-   (like terse, unlike HTML/`hd`), so there's no reason to make it wait
-   for the harder nested-table backends below, and having it land right
-   after terse/HTML keeps the two simplest backends' lessons fresh
-   while designing it. Modeled on `besm2_fmt.Format_Hmm`'s tab-indented-
-   outline shape (its `PLAN.md` §8 item 5), but needs its own design
-   pass against OVA's specific nesting shapes — Transformation/
-   Companion/Magic-spell linked content, Perks/Flaws, paired Defense —
-   the way terse's own outline already got (§ "Decisions already made"
-   below has no h-m-m-specific entries yet; this is genuinely
-   unstarted, not just unsequenced).
-6. **`hd`-table raw-ms backend**: groff `hd` macros, not `tbl` (§7),
-   in a `.. raw:: ms` block, through Pandoc's `ms` writer. Sequenced
-   after HTML deliberately — `hd`'s actual nested-table support still
-   needs hands-on confirmation against the installed groff version
-   (§ open questions), and having a working HTML nested-table
-   reference in hand first gives something concrete to compare `hd`'s
-   real rendered output against while sorting that out.
+   sequenced here, right after HTML-in-reST: needs no table-layout
+   work at all (like terse, unlike HTML-in-reST/groff-in-reST), so
+   there's no reason to make it wait for the harder nested-table
+   backends below, and having it land right after terse/HTML-in-reST
+   keeps the two simplest backends' lessons fresh while designing it.
+   Modeled on `besm2_fmt.Format_Hmm`'s tab-indented-outline shape (its
+   `PLAN.md` §8 item 5), but needs its own design pass against OVA's
+   specific nesting shapes — Transformation/Companion/Magic-spell
+   linked content, Perks/Flaws, paired Defense — the way terse's own
+   outline already got (§ "Decisions already made" below has no
+   h-m-m-specific entries yet; this is genuinely unstarted, not just
+   unsequenced).
+6. **groff-in-reST backend** (`hd` table macros, not `tbl` — §7), in a
+   `.. raw:: ms` block, through Pandoc's `ms` writer — same "reST
+   document with one raw block spliced in for nested tables" shape as
+   HTML-in-reST, groff/`ms` instead of HTML. Sequenced after
+   HTML-in-reST deliberately — `hd`'s actual nested-table support
+   still needs hands-on confirmation against the installed groff
+   version (§ open questions), and having a working HTML-in-reST
+   nested-table reference in hand first gives something concrete to
+   compare `hd`'s real rendered output against while sorting that out.
 7. **Direct-to-Lout backend last.** No Pandoc involvement (§7) — a
-   structurally separate output mode from the other three, modeled on
-   the existing `Fukiko-experiment.lout` worked example (§3), using
+   structurally separate output mode from the other three (genuinely
+   direct, unlike HTML-in-reST/groff-in-reST), modeled on the existing
+   `Fukiko-experiment.lout` worked example (§3), using
    `~/Reference/Document-Tools/lout/`'s `user.pdf`/`expert.pdf` (§2)
    as needed for anything beyond what that one example already shows.
 
@@ -1319,7 +1327,7 @@ format automatically.
   plain-text-markup family" is already a bit of a reach, confirmed
   worth flagging rather than living with silently.
 
-  Separately: **the HTML and `hd`-table raw-ms backends already
+  Separately: **the HTML-in-reST and groff-in-reST backends already
   planned (§7/§9) are not "direct to HTML/groff" at all** — as
   designed, both are reST documents with one raw block spliced in
   (`.. raw:: html`/`.. raw:: ms`) for the one thing reST tables can't
@@ -1767,21 +1775,22 @@ format automatically.
   `test-data/*.yaml` fixture (Karis's Arasuni, Yuu's Fenrir included)
   is byte-identical, confirming the rename touched nothing observable.
 - ~~**Which output formats are actually wanted**~~: §7/§8 cover terse,
-  HTML, raw-ms/`hd`, and Lout. **Confirmed, per the user: an h-m-m
-  outline backend is also wanted** (no OVA attempt exists yet, unlike
-  BESM, where `besm2_fmt.Format_Hmm` is the reference to follow). Now
-  sequenced into §9's build order too, per the user: right after the
-  HTML backend (step 4, ahead of `hd`/Lout) — see §9 for why. Still
-  needs its own design pass against OVA's specific nesting shapes
-  (Transformation/Companion/Magic-spell linked content, Perks/Flaws,
-  paired Defense) the way terse's own outline got, once its turn in
-  the build order comes up.
+  HTML-in-reST, groff-in-reST (`hd` tables), and Lout. **Confirmed, per
+  the user: an h-m-m outline backend is also wanted** (no OVA attempt
+  exists yet, unlike BESM, where `besm2_fmt.Format_Hmm` is the
+  reference to follow). Now sequenced into §9's build order too, per
+  the user: right after the HTML-in-reST backend (step 4, ahead of
+  groff-in-reST/Lout) — see §9 for why. Still needs its own design
+  pass against OVA's specific nesting shapes (Transformation/
+  Companion/Magic-spell linked content, Perks/Flaws, paired Defense)
+  the way terse's own outline got, once its turn in the build order
+  comes up.
 - **groff version/`hd` support** (§7): the `hd` table macros are
   reportedly not well supported in groff ~1.24 but are supported in
   1.23, which is what's actually installed here — confirm the
   installed version and re-verify `hd`'s nested-table (and color)
   support directly before committing real implementation time to the
-  raw-ms/`hd` backend.
+  groff-in-reST backend.
 - **`tbl` column/row spanning as a fallback**: floated in §7 as a
   "maybe something could be done" alternative to `hd` if `hd` support
   turns out to be inadequate — not investigated, likely inferior to
@@ -1823,8 +1832,8 @@ format automatically.
   for all twelve rulebook sample characters first, generalizing
   `Fukiko.yaml`'s schema to cover companion and transformation-
   description callouts seen on other characters' sheets; (2) terse
-  backend; (3) HTML-raw-block backend; (4) `hd`-table raw-ms backend;
-  (5) direct-to-Lout backend last, using
+  backend; (3) HTML-in-reST backend; (4) groff-in-reST (`hd` table)
+  backend; (5) direct-to-Lout backend last, using
   `~/Reference/Document-Tools/lout/`'s docs alongside
   `Fukiko-experiment.lout`.
 - **Perks/Flaws are a general Ability modifier, not attack-specific**
