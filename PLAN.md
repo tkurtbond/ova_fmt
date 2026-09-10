@@ -1392,11 +1392,46 @@ automatically.
   typed data underneath, not `Format_Terse`'s emphasis/heading/bullet
   helpers.
 
-  **Decided, per the user: hold off on renaming `Format_Terse` for
-  now** — revisit when a third member of the plain-text-markup family
-  (Markdown?) or an actual direct-to-HTML/direct-to-groff backend
-  (as opposed to the Pandoc-embedded kind already planned) makes the
-  name actually wrong rather than just a little strained.
+  **Superseded — reopened and resolved in a later session.** The user
+  revisited this rather than waiting for a third family member: split
+  by output *pipeline* rather than by code-sharing — `Ova_Fmt.
+  Format_Rst` (Terse, Html_In_Rst, and the future groff-in-reST, all
+  of which feed Pandoc's reST reader) and `Ova_Fmt.Format_Gemini`
+  (Gemtext, which is not reST and never touches Pandoc). Confirmed
+  during the discussion that this axis doesn't match the code's actual
+  sharing pattern — Terse and Gemtext share far more content-assembly
+  logic with each other (the whole bulleted-list rendering,
+  `Print_Header_And_Prose`) than Terse shares with Html_In_Rst's own
+  table renderers — so per the user, that shared logic was factored
+  into a third package, `Ova_Fmt.Format_Common`, rather than either
+  duplicated between `Format_Rst`/`Format_Gemini` or used as an excuse
+  to keep Terse and Gemtext bundled together. `Format_Common` holds:
+  `Bold`/`Italic`/`Section_Header`/`Bullet` (unchanged — they already
+  gated on `Config.Format = Config.Gemtext` internally, so needed no
+  parameterization to serve both new packages), the number/text/Perk-
+  Flaw/attack-clause formatters, `Print_Header_And_Prose`, the new
+  `Print_Tail` (Notes/Fluff/Creation-Rules, extracted from the old
+  `Process_Entity`'s unconditional tail — shared across literally
+  every format and entity kind, Fragment included), and
+  `Process_Entity` (Fragment-or-flat-bulleted-list rendering, used
+  directly by both `Format_Gemini.Process_Entity` and by
+  `Format_Rst.Process_Entity` for Terse mode/any Fragment).
+  `Format_Rst` keeps only what's actually Html_In_Rst-specific
+  (`Html_Escape`, `Strip_Parens`, the `<table>` renderers) plus a
+  three-line dispatch: Html_In_Rst-and-not-a-Fragment calls
+  `Format_Common.Print_Header_And_Prose`/its own tables/
+  `Format_Common.Print_Tail`; everything else delegates whole to
+  `Format_Common.Process_Entity`. `Format_Gemini` is a one-line
+  forwarding wrapper. `ova_fmt_main.adb` now dispatches between
+  `Format_Rst.Process_Entity`/`Format_Gemini.Process_Entity` on
+  `Config.Format = Config.Gemtext`, instead of calling one package
+  unconditionally.
+
+  Verified: a pre-refactor/post-refactor binary diff across every
+  `test-data/*.yaml` fixture, in every output mode (`-g`, `-g -e`,
+  `-H`, `-n`, `-O`, plain), is byte-identical — the split is fully
+  behavior-preserving. `make rst gemtext html pdf` all rebuild clean
+  with no warnings.
 - **TODO: audit which fields are actually optional vs. required, and
   what happens when a required-looking one is absent.** `tagline` and
   `summary` are confirmed optional (`Ova_Fmt.Entities`'

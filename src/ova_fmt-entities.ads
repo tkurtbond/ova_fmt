@@ -154,8 +154,8 @@ package Ova_Fmt.Entities is
    --  same as Companion; it has its own separate Health/Endurance,
    --  same Combat_Stats shape Companion already uses). Label ("
    --  Companion" or "Vehicle") records which, purely so
-   --  Format_Terse can print the right heading -- nothing else
-   --  depends on which one it is.
+   --  Format_Common/Format_Rst can print the right heading -- nothing
+   --  else depends on which one it is.
    -----------------------------------------------------------------
 
    type Sub_Entity_Record is record

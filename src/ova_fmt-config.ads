@@ -13,18 +13,20 @@ package Ova_Fmt.Config is
 
    --  Terse (reST) and Gemtext (gemtext.gmi, the Gemini protocol's
    --  hypertext markup -- PLAN.md's build order §9) share almost all
-   --  of Ova_Fmt.Format_Terse's content-assembly logic, differing
-   --  only in a handful of low-level primitives (inline emphasis,
-   --  heading syntax, list-item prefix) -- per the user, parameterized
-   --  in that one package rather than duplicated into a second one.
-   --  Html_In_Rst: a reST document (same header/tagline/summary/
-   --  background/personality/Notes/Fluff/Creation-Rules rendering as
-   --  Terse -- unaffected by this value) with one `.. raw:: html`
-   --  block for the genuinely tabular/nestable content (Abilities/
-   --  Weaknesses/Combat/Attacks), still run through Pandoc -- not a
-   --  standalone HTML document generated directly (PLAN.md's Open
-   --  Questions has the full "HTML-in-reST, not just HTML" naming
-   --  rationale).
+   --  of their content-assembly logic (Ova_Fmt.Format_Common),
+   --  differing only in a handful of low-level primitives (inline
+   --  emphasis, heading syntax, list-item prefix). Html_In_Rst: a
+   --  reST document (same header/tagline/summary/background/
+   --  personality/Notes/Fluff/Creation-Rules rendering as Terse --
+   --  unaffected by this value) with one `.. raw:: html` block for
+   --  the genuinely tabular/nestable content (Abilities/Weaknesses/
+   --  Combat/Attacks), still run through Pandoc -- not a standalone
+   --  HTML document generated directly (PLAN.md's Open Questions has
+   --  the full "HTML-in-reST, not just HTML" naming rationale). Terse
+   --  and Html_In_Rst are both handled by Ova_Fmt.Format_Rst; Gemtext
+   --  by Ova_Fmt.Format_Gemini -- see Ova_Fmt.Format_Common's header
+   --  comment for why the split runs this way (by output pipeline,
+   --  not by how much code happens to be shared).
    type Output_Format is (Terse, Gemtext, Html_In_Rst);
 
    Format : aliased Output_Format := Terse;  -- -g/--gemtext or -H/--html
