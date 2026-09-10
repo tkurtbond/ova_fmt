@@ -131,6 +131,42 @@ package body Ova_Fmt.Format_Hmm is
    --  comma-joined "Abilities: ..." line for a sub-entity.
    -----------------------------------------------------------------
 
+   --  Fragment-style Companion/Vehicle (`fragment: true`) -- no
+   --  separate header node (the granting Ability's own line already
+   --  names it via `detail:`), one compact "Attributes:" node at
+   --  Header_Depth itself (not one level deeper -- there's no header
+   --  node consuming that level here), then Combat/Attacks, same
+   --  Header_Depth. Mirrors Ova_Fmt.Format_Common.
+   --  Print_Sub_Entity_Fragment_Style's shape but with Header_Depth
+   --  threaded through, which that shared version has no parameter
+   --  for.
+   --  Leads with "**Name** --", same fix/reasoning as Ova_Fmt.
+   --  Format_Common.Print_Sub_Entity_Fragment_Style's own doc comment:
+   --  a Sub_Entity has no Background of its own to fall back on for
+   --  identification the way a top-level Fragment does.
+   procedure Print_Sub_Entity_Fragment_Style
+     (SE : Entities.Sub_Entity_Access; Header_Depth : Natural)
+   is
+      Name : constant String := To_String (SE.Name);
+   begin
+      if SE.Abilities.Is_Empty and then SE.Weaknesses.Is_Empty then
+         IO.Put_Line (Indent (Header_Depth) & Common.Bold (Name) & ".");
+      else
+         declare
+            Line : Unbounded_String :=
+              To_Unbounded_String (Common.Bold (Name) & " -- " & Common.Bold ("Attributes:") & " ") &
+              Common.Join_Fragment_Sub_Items (SE.Abilities);
+         begin
+            if not SE.Abilities.Is_Empty and then not SE.Weaknesses.Is_Empty then
+               Line := Line & "; ";
+            end if;
+            Line := Line & Common.Join_Fragment_Sub_Items (SE.Weaknesses);
+            IO.Put_Line (Indent (Header_Depth) & To_String (Line) & ".");
+         end;
+      end if;
+      Print_Combat (SE.Combat, Header_Depth);
+   end Print_Sub_Entity_Fragment_Style;
+
    procedure Print_Linked_Section (A : Entities.Ability; Header_Depth : Natural) is
       Has_Transformation : constant Boolean :=
         not A.Sub_Abilities.Is_Empty or else not A.Sub_Weaknesses.Is_Empty;
@@ -138,6 +174,11 @@ package body Ova_Fmt.Format_Hmm is
       Has_Sub_Entity      : constant Boolean := A.Sub_Entity /= null;
    begin
       if not (Has_Transformation or else Has_Spells or else Has_Sub_Entity) then
+         return;
+      end if;
+
+      if Has_Sub_Entity and then A.Sub_Entity.Is_Fragment then
+         Print_Sub_Entity_Fragment_Style (A.Sub_Entity, Header_Depth);
          return;
       end if;
 

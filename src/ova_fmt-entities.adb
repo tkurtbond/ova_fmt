@@ -324,6 +324,9 @@ package body Ova_Fmt.Entities is
    begin
       Result.Label := To_Unbounded_String (Label);
       Result.Name := Require_String (N, "name");
+      if N.Has_Key ("fragment") then
+         Result.Is_Fragment := N.Boolean_Value ("fragment");
+      end if;
       if Abilities_Node.Is_Valid then
          Result.Abilities := Load_Sub_Item_List (Abilities_Node);
       end if;

@@ -2246,33 +2246,63 @@ automatically.
   before finalizing the field set in §5, in case they show a different
   or more complete layout than the one fillable-PDF sheet reviewed so
   far.
-- **A Companion/Vehicle sub-entity should be able to opt into
-  NPC-Fragment-style rendering** (`fragment: true` on the `companion:`/
-  `vehicle:` block itself), per the user, given directly right after
-  the groff-in-reST backend landed (§9 step 6) — not yet designed or
-  implemented. Motivation: not every Companion/Vehicle is a Karis/
-  Arasuni-scale full write-up; a simple one (comparable to Fukiko's
-  prose-only Azyrus, or a plain mook-tier sidekick/mecha with barely
-  any Abilities/Weaknesses of its own) shouldn't have to carry the
-  full separate-section treatment (own side-by-side Abilities/
-  Weaknesses tables, own "Attacks & Combat Stats" box in groff-in-reST;
-  own nested `<table>`s in Html_In_Rst; its own bulleted sub-section in
-  Terse/Gemtext) when a flat NPC-Fragment-style rendering (`Ova_Fmt.
-  Format_Common.Print_Fragment_Header`/`Print_Fragment_Attributes`,
-  already used for standalone Fragment entities, `Entity.Is_Fragment`)
-  would suit it better. Open design questions once this is picked up:
-  whether this is a per-entity-kind (Terse/Gemtext/HTML/groff) rendering
-  switch only, or whether `Entities.Sub_Entity_Record` needs its own
-  `Is_Fragment`-equivalent field (probably the latter, mirroring
-  `Entity`'s own field, so every backend's Companion/Vehicle path can
-  check it uniformly the way `Process_Entity` already branches on
-  `Entity.Is_Fragment`); whether a fragment-style Companion/Vehicle can
-  still carry a `combat:` block (a Fragment's own rendering has no
-  Attacks/Combat-stats section at all per the existing convention, so
-  this may need resolving) or whether opting into fragment style
-  implies dropping combat stats entirely; and what the flat rendering
-  actually looks like for something that (unlike a real Fragment) has a
-  `name:` field distinct from the granting Ability's own `detail:`.
+- ~~**A Companion/Vehicle sub-entity should be able to opt into
+  NPC-Fragment-style rendering**~~ Resolved and implemented, same
+  session it was raised. `fragment: true` on the `companion:`/
+  `vehicle:` block itself (`Entities.Sub_Entity_Record.Is_Fragment`,
+  mirroring `Entity.Is_Fragment`'s own key/field exactly) lets a simple
+  sub-entity (Fukiko's Azyrus is the first real user, retrofitted with
+  the flag this session: a short Abilities/Weaknesses list, no
+  `combat:` block) render flat instead of every backend's normal full
+  treatment.
+
+  Answers to the open design questions from when this was first
+  raised: **yes, a fragment-style sub-entity can still carry a
+  `combat:` block** — a top-level `Entity.Is_Fragment` already proves
+  this is fine (`Process_Entity`'s Fragment branch calls the exact same
+  `Print_Combat_And_Attacks`/`Print_Combat` every non-Fragment entity
+  uses), so the sub-entity version does the same, unconditionally.
+  **The flat rendering has no separate name/header line at all** —
+  unlike a top-level Fragment's own bare-name fallback (there's no
+  Background prose for a sub-entity to embed a bolded name in the way
+  the rulebook's own Fragments do), a fragment-style sub-entity relies
+  entirely on the granting Ability's own line already naming it via
+  `detail:` (e.g. "Companion +2 (Azyrus)"); what follows is just one
+  compact "Attributes: ..." line (comma-joined Abilities, semicolon,
+  comma-joined Weaknesses — new `Format_Fragment_Sub_Item_Line`/
+  `Join_Fragment_Sub_Items` in `Format_Common`, mirroring
+  `Format_Fragment_Ability_Line`'s own "Name Level (detail)" reordering
+  but for `Sub_Item`) then Combat/Attacks.
+
+  Terse/Gemtext (`Format_Common.Print_Linked_Section`) and h-m-m
+  (`Format_Hmm`'s own mirrored version, since its indentation-tracked
+  structure needs `Header_Depth` threaded through every line) both
+  just skip the normal `Section_Header`/nested-content branch and
+  print the compact shape directly. Html_In_Rst and Groff_In_Rst needed
+  genuinely different treatments because of how differently the two
+  already lay out a (non-fragment) sub-entity's content: Html_In_Rst
+  nests it *inside* the granting Ability's own `<td>` cell, so a
+  fragment-style one still has to stay inside that cell as literal
+  (flatter, escaped) HTML — one `<p>Attributes: ...</p>` instead of two
+  nested `<table>`s, Combat left as its existing compact table (no
+  print-pagination concern in HTML the way `hd` has, so no correctness
+  reason to flatten that part too). Groff_In_Rst, since step 6 already
+  moved sub-entities out to their own separate top-level section, can
+  go all the way to genuinely format-invariant rendering: it closes its
+  current `.. raw:: ms` block, calls a new shared `Format_Common.
+  Print_Sub_Entity_Fragment_Style` (plain reST, no `hd` markup at all —
+  the same content Terse/Gemtext print), then reopens a fresh raw block
+  afterward if more raw content follows (a later, non-fragment
+  sub-entity, say) — confirmed rendering correctly through the real
+  `pandoc -r rst -w ms --template=tkb` pipeline, not just bare groff.
+
+  Verified: pre/post binary diff of every format across every
+  `test-data/*.yaml` fixture *except* Fukiko (the one file that gained
+  `fragment: true`) is byte-identical; Fukiko's own output was
+  hand-checked in each format (including a rendered groff PDF and a
+  Python `html.parser` pass on the HTML-in-reST output) to confirm
+  Azyrus renders flat and Karis/Arasuni's own (non-fragment, still
+  full-treatment) rendering is completely unaffected.
 
 ## Decisions already made
 

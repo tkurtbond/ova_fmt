@@ -44,6 +44,13 @@
 #     was the original Barrier-via-Transformation example that
 #     motivated that design, but the note was only actually added to
 #     Ai.yaml until now.
+#   - **Azyrus's `companion:` block now also sets `fragment: true`**
+#     (added this session, first use of the key): a short Abilities/
+#     Weaknesses list with no `combat:` block of his own is exactly
+#     the "simple companion" case this flag exists for, per the user
+#     -- renders flat, NPC-Fragment-style, in every backend instead of
+#     the full separate-section treatment Karis's Arasuni (a genuine
+#     full sub-entity, combat stats and all) still gets.
 
 - name: Fukiko
   tagline: In the memory of my mother, I'll be just like my favorite magical girls!
@@ -66,6 +73,7 @@
       detail: Azyrus
       companion:
         name: Azyrus
+        fragment: true
         abilities:
           - name: Flight
             level: 2

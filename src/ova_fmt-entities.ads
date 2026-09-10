@@ -156,14 +156,27 @@ package Ova_Fmt.Entities is
    --  Companion" or "Vehicle") records which, purely so
    --  Format_Common/Format_Rst can print the right heading -- nothing
    --  else depends on which one it is.
+   --
+   --  Is_Fragment (`fragment: true` on the `companion:`/`vehicle:`
+   --  block itself, mirroring Entity.Is_Fragment's own key): per the
+   --  user, a simple sub-entity (Azyrus-scale -- a short Abilities/
+   --  Weaknesses list, no combat: block, nothing worth a full separate
+   --  section for) can opt into the same flat NPC-Fragment-style
+   --  rendering a standalone Fragment entity gets, instead of every
+   --  backend's normal full treatment (a bulleted sub-section in
+   --  Terse/Gemtext/h-m-m; nested <table>s in Html_In_Rst; its own
+   --  separate side-by-side-tables-plus-Combat-box section in
+   --  Groff_In_Rst). False by default -- opt-in, same polarity as
+   --  every other rendering-shape choice in this codebase.
    -----------------------------------------------------------------
 
    type Sub_Entity_Record is record
-      Label      : Unbounded_String;
-      Name       : Unbounded_String;
-      Abilities  : Sub_Item_Vectors.Vector;
-      Weaknesses : Sub_Item_Vectors.Vector;
-      Combat     : Combat_Stats;
+      Label       : Unbounded_String;
+      Name        : Unbounded_String;
+      Is_Fragment : Boolean := False;
+      Abilities   : Sub_Item_Vectors.Vector;
+      Weaknesses  : Sub_Item_Vectors.Vector;
+      Combat      : Combat_Stats;
    end record;
 
    type Sub_Entity_Access is access Sub_Entity_Record;

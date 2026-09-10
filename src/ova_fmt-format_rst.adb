@@ -155,10 +155,47 @@ package body Ova_Fmt.Format_Rst is
       Print_Attacks_Table (C.Attacks, Caption & " — Attacks", Indent);
    end Print_Combat_Table;
 
+   --  Fragment-style Companion/Vehicle (`fragment: true`): this
+   --  content lives *inside* a `<td>` cell (Print_Linked_Content_Cell
+   --  below), so unlike Groff_In_Rst's own fragment-style handling
+   --  (Print_Groff_Tables, which drops all the way to plain reST by
+   --  closing its raw block) there's no way to leave raw HTML mid-cell
+   --  -- this renders a flatter version that's still valid HTML: one
+   --  escaped "Attributes:" paragraph instead of two nested `<table>`s
+   --  for Abilities/Weaknesses, Combat unchanged (a compact one-row-
+   --  plus-Attacks table already, and HTML has no print-pagination
+   --  concern the way Groff_In_Rst's own `hd` tables do, so there's no
+   --  correctness reason to flatten it further here).
    procedure Print_Sub_Entity_Tables (SE : Entities.Sub_Entity_Access; Indent : String) is
       Who : constant String :=
         To_String (SE.Label) & ": " & To_String (SE.Name);
    begin
+      if SE.Is_Fragment then
+         --  Leads with "<strong>Who</strong> --" ("Companion: Azyrus"),
+         --  same fix/reasoning as Ova_Fmt.Format_Common.
+         --  Print_Sub_Entity_Fragment_Style's own doc comment: a
+         --  Sub_Entity has no Background of its own to fall back on
+         --  for identification the way a top-level Fragment does.
+         if SE.Abilities.Is_Empty and then SE.Weaknesses.Is_Empty then
+            IO.Put_Line
+              (Raw_Prefix & Indent & "<p><strong>" & Html_Escape (Who) & "</strong>.</p>");
+         else
+            declare
+               Line : Unbounded_String :=
+                 To_Unbounded_String
+                   ("<strong>" & Html_Escape (Who) & "</strong> -- <strong>Attributes:</strong> ") &
+                 Html_Escape (Common.Join_Fragment_Sub_Items (SE.Abilities));
+            begin
+               if not SE.Abilities.Is_Empty and then not SE.Weaknesses.Is_Empty then
+                  Line := Line & "; ";
+               end if;
+               Line := Line & Html_Escape (Common.Join_Fragment_Sub_Items (SE.Weaknesses));
+               IO.Put_Line (Raw_Prefix & Indent & "<p>" & To_String (Line) & ".</p>");
+            end;
+         end if;
+         Print_Combat_Table (SE.Combat, Who & " — Combat", Indent);
+         return;
+      end if;
       Print_Sub_Item_Table (SE.Abilities, Who & " — Abilities", Indent);
       Print_Sub_Item_Table (SE.Weaknesses, Who & " — Weaknesses", Indent);
       Print_Combat_Table (SE.Combat, Who & " — Combat", Indent);
@@ -779,16 +816,44 @@ package body Ova_Fmt.Format_Rst is
         (SE.Combat, Ada.Characters.Handling.To_Upper (To_String (SE.Name)));
    end Print_Sub_Entity_Section_Groff;
 
+   --  A fragment-style Companion/Vehicle needs to drop all the way out
+   --  to plain reST (Common.Print_Sub_Entity_Fragment_Style -- no
+   --  `hd` tables at all, matching a top-level Entity.Is_Fragment's
+   --  own format-invariant rendering), which means closing the
+   --  current `.. raw:: ms` block first and reopening a fresh one
+   --  afterward if more raw content follows (another, non-fragment
+   --  sub-entity, say) -- unlike Html_In_Rst, where a fragment-style
+   --  sub-entity's content is nested *inside* a `<td>` cell and can't
+   --  drop out of raw HTML mid-cell, Groff_In_Rst's own sub-entity
+   --  sections are already separate top-level content (PLAN.md §9
+   --  step 6's Companion/Vehicle-move-out design), so this is clean.
    procedure Print_Groff_Tables (E : Entities.Entity) is
+      In_Raw : Boolean := False;
+
+      procedure Ensure_Raw_Open is
+      begin
+         if not In_Raw then
+            IO.Put_Line (".. raw:: ms");
+            IO.New_Line;
+            IO.Put_Line (Raw_Prefix & ".mso hdtbl.tmac");
+            In_Raw := True;
+         end if;
+      end Ensure_Raw_Open;
+
+      procedure Ensure_Raw_Closed is
+      begin
+         if In_Raw then
+            IO.New_Line;
+            In_Raw := False;
+         end if;
+      end Ensure_Raw_Closed;
    begin
       if E.Abilities.Is_Empty and then E.Weaknesses.Is_Empty
         and then not E.Combat.Has_Combat and then not E.Has_Fluff
       then
          return;
       end if;
-      IO.Put_Line (".. raw:: ms");
-      IO.New_Line;
-      IO.Put_Line (Raw_Prefix & ".mso hdtbl.tmac");
+      Ensure_Raw_Open;
       Print_Side_By_Side_Groff (E.Abilities, E.Weaknesses);
       Print_Combat_Table_Groff
         (E.Combat, Ada.Characters.Handling.To_Upper (To_String (E.Name)));
@@ -797,10 +862,16 @@ package body Ova_Fmt.Format_Rst is
       end if;
       for A of E.Abilities loop
          if A.Sub_Entity /= null then
-            Print_Sub_Entity_Section_Groff (A.Sub_Entity);
+            if A.Sub_Entity.Is_Fragment then
+               Ensure_Raw_Closed;
+               Common.Print_Sub_Entity_Fragment_Style (A.Sub_Entity);
+            else
+               Ensure_Raw_Open;
+               Print_Sub_Entity_Section_Groff (A.Sub_Entity);
+            end if;
          end if;
       end loop;
-      IO.New_Line;
+      Ensure_Raw_Closed;
    end Print_Groff_Tables;
 
    -----------------------------------------------------------------

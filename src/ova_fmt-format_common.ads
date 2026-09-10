@@ -75,6 +75,7 @@ package Ova_Fmt.Format_Common is
    function Format_Fragment_Ability_Line (A : Entities.Ability) return String;
    function Format_Fragment_Weakness_Line (W : Entities.Weakness) return String;
    function Format_Sub_Item_Line (S : Entities.Sub_Item) return String;
+   function Format_Fragment_Sub_Item_Line (S : Entities.Sub_Item) return String;
    function Format_Spell_Line (S : Entities.Spell) return String;
 
    function Format_Attack_Line (A : Entities.Attack) return String;
@@ -99,7 +100,29 @@ package Ova_Fmt.Format_Common is
    function Join_Fragment_Abilities (Vec : Entities.Ability_Vectors.Vector) return String;
    function Join_Fragment_Weaknesses (Vec : Entities.Weakness_Vectors.Vector) return String;
    function Join_Sub_Items (Vec : Entities.Sub_Item_Vectors.Vector) return String;
+   function Join_Fragment_Sub_Items (Vec : Entities.Sub_Item_Vectors.Vector) return String;
    function Join_Spells (Vec : Entities.Spell_Vectors.Vector) return String;
+
+   procedure Print_Sub_Entity_Fragment_Style (SE : Entities.Sub_Entity_Access);
+   --  A Companion/Vehicle sub-entity with `fragment: true` set --
+   --  plain reST/Gemtext text (no raw HTML/ms markup): no separate
+   --  section header (the granting Ability's own line already names
+   --  it via `detail:`), one compact "Attributes:" line (Join_
+   --  Fragment_Sub_Items, matching a top-level Fragment entity's own
+   --  Print_Fragment_Attributes shape), then Combat/Attacks via the
+   --  same Print_Combat_And_Attacks every other entity uses. Format-
+   --  invariant the same way a top-level Entity.Is_Fragment already is
+   --  (Ova_Fmt.Format_Rst.Process_Entity's own Fragment branch) --
+   --  public so Format_Rst's Groff_In_Rst path can call it directly
+   --  after closing its current `.. raw:: ms` block (Groff_In_Rst's
+   --  Companion/Vehicle sections are their own top-level content, so
+   --  dropping to plain reST there is structurally clean); Html_In_
+   --  Rst's own sub-entity content is nested *inside* a `<td>` cell,
+   --  where dropping out of raw HTML mid-cell isn't possible, so it
+   --  renders its own flatter-but-still-HTML version instead of
+   --  calling this. Ova_Fmt.Format_Hmm doesn't call this either --
+   --  its indentation-tracked structure needs Header_Depth threaded
+   --  through every line, so it has its own mirrored version.
 
    procedure Print_Header_And_Prose (E : Entities.Entity; Entity_No : Positive);
    --  Title/tagline/summary/Background/Personality -- byte-identical

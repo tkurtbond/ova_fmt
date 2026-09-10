@@ -230,6 +230,24 @@ package body Ova_Fmt.Format_Common is
       return To_String (Result);
    end Format_Sub_Item_Line;
 
+   --  Same "Name Level (detail)" reordering as Format_Fragment_Ability_
+   --  Line, for a fragment-style Companion/Vehicle's own Abilities/
+   --  Weaknesses (both stored as Sub_Item -- Entities.Sub_Entity_Record's
+   --  own doc comment).
+   function Format_Fragment_Sub_Item_Line (S : Entities.Sub_Item) return String is
+      Result : Unbounded_String :=
+        To_Unbounded_String (To_String (S.Name) & " " & Signed_Img (S.Level));
+   begin
+      if S.Has_Detail then
+         Result := Result & " (" & S.Detail & ")";
+      end if;
+      Result := Result & Format_Modifiers_Bracket (S.Perks, S.Flaws);
+      if S.Has_Note then
+         Result := Result & " (" & S.Note & ")";
+      end if;
+      return To_String (Result);
+   end Format_Fragment_Sub_Item_Line;
+
    function Format_Spell_Line (S : Entities.Spell) return String is
      (To_String (S.Name) & " (" & To_String (S.Ability) & " " &
       Signed_Img (S.Level) & "; " & To_String (S.Endurance) & " Endurance)");
@@ -293,6 +311,18 @@ package body Ova_Fmt.Format_Common is
       end loop;
       return To_String (Result);
    end Join_Sub_Items;
+
+   function Join_Fragment_Sub_Items (Vec : Entities.Sub_Item_Vectors.Vector) return String is
+      Result : Unbounded_String;
+   begin
+      for I in Vec.First_Index .. Vec.Last_Index loop
+         if I > Vec.First_Index then
+            Result := Result & ", ";
+         end if;
+         Result := Result & Format_Fragment_Sub_Item_Line (Vec (I));
+      end loop;
+      return To_String (Result);
+   end Join_Fragment_Sub_Items;
 
    function Join_Spells (Vec : Entities.Spell_Vectors.Vector) return String is
       Result : Unbounded_String;
@@ -374,6 +404,41 @@ package body Ova_Fmt.Format_Common is
    --  after the main entity's own Attacks, in Abilities list order.
    -----------------------------------------------------------------
 
+   --  Unlike a top-level Entity.Is_Fragment (which always gets *some*
+   --  identifying text -- its Background prose, or a bare bolded Name
+   --  when there's no Background, Print_Fragment_Header's own doc
+   --  comment), a Sub_Entity has no Background of its own to fall back
+   --  on -- so this always leads with the Name itself, "**Name** --",
+   --  the same "**Header** -- text" shape Print_Tail's own Notes
+   --  already use elsewhere in the same document. Found missing
+   --  entirely in an earlier version: without it, the flat Attributes
+   --  line had nothing at all connecting it to which Companion/Vehicle
+   --  it belonged to (the granting Ability's own line names it via
+   --  `detail:`, but that's easy to lose track of by the time this
+   --  line appears, especially once combat/Attacks separates the two).
+   procedure Print_Sub_Entity_Fragment_Style (SE : Entities.Sub_Entity_Access) is
+      Name : constant String := To_String (SE.Name);
+   begin
+      if SE.Abilities.Is_Empty and then SE.Weaknesses.Is_Empty then
+         IO.Put_Line (Bold (Name) & ".");
+         IO.New_Line;
+      else
+         declare
+            Line : Unbounded_String :=
+              To_Unbounded_String (Bold (Name) & " -- " & Bold ("Attributes:") & " ") &
+              Join_Fragment_Sub_Items (SE.Abilities);
+         begin
+            if not SE.Abilities.Is_Empty and then not SE.Weaknesses.Is_Empty then
+               Line := Line & "; ";
+            end if;
+            Line := Line & Join_Fragment_Sub_Items (SE.Weaknesses);
+            IO.Put_Line (To_String (Line) & ".");
+            IO.New_Line;
+         end;
+      end if;
+      Print_Combat_And_Attacks (SE.Combat);
+   end Print_Sub_Entity_Fragment_Style;
+
    procedure Print_Linked_Section (A : Entities.Ability) is
       Has_Transformation : constant Boolean :=
         not A.Sub_Abilities.Is_Empty or else not A.Sub_Weaknesses.Is_Empty;
@@ -381,6 +446,17 @@ package body Ova_Fmt.Format_Common is
       Has_Sub_Entity      : constant Boolean := A.Sub_Entity /= null;
    begin
       if not (Has_Transformation or else Has_Spells or else Has_Sub_Entity) then
+         return;
+      end if;
+
+      --  Fragment-style Companion/Vehicle: no separate section header
+      --  (the granting Ability's own line already names it via
+      --  `detail:`, same reasoning a top-level Fragment's own bare-
+      --  name fallback exists for), just the compact Attributes/Combat
+      --  shape -- see Print_Sub_Entity_Fragment_Style's own doc
+      --  comment.
+      if Has_Sub_Entity and then A.Sub_Entity.Is_Fragment then
+         Print_Sub_Entity_Fragment_Style (A.Sub_Entity);
          return;
       end if;
 
