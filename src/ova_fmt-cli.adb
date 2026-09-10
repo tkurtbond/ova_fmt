@@ -9,6 +9,12 @@ package body Ova_Fmt.Cli is
       return False;
    end Do_Help;
 
+   function Do_Gemtext return Boolean is
+   begin
+      Config.Format := Config.Gemtext;
+      return True;
+   end Do_Gemtext;
+
    function Do_Subunderliner (Arg : String) return Boolean is
    begin
       if Arg'Length /= 1 then

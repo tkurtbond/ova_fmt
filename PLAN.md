@@ -1197,48 +1197,65 @@ for test data and output-format sequencing:
    flattened by pandoc's reST reader (a real risk worth checking,
    since the nested-bullet structure is whitespace-sensitive).
    `testclean` now also removes `build/*.ms.pdf`.
-3. **TODO: Gemtext backend**, per the user — sequenced here, right
-   after terse and before HTML: no table-layout work needed (like
-   terse), and it's structurally the closest thing to terse of any
-   planned backend, so it makes sense to build while terse's own
-   lessons are freshest, before the harder nested-table backends.
-   Genuinely unstarted, not just unsequenced — recorded here from the
-   user's own description plus the actual spec
+3. ~~**TODO: Gemtext backend**~~ Done. Sequenced right after terse,
+   before HTML: no table-layout work needed (like terse), and it's
+   structurally the closest thing to terse of any planned backend.
+   Grounded in the actual spec before implementing, not assumed
    (<https://geminiprotocol.net/docs/gemtext.gmi>,
-   <https://geminiprotocol.net/docs/>), not assumed.
-
-   Gemtext is the hypertext markup of the Gemini protocol (MIME type
-   `text/gemini`, `.gmi` files) — deliberately much simpler than HTML
-   or reST. Its line types, confirmed against the spec: plain text
-   lines (long lines, client-wrapped, no manual line breaks); `#`/`##`/
-   `###` headings (one space required after the hashes, three levels
-   only); `* item` list items (a literal `*`, one space, no nesting);
-   `> quoted text` blockquotes; `` ``` `` toggles preformatted/fixed-
-   width mode (parses nothing inside); and `=> URL [label]` links,
-   which **must be on their own line** — gemtext has no way to make a
-   word mid-sentence a link, unlike reST/HTML/Markdown. **No inline
+   <https://geminiprotocol.net/docs/>, cross-checked live over the
+   Gemini protocol itself via `gemget` too, per the user) — confirmed
+   line types: plain text lines (long lines, client-wrapped); `#`/`##`/
+   `###` headings (one mandatory space after the hashes, three levels
+   only, no underline syntax); `* item` list items (a literal `*`, one
+   space, no nesting — `-` "will not do anything"); `> quoted text`
+   blockquotes; `` ``` `` toggles preformatted/fixed-width mode; and
+   `=> URL [label]` links, which must be on their own line. **No inline
    emphasis (bold/italic) exists in the spec at all.**
 
-   Per the user: since many gemtext authors use `*italic*`/`**bold**`/
-   `***bold italic***` literally anyway (unenforced by the format, but
-   a real convention), there should be a command-line option
-   controlling whether ova_fmt emits them — off by default (spec-
-   compliant plain text), on if asked for. Otherwise, per the user,
-   Gemtext output should be *the same as Terse* in content and
-   organization — same information, same order — just through
-   gemtext's own line syntax instead of reST's: terse's underlined
-   "Name\n======" header becomes a `# Name` heading line; terse's
-   "- **Abilities:** ..." bullet becomes gemtext's `* ` list-item
-   prefix (dropping the leading `- `); section labels currently
-   rendered as a bolded line ("Notes", "Fluff", "Companion: X", ...)
-   likely become `##` headings instead, matching gemtext's own
-   heading levels rather than emphasis. Suggests implementation as a
-   shared content-assembly layer with Terse (same information/order,
-   same domain-formatting calls) behind a pluggable low-level "emit"
-   step (line syntax, and whether Bold/Italic wrap in anything at all)
-   rather than a fully separate backend duplicating Terse's logic --
-   worth confirming that approach once implementation actually starts,
-   not assumed final here.
+   Implemented as `Ova_Fmt.Config.Output_Format` (`Terse`/`Gemtext`,
+   `-g`/`--gemtext` selects `Gemtext`) and `Config.Gemtext_Emphasis`
+   (`-e`/`--gemtext-emphasis`, off by default) — per the user: many
+   gemtext authors use `*`/`**` anyway as an unenforced convention, so
+   it's opt-in, not default behavior. Per the user's explicit
+   architecture call: **parameterized `Ova_Fmt.Format_Terse` itself**
+   rather than duplicating it into a new package — `Bold`/`Italic` wrap
+   only for Terse or (Gemtext AND `Gemtext_Emphasis`); a new
+   `Section_Header` helper prints a real `##` heading for Gemtext
+   (headings are a distinct always-available line type, so this does
+   *not* gate on `Gemtext_Emphasis` the way `Bold`/`Italic` do) or falls
+   back to `Bold` for Terse, used for every standalone section title
+   ("Background", "Personality", "Notes", "Fluff", the Companion/
+   Vehicle/linked-Ability heading) — but *not* inline labels within a
+   sentence ("Creation Rules:", a Fluff item's own label, a Note's own
+   header), which stay `Bold` either way since turning those into
+   headings would mix heading semantics with actual data on one line; a
+   new `Bullet` helper returns `* ` for Gemtext, `- ` for Terse
+   (gemtext has no nesting, so `Print_Attack`'s indented `"  - "`
+   sub-bullet becomes a plain top-level `Bullet` too); the top-level
+   entity title becomes `"# " & Title` for Gemtext (no underline
+   concept exists there, so `-U`/`--subunderliner` has no Gemtext
+   equivalent and is simply inert in that mode) instead of the
+   underlined reST title. An NPC Fragment's own bare-Name fallback
+   header (`Print_Fragment_Header`, when there's no `Background` prose
+   to carry the name) deliberately stays `Bold`, not `Section_Header`,
+   matching the rulebook's own convention of never giving a Fragment
+   its own structural heading in any format.
+
+   `GNUmakefile` gained `TEST_GEMTEXTOUTPUT`/`gemtext` target
+   (`build/%.gmi`, `-g`, no PDF rendering — gemtext isn't a Pandoc
+   reader and isn't meant to be typeset), following the same wildcard-
+   derived-from-`TEST_DATA` convention as `TEST_TERSEOUTPUT`/
+   `TEST_PDFOUTPUT` (§9's own convention note, updated to mention it).
+
+   Verified: a pre-change/post-change binary diff of plain (Terse-mode)
+   output across every `test-data/*.yaml` fixture is byte-identical —
+   the parameterization is fully transparent when `Config.Format` stays
+   `Terse`. `-g` on every fixture produces valid, spec-conforming
+   gemtext (headings, `* ` bullets, no stray reST syntax); `-g -e`
+   correctly adds `*`/`**` markers back; `Fragment.yaml`'s literal
+   author-written `**Shady Teacher**` inside its `background:` prose
+   renders unchanged either way, since that's raw author text passed
+   through verbatim, not something `Bold`/`Italic` generate.
 4. **HTML backend**: raw `.. raw:: html` blocks containing
    hand-written, potentially-nested `<table>` markup (§7), through the
    same reST→Pandoc pipeline `besm2_fmt`'s raw-ms backend already
@@ -1271,17 +1288,19 @@ for test data and output-format sequencing:
 
 **`GNUmakefile` convention to keep as each new backend lands, per the
 user:** every existing output-list variable (`TEST_TERSEOUTPUT`,
-`TEST_PDFOUTPUT`) is derived from the single wildcard-based `TEST_DATA`
+`TEST_PDFOUTPUT`, and now `TEST_GEMTEXTOUTPUT`) is derived from the
+single wildcard-based `TEST_DATA`
 (`$(foreach f,$(notdir $(TEST_DATA)),...)`, same shape `besm2_fmt`'s
 own `GNUmakefile` uses for its several output variants), not a
 hardcoded per-fixture list — confirmed this is why `test-data/
-Fragment.yaml` got a `build/Fragment.ms.pdf` automatically the moment
-it was added, no `GNUmakefile` change needed. Each new backend's own
-output-list variable (an eventual `TEST_GEMTEXTOUTPUT`,
-`TEST_HTMLOUTPUT`, `TEST_HMMOUTPUT`, `TEST_LOUTOUTPUT`, ...) needs to
-follow the same derived-from-`TEST_DATA` shape, not enumerate fixtures
-by hand, so every existing and future `test-data/*.yaml` file keeps
-getting picked up for every format automatically.
+Fragment.yaml` got a `build/Fragment.ms.pdf` (and, once Gemtext
+landed, a `build/Fragment.gmi`) automatically the moment it was added,
+no `GNUmakefile` change needed. Each remaining backend's own
+output-list variable (an eventual `TEST_HTMLOUTPUT`, `TEST_HMMOUTPUT`,
+`TEST_LOUTOUTPUT`, ...) needs to follow the same derived-from-
+`TEST_DATA` shape, not enumerate fixtures by hand, so every existing
+and future `test-data/*.yaml` file keeps getting picked up for every
+format automatically.
 
 ## Open questions
 

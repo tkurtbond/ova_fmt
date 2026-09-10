@@ -10,10 +10,8 @@ PROGRAM=ova_fmt
 #  (re)built.
 TEST_DATA=$(filter-out test-data/Broken.yaml,$(wildcard test-data/*.yaml))
 
-# Terse (reST) output -- the only backend implemented so far (PLAN.md
-# §9 step 2: HTML/raw-ms/Lout are steps 3-5, not yet built). Unlike
-# besm2_fmt, ova_fmt has no -t/-s/-m/-n flags yet -- terse is simply
-# what the program does.
+# Terse (reST) output -- the default backend (PLAN.md §9 step 2).
+# Plain `ova_fmt`, no format-selecting flag needed.
 TEST_TERSEOUTPUT=$(foreach f,$(notdir $(TEST_DATA)),build/$(addsuffix .gen.rst,$(basename $(f))))
 
 # PDF renderings of the above, via pandoc's ms writer -- same
@@ -22,7 +20,12 @@ TEST_TERSEOUTPUT=$(foreach f,$(notdir $(TEST_DATA)),build/$(addsuffix .gen.rst,$
 # variant instead of besm2_fmt's several.
 TEST_PDFOUTPUT=$(foreach f,$(notdir $(TEST_DATA)),build/$(addsuffix .ms.pdf,$(basename $(f))))
 
-.PHONY: all rst pdf install clean testclean
+# Gemtext output (-g/--gemtext, PLAN.md §9 step 3) -- .gmi files, the
+# Gemini protocol's own convention. No PDF rendering: gemtext isn't a
+# Pandoc reader, and it's meant to be read as gemtext, not typeset.
+TEST_GEMTEXTOUTPUT=$(foreach f,$(notdir $(TEST_DATA)),build/$(addsuffix .gmi,$(basename $(f))))
+
+.PHONY: all rst pdf gemtext install clean testclean
 
 all: $(PROGRAM)
 
@@ -39,8 +42,13 @@ rst: $(PROGRAM) $(TEST_TERSEOUTPUT)
 
 pdf: rst $(TEST_PDFOUTPUT)
 
+gemtext: $(PROGRAM) $(TEST_GEMTEXTOUTPUT)
+
 build/%.gen.rst : test-data/%.yaml $(PROGRAM)
 	./$(PROGRAM) $< >$@
+
+build/%.gmi : test-data/%.yaml $(PROGRAM)
+	./$(PROGRAM) -g $< >$@
 
 #MS_COLUMNS=-V twocolumns
 build/%.ms.pdf : build/%.gen.rst
@@ -50,8 +58,8 @@ clean:
 	-rm -f $(PROGRAM)
 
 testclean:
-	-rm -v build/*.gen.rst build/*.ms.pdf
+	-rm -v build/*.gen.rst build/*.ms.pdf build/*.gmi
 
-.PRECIOUS: build/%.gen.rst build/%.ms.pdf
+.PRECIOUS: build/%.gen.rst build/%.ms.pdf build/%.gmi
 
 print-%  : ; @echo $* = $($*)

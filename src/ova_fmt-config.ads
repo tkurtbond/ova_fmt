@@ -11,6 +11,25 @@ with Arg_Parser;
 
 package Ova_Fmt.Config is
 
+   --  Terse (reST) and Gemtext (gemtext.gmi, the Gemini protocol's
+   --  hypertext markup -- PLAN.md's build order §9) share almost all
+   --  of Ova_Fmt.Format_Terse's content-assembly logic, differing
+   --  only in a handful of low-level primitives (inline emphasis,
+   --  heading syntax, list-item prefix) -- per the user, parameterized
+   --  in that one package rather than duplicated into a second one.
+   type Output_Format is (Terse, Gemtext);
+
+   Format : aliased Output_Format := Terse;  -- -g/--gemtext switches to Gemtext
+
+   --  Gemtext's spec has no inline emphasis at all (no bold/italic) --
+   --  confirmed against <https://geminiprotocol.net/docs/gemtext.gmi>
+   --  -- but per the user, many gemtext authors use `*`/`**` anyway,
+   --  unenforced convention rather than real markup, so this is an
+   --  opt-in rather than something Gemtext output does by default.
+   --  Meaningless when Format = Terse (reST always wants its own
+   --  emphasis markup).
+   Gemtext_Emphasis : aliased Boolean := False;  -- -e/--gemtext-emphasis
+
    Output_File : aliased Arg_Parser.String_Reference;  -- -o/--output; null = unset (stdout)
 
    Underliner    : aliased Character := '=';        -- -u/--underliner

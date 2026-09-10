@@ -26,6 +26,7 @@ package Ova_Fmt.Cli is
 private
 
    function Do_Help return Boolean;
+   function Do_Gemtext return Boolean;
    function Do_Subunderliner (Arg : String) return Boolean;
    function Do_Underliner (Arg : String) return Boolean;
    function Do_Argument (Start_With : Positive; Arg : String) return Boolean;
@@ -36,6 +37,21 @@ private
          Short_Name  => 'h',
          Long_Name   => "help",
          Handler     => Do_Help'Access),
+      Arg_Parser.Make_Option
+        (Description => "Output gemtext (the Gemini protocol's hypertext " &
+                         "markup) instead of reST.",
+         Short_Name  => 'g',
+         Long_Name   => "gemtext",
+         Handler     => Do_Gemtext'Access),
+      Arg_Parser.Make_Set_Boolean_True_Option
+        (Description => "With -g/--gemtext, emit *italic*/**bold** markers " &
+                         "anyway -- gemtext's spec has no inline emphasis " &
+                         "at all, but many authors use them as an " &
+                         "unenforced convention. Off (plain text) by " &
+                         "default; meaningless without -g/--gemtext.",
+         Short_Name  => 'e',
+         Long_Name   => "gemtext-emphasis",
+         Variable    => Ova_Fmt.Config.Gemtext_Emphasis'Access),
       Arg_Parser.Make_Set_String_Option
         (Description => "Output file.",
          Short_Name  => 'o',

@@ -9,9 +9,37 @@ package body Ova_Fmt.Format_Terse is
    package Config renames Ova_Fmt.Config;
    package IO renames Ada.Text_IO;
    use type Entities.Sub_Entity_Access;
+   use type Config.Output_Format;
 
-   function Bold (S : String) return String is ("**" & S & "**");
-   function Italic (S : String) return String is ("*" & S & "*");
+   --  Terse (reST) always wants its own emphasis markup; Gemtext's
+   --  spec has none at all, so these only wrap when
+   --  Config.Gemtext_Emphasis opts in (Config.Gemtext_Emphasis's own
+   --  doc comment).
+   function Bold (S : String) return String is
+     (if Config.Format = Config.Gemtext and then not Config.Gemtext_Emphasis
+      then S
+      else "**" & S & "**");
+
+   function Italic (S : String) return String is
+     (if Config.Format = Config.Gemtext and then not Config.Gemtext_Emphasis
+      then S
+      else "*" & S & "*");
+
+   --  A structural section label ("Notes", "Fluff", "Companion: X",
+   --  ...) -- a real gemtext `##` heading in Gemtext output (headings
+   --  are a distinct, always-available line type, not inline
+   --  emphasis, so this doesn't gate on Gemtext_Emphasis the way
+   --  Bold/Italic do), a bolded line in Terse as before.
+   function Section_Header (S : String) return String is
+     (if Config.Format = Config.Gemtext then "## " & S else Bold (S));
+
+   --  The list-item prefix Terse's reST bullets and Gemtext's own list
+   --  syntax each need -- "- " does nothing special in gemtext (its
+   --  spec: "Using - instead of * like in Markdown will not do
+   --  anything"), and gemtext lists don't nest, so this is also used
+   --  for what Terse renders as an indented sub-bullet (Print_Attack).
+   function Bullet return String is
+     (if Config.Format = Config.Gemtext then "* " else "- ");
 
    function Trim_Img (N : Integer) return String is
      (Ada.Strings.Fixed.Trim (Integer'Image (N), Ada.Strings.Left));
@@ -216,9 +244,14 @@ package body Ova_Fmt.Format_Terse is
 
    procedure Print_Attack (A : Entities.Attack) is
       Clause : constant String := Format_Attack_Clause (A);
+      --  Terse indents this as a sub-bullet of the "- **Attacks:**"
+      --  line above it; gemtext has no nested lists at all, so this
+      --  is just Bullet's own top-level "* ", no indentation implied.
+      Attack_Prefix : constant String :=
+        (if Config.Format = Config.Gemtext then Bullet else "  - ");
       Line   : Unbounded_String :=
         To_Unbounded_String
-          ("  - " & Bold (To_String (A.Name) & ":") & " Roll " &
+          (Attack_Prefix & Bold (To_String (A.Name) & ":") & " Roll " &
            Bold (Number_Img (A.Roll) & " dice") & " | " &
            Bold ("DX " & To_String (A.Dx)) & " | " &
            Bold ("Endurance Cost: " & Trim_Img (A.Endurance)));
@@ -239,7 +272,7 @@ package body Ova_Fmt.Format_Terse is
          return;
       end if;
       IO.Put_Line
-        ("- " & Bold ("Health:") & " " & Trim_Img (C.Health) & " | " &
+        (Bullet & Bold ("Health:") & " " & Trim_Img (C.Health) & " | " &
          Bold ("Endurance:") & " " & Trim_Img (C.Endurance) & " | " &
          Bold ("Defense:") & " " & To_String (C.Defense) & " | " &
          Bold ("Threat Value (TV):") & " " &
@@ -247,7 +280,7 @@ package body Ova_Fmt.Format_Terse is
       IO.New_Line;
 
       if not C.Attacks.Is_Empty then
-         IO.Put_Line ("- " & Bold ("Attacks:"));
+         IO.Put_Line (Bullet & Bold ("Attacks:"));
          IO.New_Line;
          for A of C.Attacks loop
             Print_Attack (A);
@@ -277,11 +310,11 @@ package body Ova_Fmt.Format_Terse is
 
       if Has_Sub_Entity then
          IO.Put_Line
-           (Bold
+           (Section_Header
               (To_String (A.Sub_Entity.Label) & ": " &
                Name_Detail (A.Sub_Entity.Name, False, Null_Unbounded_String)));
       else
-         IO.Put_Line (Bold (Name_Detail (A.Name, A.Has_Detail, A.Detail)));
+         IO.Put_Line (Section_Header (Name_Detail (A.Name, A.Has_Detail, A.Detail)));
       end if;
       IO.New_Line;
 
@@ -422,13 +455,24 @@ package body Ova_Fmt.Format_Terse is
                 (E.Name,
                  E.Has_Fluff and then E.Fluff.Has_Concept,
                  (if E.Has_Fluff then E.Fluff.Concept else Null_Unbounded_String));
-            Underline_Char : constant Character :=
-              (if Entity_No > 1 and then Config.Subunderliner /= ASCII.NUL
-               then Config.Subunderliner
-               else Config.Underliner);
          begin
-            IO.Put_Line (Title);
-            IO.Put_Line (String'(1 .. Title'Length => Underline_Char));
+            if Config.Format = Config.Gemtext then
+               --  Gemtext's only heading syntax; -U/--subunderliner's
+               --  "distinguish entities after the first" concept has
+               --  no equivalent here (no underline character to swap)
+               --  and doesn't apply.
+               IO.Put_Line ("# " & Title);
+            else
+               declare
+                  Underline_Char : constant Character :=
+                    (if Entity_No > 1 and then Config.Subunderliner /= ASCII.NUL
+                     then Config.Subunderliner
+                     else Config.Underliner);
+               begin
+                  IO.Put_Line (Title);
+                  IO.Put_Line (String'(1 .. Title'Length => Underline_Char));
+               end;
+            end if;
             IO.New_Line;
          end;
 
@@ -443,21 +487,21 @@ package body Ova_Fmt.Format_Terse is
          end if;
 
          if E.Has_Background then
-            IO.Put_Line (Bold ("Background"));
+            IO.Put_Line (Section_Header ("Background"));
             IO.New_Line;
             IO.Put_Line (To_String (E.Background));
             IO.New_Line;
          end if;
 
          if E.Has_Personality then
-            IO.Put_Line (Bold ("Personality"));
+            IO.Put_Line (Section_Header ("Personality"));
             IO.New_Line;
             IO.Put_Line (To_String (E.Personality));
             IO.New_Line;
          end if;
 
          if not E.Abilities.Is_Empty then
-            IO.Put ("- " & Bold ("Abilities:") & " ");
+            IO.Put (Bullet & Bold ("Abilities:") & " ");
             for I in E.Abilities.First_Index .. E.Abilities.Last_Index loop
                if I > E.Abilities.First_Index then
                   IO.Put (", ");
@@ -469,7 +513,7 @@ package body Ova_Fmt.Format_Terse is
          end if;
 
          if not E.Weaknesses.Is_Empty then
-            IO.Put ("- " & Bold ("Weaknesses:") & " ");
+            IO.Put (Bullet & Bold ("Weaknesses:") & " ");
             for I in E.Weaknesses.First_Index .. E.Weaknesses.Last_Index loop
                if I > E.Weaknesses.First_Index then
                   IO.Put (", ");
@@ -488,7 +532,7 @@ package body Ova_Fmt.Format_Terse is
       end loop;
 
       if not E.Notes.Is_Empty then
-         IO.Put_Line (Bold ("Notes"));
+         IO.Put_Line (Section_Header ("Notes"));
          IO.New_Line;
          for N of E.Notes loop
             IO.Put_Line (Bold (To_String (N.Header)) & " -- " & To_String (N.Text));
@@ -517,7 +561,7 @@ package body Ova_Fmt.Format_Terse is
                end if;
             end Add;
          begin
-            IO.Put_Line (Bold ("Fluff"));
+            IO.Put_Line (Section_Header ("Fluff"));
             IO.New_Line;
             Add ("Concept", E.Fluff.Has_Concept, E.Fluff.Concept);
             Add ("Birthday", E.Fluff.Has_Birthday, E.Fluff.Birthday);
