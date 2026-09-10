@@ -14,19 +14,25 @@ package body Ova_Fmt.Format_Common is
    --  Terse/Gemtext primitives.
    -----------------------------------------------------------------
 
-   --  Terse (reST) and Html_In_Rst always want reST's own emphasis
-   --  markup; Gemtext's spec has none at all, so these only wrap when
-   --  Config.Gemtext_Emphasis opts in (Config.Gemtext_Emphasis's own
-   --  doc comment).
+   --  Terse and Html_In_Rst always want reST's own emphasis markup, and
+   --  so does Hmm by default (Ova_Fmt.Format_Hmm reuses Bold/Italic/
+   --  Section_Header directly, plus Format_Attack_Line/
+   --  Format_Combat_Summary_Line below, whose own Bold/Italic calls
+   --  aren't otherwise reachable from outside this package) -- but
+   --  Gemtext's spec has no inline emphasis at all, so these only wrap
+   --  for Gemtext when Config.Gemtext_Emphasis opts in (its own doc
+   --  comment), and per the user, Hmm output can turn emphasis off
+   --  entirely via Config.Hmm_Plain (-p/--hmm-plain, off by default --
+   --  its own doc comment).
+   function No_Emphasis return Boolean is
+     ((Config.Format = Config.Gemtext and then not Config.Gemtext_Emphasis)
+      or else (Config.Format = Config.Hmm and then Config.Hmm_Plain));
+
    function Bold (S : String) return String is
-     (if Config.Format = Config.Gemtext and then not Config.Gemtext_Emphasis
-      then S
-      else "**" & S & "**");
+     (if No_Emphasis then S else "**" & S & "**");
 
    function Italic (S : String) return String is
-     (if Config.Format = Config.Gemtext and then not Config.Gemtext_Emphasis
-      then S
-      else "*" & S & "*");
+     (if No_Emphasis then S else "*" & S & "*");
 
    --  A structural section label ("Notes", "Fluff", "Companion: X",
    --  ...) -- a real gemtext `##` heading in Gemtext output (headings

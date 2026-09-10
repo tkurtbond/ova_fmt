@@ -57,6 +57,15 @@ package Ova_Fmt.Config is
    --  -O/--options).
    Hmm_Compact_Lists : aliased Boolean := False;  -- -c/--hmm-compact-lists
 
+   --  Per the user: -m/--hmm output can turn OFF *italic*/**bold**/
+   --  ***bold italic*** emphasis entirely -- unlike Gemtext (whose
+   --  spec has no emphasis syntax at all, so it's opt-in to add it),
+   --  Hmm's underlying reST-style emphasis markup is on by default
+   --  (Ova_Fmt.Format_Common.Bold/Italic's own doc comment), so this
+   --  is opt-in to remove it, off by default like every other opt-in
+   --  rendering choice.
+   Hmm_Plain : aliased Boolean := False;  -- -p/--hmm-plain
+
    --  Gemtext's spec has no inline emphasis at all (no bold/italic) --
    --  confirmed against <https://geminiprotocol.net/docs/gemtext.gmi>
    --  -- but per the user, many gemtext authors use `*`/`**` anyway,

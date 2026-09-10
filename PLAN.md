@@ -1386,16 +1386,41 @@ for test data and output-format sequencing:
    convention. No PDF rendering, same reason as Gemtext: not a Pandoc
    reader, meant to be read/loaded into an outline viewer as-is.
 
+   **`-p`/`--hmm-plain` added**, per the user, requested right after
+   this backend first landed: turns OFF `*italic*`/`**bold**`/`***bold
+   italic***` emphasis entirely for `-m`/`--hmm` output, off by default
+   (emphasis stays on, matching the shape already confirmed). Unlike
+   Gemtext's `-e`/`--gemtext-emphasis` (opt-in to *add* emphasis a spec
+   with none at all doesn't have), this is opt-in to *remove* emphasis
+   that's on by default -- the inverse polarity, since Hmm's underlying
+   markup is reST-style and on by default like Terse's. Implemented in
+   `Ova_Fmt.Format_Common.Bold`/`Italic` themselves (a new `No_Emphasis`
+   check, `(Gemtext and not Gemtext_Emphasis) or (Hmm and Hmm_Plain)`),
+   not as a wrapper in `Ova_Fmt.Format_Hmm` -- necessary, not just
+   tidier: `Format_Attack_Line`/`Format_Combat_Summary_Line`'s own
+   internal `Bold`/`Italic` calls (Health/Endurance/Defense/TV,
+   Roll/DX/Endurance Cost, attack Description) aren't reachable from
+   outside `Format_Common`, so a `Format_Hmm`-local wrapper around
+   calls it makes *itself* would have missed those. No changes needed
+   to `Ova_Fmt.Format_Hmm.adb` at all as a result -- it already called
+   `Format_Common.Bold`/`Italic`/`Section_Header` throughout, so they
+   all pick up `Config.Hmm_Plain` automatically.
+
+   `GNUmakefile` gained `TEST_HMM_PLAIN_OUTPUT`/`build/%.plain.hmm`
+   (via `-m -p`), same convention.
+
    Verified: a pre-change/post-change binary diff of Terse/Gemtext/
    Html_In_Rst output across every `test-data/*.yaml` fixture is
-   byte-identical (the `Format_Common` extraction/reuse refactor this
-   needed touches only how that shared code is factored, not what it
-   produces); `-m` and `-m -c` on every fixture (Karis/Yuu's nested
-   Companion, Fukiko's Transformation, Auren's Magic spells,
-   Fragment.yaml, Vehicle.yaml) produce correctly nested, valid
-   tab-indented outlines with no crashes; `-L`/`-n`/`-O` all confirmed
-   working in `-m` mode too. `make rst pdf gemtext html hmm` all
-   rebuild clean with no warnings.
+   byte-identical throughout this whole item (the `Format_Common`
+   extraction/reuse refactor, and then the `No_Emphasis` change, touch
+   only Hmm-reachable code paths); `-m`/`-m -c` on every fixture
+   (Karis/Yuu's nested Companion, Fukiko's Transformation, Auren's
+   Magic spells, Fragment.yaml, Vehicle.yaml) produce correctly nested,
+   valid tab-indented outlines with no crashes; `-L`/`-n`/`-O` all
+   confirmed working in `-m` mode too; `-p` (alone and combined with
+   `-c`) confirmed to leave zero `*`/`**` characters in the output
+   across every fixture, including the Attack/Combat-summary lines.
+   `make rst pdf gemtext html hmm` all rebuild clean with no warnings.
 6. **groff-in-reST backend** (`hd` table macros, not `tbl` — §7), in a
    `.. raw:: ms` block, through Pandoc's `ms` writer — same "reST
    document with one raw block spliced in for nested tables" shape as

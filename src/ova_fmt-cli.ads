@@ -112,7 +112,14 @@ private
                          "node per item. Off by default.",
          Short_Name  => 'c',
          Long_Name   => "hmm-compact-lists",
-         Variable    => Ova_Fmt.Config.Hmm_Compact_Lists'Access));
+         Variable    => Ova_Fmt.Config.Hmm_Compact_Lists'Access),
+      Arg_Parser.Make_Set_Boolean_True_Option
+        (Description => "With -m/--hmm, turn OFF *italic*/**bold**/" &
+                         "***bold italic*** emphasis markers entirely. " &
+                         "Off by default (emphasis is on).",
+         Short_Name  => 'p',
+         Long_Name   => "hmm-plain",
+         Variable    => Ova_Fmt.Config.Hmm_Plain'Access));
 
    The_Parser : Arg_Parser.Parser :=
      Arg_Parser.Make_Parser

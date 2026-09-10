@@ -47,6 +47,11 @@ TEST_HMMOUTPUT=$(foreach f,$(notdir $(TEST_DATA)),build/$(addsuffix .hmm,$(basen
 # above.
 TEST_HMM_COMPACT_OUTPUT=$(foreach f,$(notdir $(TEST_DATA)),build/$(addsuffix .compact.hmm,$(basename $(f))))
 
+# Same, with -p/--hmm-plain on -- no *italic*/**bold** emphasis markers
+# at all, for comparison against the (default, emphasized) .hmm output
+# above.
+TEST_HMM_PLAIN_OUTPUT=$(foreach f,$(notdir $(TEST_DATA)),build/$(addsuffix .plain.hmm,$(basename $(f))))
+
 .PHONY: all rst pdf gemtext html hmm install clean testclean
 
 all: $(PROGRAM)
@@ -68,7 +73,7 @@ gemtext: $(PROGRAM) $(TEST_GEMTEXTOUTPUT) $(TEST_GEMTEXT_EMPHASIS_OUTPUT)
 
 html: $(PROGRAM) $(TEST_HTMLOUTPUT) $(TEST_HTMLRENDEROUTPUT)
 
-hmm: $(PROGRAM) $(TEST_HMMOUTPUT) $(TEST_HMM_COMPACT_OUTPUT)
+hmm: $(PROGRAM) $(TEST_HMMOUTPUT) $(TEST_HMM_COMPACT_OUTPUT) $(TEST_HMM_PLAIN_OUTPUT)
 
 build/%.gen.rst : test-data/%.yaml $(PROGRAM)
 	./$(PROGRAM) $< >$@
@@ -91,6 +96,9 @@ build/%.hmm : test-data/%.yaml $(PROGRAM)
 build/%.compact.hmm : test-data/%.yaml $(PROGRAM)
 	./$(PROGRAM) -m -c $< >$@
 
+build/%.plain.hmm : test-data/%.yaml $(PROGRAM)
+	./$(PROGRAM) -m -p $< >$@
+
 #MS_COLUMNS=-V twocolumns
 build/%.ms.pdf : build/%.gen.rst
 	pandoc -r rst -w ms --template=tkb $(MS_COLUMNS) -o $@ $<
@@ -101,6 +109,6 @@ clean:
 testclean:
 	-rm -v build/*.gen.rst build/*.ms.pdf build/*.gmi build/*.html build/*.hmm
 
-.PRECIOUS: build/%.gen.rst build/%.ms.pdf build/%.gmi build/%.emp.gmi build/%.html.gen.rst build/%.html build/%.hmm build/%.compact.hmm
+.PRECIOUS: build/%.gen.rst build/%.ms.pdf build/%.gmi build/%.emp.gmi build/%.html.gen.rst build/%.html build/%.hmm build/%.compact.hmm build/%.plain.hmm
 
 print-%  : ; @echo $* = $($*)
