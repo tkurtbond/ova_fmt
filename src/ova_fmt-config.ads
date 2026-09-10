@@ -32,9 +32,30 @@ package Ova_Fmt.Config is
    --  reST nor Gemtext and shares no content-assembly code with either
    --  (Ova_Fmt.Format_Common is specifically the reST/Gemtext
    --  bulleted-list family).
-   type Output_Format is (Terse, Gemtext, Html_In_Rst, Hmm);
+   --  Groff_In_Rst: a reST document (same shared header/tagline/
+   --  summary/background/personality rendering as Terse/Html_In_Rst)
+   --  with `.. raw:: ms` blocks using groff's `hd` table macros
+   --  (`hdtbl.tmac`) instead of classic `tbl` -- PLAN.md §7's
+   --  settled per-format strategy, since `tbl` can't nest a table
+   --  inside a cell at all. Laid out to match the rulebook's own
+   --  Sample Characters spread (PLAN.md §2.1/§2.2/§9 step 6's
+   --  progress notes) rather than Html_In_Rst's simpler sequential
+   --  one-table-per-section layout: Abilities/Weaknesses side by
+   --  side, a combined "Attacks & Combat Stats" box, an "Other
+   --  Statistics" box built from `fluff:` instead of Print_Tail's
+   --  plain comma-joined line. Companion/Vehicle sub-entities print
+   --  as their own separate section *after* the main character,
+   --  structurally self-similar to a top-level entity, rather than
+   --  nested inside the granting Ability's table cell -- per the
+   --  user, and confirmed against the rulebook's own Karis/Arasuni
+   --  spread (§2.3: Arasuni gets his own separately-boxed "Attacks &
+   --  Combat Stats (ARASUNI)"), not just a workaround for `hd`'s own
+   --  undocumented per-table pagination ceiling (found this session)
+   --  that this move happens to also fix.
+   type Output_Format is (Terse, Gemtext, Html_In_Rst, Groff_In_Rst, Hmm);
 
-   Format : aliased Output_Format := Terse;  -- -g/--gemtext, -H/--html, or -m/--hmm
+   Format : aliased Output_Format := Terse;
+   --  -g/--gemtext, -H/--html, -G/--groff, or -m/--hmm
 
    --  Indentation baseline for -m/--hmm output, in tab stops -- lets
    --  the output be embedded under an existing outline node elsewhere

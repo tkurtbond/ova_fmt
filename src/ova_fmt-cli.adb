@@ -21,6 +21,12 @@ package body Ova_Fmt.Cli is
       return True;
    end Do_Html;
 
+   function Do_Groff return Boolean is
+   begin
+      Config.Format := Config.Groff_In_Rst;
+      return True;
+   end Do_Groff;
+
    function Do_Hmm return Boolean is
    begin
       Config.Format := Config.Hmm;

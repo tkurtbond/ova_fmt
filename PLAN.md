@@ -1421,7 +1421,7 @@ for test data and output-format sequencing:
    `-c`) confirmed to leave zero `*`/`**` characters in the output
    across every fixture, including the Attack/Combat-summary lines.
    `make rst pdf gemtext html hmm` all rebuild clean with no warnings.
-6. **groff-in-reST backend** (`hd` table macros, not `tbl` — §7), in a
+6. ~~**groff-in-reST backend**~~ Done (`hd` table macros, not `tbl` — §7), in a
    `.. raw:: ms` block, through Pandoc's `ms` writer — same "reST
    document with one raw block spliced in for nested tables" shape as
    HTML-in-reST, groff/`ms` instead of HTML. Sequenced after
@@ -1430,6 +1430,270 @@ for test data and output-format sequencing:
    version (§ open questions), and having a working HTML-in-reST
    nested-table reference in hand first gives something concrete to
    compare `hd`'s real rendered output against while sorting that out.
+
+   **Progress: `hd`'s nested-table support confirmed working, via a
+   standalone experiment before touching `Ova_Fmt` at all** — same role
+   `Fukiko-experiment.lout` played for the Lout backend (§3): a small
+   hand-written worked example to build the real backend against,
+   rather than debugging macro syntax and Ada code at the same time.
+   `hd-experiment.ms`/`hd-experiment.rst` (repo root; rendered PDFs at
+   `build/hd-experiment.ms.pdf`/`build/hd-experiment.rst.pdf`) record
+   the findings in full via their own header comments; summary:
+   - The installed groff is 1.23.0 (`groff -v`) — the version the plan
+     already flagged as the one where `hd` should work, confirmed
+     rather than assumed.
+   - The actual macro file is `hdtbl.tmac` ("Heidelberger table
+     macros," `/usr/share/groff/1.23.0/tmac/hdtbl.tmac`), loaded with
+     `.mso hdtbl.tmac` — not a `-m` command-line flag. It auto-loads
+     `hdmisc.tmac`/`62bit.tmac` itself.
+   - Nesting is a designed-in feature, not incidental: the package
+     tracks its own "table nesting level" register (`t*#`), and groff
+     ships its own worked nested-table example
+     (`/usr/share/doc/groff/examples/hdtbl/color_nested_tables.roff`).
+     A hand-written Fukiko-style Abilities table with a nested
+     Transformation sub-table rendered correctly (real borders/shading
+     on both levels, right-aligned Level column, bold total row) via
+     plain `groff -ms hd-experiment.ms -T ps | ps2pdf`, no warnings.
+   - Cell horizontal alignment is the `hal` keyword (`b`/`c`/`r`/`l`),
+     not `ad` — a first draft guessed `ad=r` and it was silently
+     absorbed as literal cell content rather than erroring (hdtbl
+     doesn't validate unknown `keyword=value` tokens against a fixed
+     list). Worth remembering when debugging `Ova_Fmt`'s eventual
+     output: a bad keyword there won't raise an error, it'll just show
+     up as stray text in the cell.
+   - The full intended pipeline was also verified end-to-end, not just
+     bare groff: the same `hd` markup inside a `.. raw:: ms` block,
+     run through `pandoc -r rst -w ms --template=tkb -o out.ms.pdf
+     in.rst` (the exact command `GNUmakefile`'s `build/%.ms.pdf` rule
+     already uses), passes through byte-for-byte into the intermediate
+     `.ms` text and renders correctly via pandoc's default `ms`
+     pdf-engine (`pdfroff`) — no extra flags, no template changes.
+     One layout detail noted for later: the table floats to the top of
+     the page ahead of surrounding prose in this pipeline, which is
+     standard groff `-ms` floating-table behavior, not a nesting
+     failure — something to address (or accept) once the real backend
+     emits prose around its tables, not a blocker to this proof of
+     concept.
+   - Column widths are controlled with `.TBL`'s `width` argument: a
+     quoted, space-separated per-column list, each value an absolute
+     groff length (`0.75i`) or a `%`-suffixed percentage of the current
+     line length. Values must be single-quoted (`width='10% 90%'`) —
+     double quotes are not recognized by hdtbl's argument parser and
+     produce a misleading "Invalid cell width 'width'" error instead
+     (the whole token gets misparsed as the bare keyword `width`
+     followed by unrelated cell widths). Used to narrow Fukiko's Level
+     column to 10% (Name gets the remaining 90%); a nested table's own
+     `width=` is relative to its cell's already-narrowed width, so
+     nesting levels don't need matching splits. Confirmed both via
+     plain groff and through the full Pandoc pipeline.
+
+   **Major finding (this session, before any layout was confirmed with
+   the user): `hd` tables have no pagination support at all, and
+   overflow is silent, not an error.** Investigated because the user
+   asked to organize the groff-in-reST output like the rulebook's own
+   Sample Characters spread (§2.1/§2.2) — name/tagline header,
+   Abilities/Weaknesses **side by side**, then a combined "Attacks &
+   Combat Stats" box, then an "Other Statistics" box — rather than
+   HTML-in-reST's sequential one-`<table>`-per-section layout.
+   - The side-by-side placement itself works, using the same nesting
+     hd already proved: an outer, borderless 2-column `.TBL` whose
+     left/right cells each hold one complete bordered table (confirmed
+     with Karis's real Abilities/Weaknesses, and with a 3-levels-deep
+     version — Companion row nesting Arasuni's own Abilities,
+     Weaknesses, *and* Combat-with-attacks tables all inside one
+     cell).
+   - But a full worked Karis/Arasuni version of that side-by-side
+     layout — real data, real nesting depth — rendered with **the
+     entire outer container silently missing**: no error, no warning,
+     just absent from the output, while a separate, shorter "Attacks &
+     Combat Stats" table on the same page rendered fine.
+   - Bisected the cause with a plain, non-nested `hd` table (no
+     nesting at all): at this document's font/margin/`cpd`/`csp`
+     settings, a flat table with 28 body rows renders correctly; one
+     row more (29) **vanishes completely**, with zero diagnostic
+     output, regardless of how much room is left on the page (even
+     starting fresh atop an otherwise-empty page). `hd` has no
+     mechanism to break a table across a page boundary — a table
+     taller than one page doesn't get truncated or pushed to the next
+     page, it's simply dropped in its entirety.
+   - Confirmed this isn't a bare-`groff`-only artifact: the same
+     silent, total loss happens through the real intended pipeline too
+     (`.. raw:: ms` → `pandoc -r rst -w ms --template=tkb -o out.pdf`,
+     `pdfroff` under the hood) — an earlier "it worked!" reading of
+     that test was a false positive from `grep`ing for text that also
+     happened to appear in the document's own title, not the table;
+     rechecked by counting actual row content and it fails identically
+     to bare groff.
+   - **Consequence for the side-by-side design specifically:** wrapping
+     Abilities and Weaknesses together in one outer container roughly
+     doubles the height that has to fit in one page budget compared to
+     printing them separately, and genuine nesting (a Companion's own
+     Abilities/Weaknesses/Combat tables-inside-a-cell, the entire
+     reason `hd` was chosen over classic `tbl`) adds still more height
+     to whichever table contains it. Karis/Arasuni — already the
+     repo's best-established nested-Companion example — is enough on
+     its own to trip this: the outer Abilities/Weaknesses container
+     that includes Arasuni's full nested write-up exceeds the ~28-row
+     ceiling and silently disappears.
+   - This directly bears out §7's own pre-flagged caution about `hd`
+     being a fragility risk, just discovered by testing rather than by
+     a version upgrade: it's not merely "less well supported on some
+     groff versions," it has a hard structural limitation (no
+     pagination) that risks **silent data loss** — the worst failure
+     mode, since nothing in the pipeline flags that anything went
+     wrong.
+   - **Resolved, per the user:** Companion/Vehicle sub-entities move
+     out of the granting Ability's table cell entirely and print as
+     their own separate section *after* the main character's whole
+     write-up, structurally self-similar to a top-level character (own
+     side-by-side Abilities/Weaknesses, own "Attacks & Combat Stats"
+     box) — the Ability's own row in the main table just carries a
+     short "— see below" pointer instead of a nested table. This isn't
+     a compromise invented to dodge the pagination bug — it's what the
+     rulebook's own Karis spread actually does (§2.3: Arasuni gets his
+     own separately-boxed "Attacks & Combat Stats (ARASUNI)," laid out
+     alongside Karis's own, not folded into her Abilities table), so
+     the fix is *more* faithful to the primary source, not less.
+     Transformation's sub-abilities/sub-weaknesses and Magic's spells
+     are unaffected — they're short flat lists with no `combat:` block
+     of their own, never came close to the row ceiling, and keep
+     nesting directly in the granting row's cell as before. Rebuilt
+     the full Karis/Arasuni worked example this way
+     (`hd-layout-experiment.ms`/`.rst`, repo root, replacing the
+     earlier abandoned all-nested attempt; rendered PDFs at
+     `build/hd-layout-experiment.ms.pdf`/`.rst.pdf`): every individual
+     table now stays well under 28 rows, and the previously-vanishing
+     content all renders correctly.
+   - **Second finding while re-testing:** even with every table safely
+     undersized on its own, one more thing can still make a table
+     disappear: **hd tables don't just fail past a one-page height
+     ceiling, they fail to fit in whatever space happens to be left on
+     the *current* page and do not automatically flow to a fresh page
+     on their own** — a table with plenty of room to spare on a blank
+     page still vanished silently when placed a little too close to
+     the bottom of a page that was already partly full (Arasuni's
+     Combat table, page 2 of the rebuilt example, immediately after
+     his side-by-side Abilities/Weaknesses tables). **Fix: precede
+     each top-level `.TBL` with a plain troff `.ne <estimated height>`
+     request** (unrelated to hd itself — this is core troff's ordinary
+     "need this much vertical space or start a new page" primitive) —
+     confirmed this forces the table onto a fresh page instead of
+     disappearing, with no downside beyond an intentional page break.
+     **Design consequence for the real backend:** `Format_Groff` (or
+     wherever this lands) needs to emit a `.ne` sized to each table's
+     own estimated height immediately before emitting it — a
+     mechanical row-counting exercise (header + one line per row +
+     caption, times each table's own line height), not a layout
+     judgment call, but a real piece of bookkeeping every table-
+     emitting procedure needs, on top of just not exceeding the ~28-row
+     per-table ceiling in the first place (still a real, if now much
+     rarer, residual risk — e.g. a single attack-heavy character's own
+     "Attacks & Combat Stats" box, which isn't split up by this
+     Companion/Vehicle fix at all).
+   **Progress: implemented, as a fourth `Config.Output_Format` value
+   (`Groff_In_Rst`, `-G`/--groff`) inside `Ova_Fmt.Format_Rst`, same
+   home as Html_In_Rst and for the same reason (§ Open Questions'
+   naming analysis: these Pandoc-embedded backends are extensions of
+   one family, not a reason to split `Format_Rst` apart).**
+   Header/tagline/summary/background/personality stay byte-identical
+   to Terse/Html_In_Rst via the shared `Print_Header_And_Prose`. The
+   "Other Statistics" box is built straight from `fluff:` rather than
+   reusing `Print_Tail`'s plain comma-joined Fluff line — which meant
+   splitting `Print_Tail` into `Print_Notes`/`Print_Fluff` (inline)/
+   `Print_Options_If_Shown`, now all public on `Format_Common`, so
+   Groff_In_Rst can call Notes/Options directly and substitute its own
+   Fluff rendering; verified behavior-preserving for every existing
+   caller with a pre/post binary diff across every format before
+   writing a line of the new backend.
+
+   One correctness bug found and fixed during implementation, not
+   caught by either hand-written experiment above: **`hd`'s `.TD`/
+   `.CPTN` scan every trailing argument for a `keyword=value` match by
+   comparing each token's own leading characters against hd's fixed
+   keyword list (hal, val, fst, bc, bgc, fgc, csp, cpd, cols, border,
+   height, tal, width, rowspan, colspan) — not by requiring a literal
+   `=` first.** Real free-form Ability/Weakness detail text tripped
+   this for the first time on Fukiko's Barrier ("...the second Defense
+   **value** in Combat...") — `hd` read the plain English word "value"
+   as an attempted `val=` cell-alignment keyword and choked with
+   "Invalid vertical alignment 'e'". Fix, confirmed against both the
+   original failure and a deliberately adversarial line combining every
+   reserved keyword name: put any free-form/user-authored text (a
+   Name/Detail/Note/Description — never this package's own fixed
+   column-header or caption-template strings) on its own line
+   following a bare (or keyword-args-only) `.TD`, never as a same-line
+   trailing argument — hd's keyword scan only inspects the request
+   line's own arguments, never text that follows. Two small helpers
+   (`Put_Cell`/`Put_Caption`) centralize this so it can't quietly
+   regress. `.CPTN` specifically keeps its caption as a quoted
+   same-line argument rather than the same two-line treatment, though —
+   found while testing this fix through the *real* Pandoc/pdfroff
+   pipeline (not just bare groff) that `.CPTN`'s own next-line-caption
+   support doesn't survive that pipeline (the caption leaks out as
+   plain body text above the table instead, leaving the caption blank);
+   a quoted single argument is grouped into one token by troff's own
+   parsing before hd's scan runs, so it only re-opens the original bug
+   if a caption's own leading text is a lowercase match — every caption
+   here starts with either a fixed string or a user-authored name, and
+   OVA names are conventionally capitalized throughout every fixture
+   transcribed so far, so this narrower residual risk was accepted
+   rather than chased further.
+
+   A second, smaller issue found during the same testing pass: an
+   Ability row pointing at its Companion/Vehicle section ("— see
+   below") was hand-written using the troff `\(em` escape, which the
+   new backslash-escaping step (needed for arbitrary user text, see
+   above) silently mangled into literal `\e(em`. Fixed by using the
+   literal em dash character directly, matching the convention
+   `Format_Common`/`Format_Rst`'s own `Print_Sub_Entity_Tables`-style
+   captions already used.
+
+   A third issue, cosmetic rather than a correctness bug: an earlier
+   version gave each Companion/Vehicle section its own plain `.B`
+   heading line before its tables. Since `hd` tables don't stay in the
+   surrounding document's normal text flow (the pre-existing "floats
+   ahead of prose" quirk noted below and in the first experiment),
+   that heading could drift away from the tables it was meant to
+   label — confirmed happening for Karis: "Companion: Arasuni" rendered
+   a full page *after* Arasuni's own Combat table instead of before his
+   Abilities/Weaknesses. Fixed by folding "<Label>: <Name>" into each
+   of the section's own table captions instead of separate running
+   prose, which stays glued to its content no matter how the tables
+   themselves get placed — and matches the rulebook's own convention
+   more closely anyway (§2.3: Arasuni's own box is headed "Attacks &
+   Combat Stats (ARASUNI)," not introduced by separate prose).
+
+   Verified: a pre-change/post-change binary diff of Terse/Gemtext/
+   Html_In_Rst output across every `test-data/*.yaml` fixture is
+   byte-identical (both after the `Print_Tail` refactor and after the
+   full backend landed) — the new format value and the `Print_Common`
+   split together touch nothing else. `-G` on every fixture (Karis/
+   Arasuni's full nested-Companion example, Fukiko/Miho's Transformation
+   sub-abilities, Auren/Unsorted's Magic spells, Vehicle.yaml's Vehicle
+   sub-entity, Fragment.yaml's unaffected flat rendering, Escaping.yaml's
+   special characters) produces reST that Pandoc's real `-w ms`
+   pipeline (`pandoc -r rst -w ms --template=tkb`, the same command
+   `GNUmakefile`'s new `build/%.groff.pdf` rule uses) renders with no
+   errors and no dropped tables — confirmed by grepping every expected
+   table caption out of the rendered PDF's extracted text, not just
+   eyeballing the intermediate reST. `GNUmakefile` gained
+   `TEST_GROFFOUTPUT`/`TEST_GROFFRENDEROUTPUT`/`groff` (`build/%.groff.
+   gen.rst` via `-G`, `build/%.groff.pdf` via Pandoc, the same `.ms.pdf`
+   pipeline Terse's own PDF uses, since the deliverable here is a PDF
+   like Terse, not a standalone format the way Gemtext/h-m-m/
+   HTML-in-reST's `.html` are), following the same wildcard-derived-
+   from-`TEST_DATA` convention as every other output-list variable.
+
+   Two residual, accepted limitations, not fixed: (1) the per-table
+   ~28-row silent-overflow ceiling and the need for a `.ne` before every
+   top-level table (both above) still apply — an unusually attack-heavy
+   character's own Combat box is the sharpest remaining edge, not
+   addressed by the Companion/Vehicle-section fix; (2) `hd` tables float
+   ahead of surrounding prose within a page rather than interleaving
+   with it (first noted in `hd-experiment.ms`) — visible now with real
+   prose alongside real tables, e.g. Other Statistics landing above a
+   trailing line of Personality prose that logically precedes it. Both
+   are `hd`/`-ms` limitations, not bugs introduced by this backend.
 7. **Direct-to-Lout backend last.** No Pandoc involvement (§7) — a
    structurally separate output mode from the other three (genuinely
    direct, unlike HTML-in-reST/groff-in-reST), modeled on the existing
@@ -1982,6 +2246,33 @@ automatically.
   before finalizing the field set in §5, in case they show a different
   or more complete layout than the one fillable-PDF sheet reviewed so
   far.
+- **A Companion/Vehicle sub-entity should be able to opt into
+  NPC-Fragment-style rendering** (`fragment: true` on the `companion:`/
+  `vehicle:` block itself), per the user, given directly right after
+  the groff-in-reST backend landed (§9 step 6) — not yet designed or
+  implemented. Motivation: not every Companion/Vehicle is a Karis/
+  Arasuni-scale full write-up; a simple one (comparable to Fukiko's
+  prose-only Azyrus, or a plain mook-tier sidekick/mecha with barely
+  any Abilities/Weaknesses of its own) shouldn't have to carry the
+  full separate-section treatment (own side-by-side Abilities/
+  Weaknesses tables, own "Attacks & Combat Stats" box in groff-in-reST;
+  own nested `<table>`s in Html_In_Rst; its own bulleted sub-section in
+  Terse/Gemtext) when a flat NPC-Fragment-style rendering (`Ova_Fmt.
+  Format_Common.Print_Fragment_Header`/`Print_Fragment_Attributes`,
+  already used for standalone Fragment entities, `Entity.Is_Fragment`)
+  would suit it better. Open design questions once this is picked up:
+  whether this is a per-entity-kind (Terse/Gemtext/HTML/groff) rendering
+  switch only, or whether `Entities.Sub_Entity_Record` needs its own
+  `Is_Fragment`-equivalent field (probably the latter, mirroring
+  `Entity`'s own field, so every backend's Companion/Vehicle path can
+  check it uniformly the way `Process_Entity` already branches on
+  `Entity.Is_Fragment`); whether a fragment-style Companion/Vehicle can
+  still carry a `combat:` block (a Fragment's own rendering has no
+  Attacks/Combat-stats section at all per the existing convention, so
+  this may need resolving) or whether opting into fragment style
+  implies dropping combat stats entirely; and what the flat rendering
+  actually looks like for something that (unlike a real Fragment) has a
+  `name:` field distinct from the granting Ability's own `detail:`.
 
 ## Decisions already made
 

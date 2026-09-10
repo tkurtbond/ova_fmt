@@ -28,6 +28,7 @@ private
    function Do_Help return Boolean;
    function Do_Gemtext return Boolean;
    function Do_Html return Boolean;
+   function Do_Groff return Boolean;
    function Do_Hmm return Boolean;
    function Do_Subunderliner (Arg : String) return Boolean;
    function Do_Underliner (Arg : String) return Boolean;
@@ -52,6 +53,14 @@ private
          Short_Name  => 'H',
          Long_Name   => "html",
          Handler     => Do_Html'Access),
+      Arg_Parser.Make_Option
+        (Description => "Output reST with groff `hd` tables (`.. raw:: " &
+                         "ms` blocks) laid out like the rulebook's own " &
+                         "Sample Characters spread, instead of terse " &
+                         "prose.",
+         Short_Name  => 'G',
+         Long_Name   => "groff",
+         Handler     => Do_Groff'Access),
       Arg_Parser.Make_Set_Boolean_True_Option
         (Description => "With -g/--gemtext, emit *italic*/**bold** markers " &
                          "anyway -- gemtext's spec has no inline emphasis " &

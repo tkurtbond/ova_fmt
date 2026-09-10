@@ -37,6 +37,17 @@ TEST_GEMTEXT_EMPHASIS_OUTPUT=$(foreach f,$(notdir $(TEST_DATA)),build/$(addsuffi
 TEST_HTMLOUTPUT=$(foreach f,$(notdir $(TEST_DATA)),build/$(addsuffix .html.gen.rst,$(basename $(f))))
 TEST_HTMLRENDEROUTPUT=$(foreach f,$(notdir $(TEST_DATA)),build/$(addsuffix .html,$(basename $(f))))
 
+# groff-in-reST output (-G/--groff, PLAN.md §9 step 6) -- a reST
+# document with `.. raw:: ms` blocks using groff's `hd` table macros
+# (hdtbl.tmac), laid out like the rulebook's own Sample Characters
+# spread rather than Html_In_Rst's sequential one-table-per-section
+# shape. Rendered the same way Terse's own PDF is (reST -> pandoc -r
+# rst -w ms --template=tkb -> groff/ms -> PDF): the deliverable here
+# is a PDF, same as Terse, not a standalone document format the way
+# Gemtext/h-m-m/HTML-in-reST's own .html are.
+TEST_GROFFOUTPUT=$(foreach f,$(notdir $(TEST_DATA)),build/$(addsuffix .groff.gen.rst,$(basename $(f))))
+TEST_GROFFRENDEROUTPUT=$(foreach f,$(notdir $(TEST_DATA)),build/$(addsuffix .groff.pdf,$(basename $(f))))
+
 # h-m-m output (-m/--hmm, PLAN.md §9 step 5) -- a tab-indented outline,
 # .hmm files. No PDF rendering, same reason as Gemtext: not a Pandoc
 # reader, meant to be read (or loaded into an outline viewer) as-is.
@@ -52,7 +63,7 @@ TEST_HMM_COMPACT_OUTPUT=$(foreach f,$(notdir $(TEST_DATA)),build/$(addsuffix .co
 # above.
 TEST_HMM_PLAIN_OUTPUT=$(foreach f,$(notdir $(TEST_DATA)),build/$(addsuffix .plain.hmm,$(basename $(f))))
 
-.PHONY: all rst pdf gemtext html hmm install clean testclean
+.PHONY: all rst pdf gemtext html groff hmm install clean testclean
 
 all: $(PROGRAM)
 
@@ -73,6 +84,8 @@ gemtext: $(PROGRAM) $(TEST_GEMTEXTOUTPUT) $(TEST_GEMTEXT_EMPHASIS_OUTPUT)
 
 html: $(PROGRAM) $(TEST_HTMLOUTPUT) $(TEST_HTMLRENDEROUTPUT)
 
+groff: $(PROGRAM) $(TEST_GROFFOUTPUT) $(TEST_GROFFRENDEROUTPUT)
+
 hmm: $(PROGRAM) $(TEST_HMMOUTPUT) $(TEST_HMM_COMPACT_OUTPUT) $(TEST_HMM_PLAIN_OUTPUT)
 
 build/%.gen.rst : test-data/%.yaml $(PROGRAM)
@@ -89,6 +102,12 @@ build/%.html.gen.rst : test-data/%.yaml $(PROGRAM)
 
 build/%.html : build/%.html.gen.rst
 	pandoc -r rst -w html --standalone -o $@ $<
+
+build/%.groff.gen.rst : test-data/%.yaml $(PROGRAM)
+	./$(PROGRAM) -G $< >$@
+
+build/%.groff.pdf : build/%.groff.gen.rst
+	pandoc -r rst -w ms --template=tkb -o $@ $<
 
 build/%.hmm : test-data/%.yaml $(PROGRAM)
 	./$(PROGRAM) -m $< >$@
@@ -107,8 +126,8 @@ clean:
 	-rm -f $(PROGRAM)
 
 testclean:
-	-rm -v build/*.gen.rst build/*.ms.pdf build/*.gmi build/*.html build/*.hmm
+	-rm -v build/*.gen.rst build/*.ms.pdf build/*.gmi build/*.html build/*.hmm build/*.groff.gen.rst build/*.groff.pdf
 
-.PRECIOUS: build/%.gen.rst build/%.ms.pdf build/%.gmi build/%.emp.gmi build/%.html.gen.rst build/%.html build/%.hmm build/%.compact.hmm build/%.plain.hmm
+.PRECIOUS: build/%.gen.rst build/%.ms.pdf build/%.gmi build/%.emp.gmi build/%.html.gen.rst build/%.html build/%.hmm build/%.compact.hmm build/%.plain.hmm build/%.groff.gen.rst build/%.groff.pdf
 
 print-%  : ; @echo $* = $($*)

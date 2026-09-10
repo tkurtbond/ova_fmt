@@ -107,10 +107,23 @@ package Ova_Fmt.Format_Common is
    --  Html_In_Rst path calls this directly (its own content differs
    --  only in what comes after).
 
+   procedure Print_Notes (E : Entities.Entity);
+   --  Notes only, extracted out of Print_Tail so Format_Rst's
+   --  Groff_In_Rst path can call it directly, sandwiched around its
+   --  own boxed "Other Statistics" table instead of Print_Tail's
+   --  plain comma-joined Fluff line (PLAN.md's rulebook-layout
+   --  design) -- Notes/Creation Rules have no rulebook-box analog, so
+   --  they stay exactly as every other format renders them.
+
+   procedure Print_Options_If_Shown (E : Entities.Entity);
+   --  Creation Rules (Options), same extraction reason as Print_Notes.
+
    procedure Print_Tail (E : Entities.Entity);
    --  Notes/Fluff/Creation-Rules -- byte-identical across every
-   --  format and every entity kind (Fragment included). Public:
-   --  Format_Rst's Html_In_Rst path calls this directly.
+   --  format and every entity kind (Fragment included) except
+   --  Groff_In_Rst, which calls Print_Notes/Print_Options_If_Shown
+   --  directly instead (its own Fluff rendering). Public: Format_Rst's
+   --  Html_In_Rst path calls this directly.
 
    procedure Process_Entity (E : Entities.Entity; Entity_No : Positive);
    --  Full Fragment-or-flat-bulleted-list rendering (header/prose,

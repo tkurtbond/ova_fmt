@@ -531,7 +531,7 @@ package body Ova_Fmt.Format_Common is
    --  Notes/Fluff/Creation-Rules -- byte-identical across every
    --  format and every entity kind (Fragment included, PLAN.md/
    --  Ova_Fmt.Format_Common.ads's doc comment).
-   procedure Print_Tail (E : Entities.Entity) is
+   procedure Print_Notes (E : Entities.Entity) is
    begin
       if not E.Notes.Is_Empty then
          IO.Put_Line (Section_Header ("Notes"));
@@ -541,6 +541,53 @@ package body Ova_Fmt.Format_Common is
             IO.New_Line;
          end loop;
       end if;
+   end Print_Notes;
+
+   procedure Print_Options_If_Shown (E : Entities.Entity) is
+   begin
+      --  GM/author metadata (which character-creation limiting rules
+      --  were used, rulebook p. 20-21), not part of the character's
+      --  own write-up -- rendered only when asked for, per the user.
+      if Config.Show_Options and then E.Has_Options then
+         declare
+            O     : Entities.Options_Block renames E.Options;
+            Line  : Unbounded_String;
+            First : Boolean := True;
+
+            procedure Add (Item : String) is
+            begin
+               if not First then
+                  Line := Line & ", ";
+               end if;
+               First := False;
+               Line := Line & Item;
+            end Add;
+         begin
+            if O.Has_Base_Zero then
+               Add ("Base Zero (±" & Trim_Img (O.Base_Zero) & ")");
+            end if;
+            if O.Has_Power_Ceiling then
+               Add ("Power Ceiling (" & Trim_Img (O.Power_Ceiling) & ")");
+            end if;
+            if O.Scaled_Cost then
+               Add ("Scaled Cost");
+            end if;
+            if O.Combined_Effectiveness then
+               Add ("Combined Effectiveness");
+            end if;
+            if not First then
+               IO.Put_Line
+                 (Bold ("Creation Rules:") & " " &
+                  End_With_Period (To_String (Line)));
+               IO.New_Line;
+            end if;
+         end;
+      end if;
+   end Print_Options_If_Shown;
+
+   procedure Print_Tail (E : Entities.Entity) is
+   begin
+      Print_Notes (E);
 
       if E.Has_Fluff then
          declare
@@ -584,44 +631,7 @@ package body Ova_Fmt.Format_Common is
          end;
       end if;
 
-      --  GM/author metadata (which character-creation limiting rules
-      --  were used, rulebook p. 20-21), not part of the character's
-      --  own write-up -- rendered only when asked for, per the user.
-      if Config.Show_Options and then E.Has_Options then
-         declare
-            O     : Entities.Options_Block renames E.Options;
-            Line  : Unbounded_String;
-            First : Boolean := True;
-
-            procedure Add (Item : String) is
-            begin
-               if not First then
-                  Line := Line & ", ";
-               end if;
-               First := False;
-               Line := Line & Item;
-            end Add;
-         begin
-            if O.Has_Base_Zero then
-               Add ("Base Zero (±" & Trim_Img (O.Base_Zero) & ")");
-            end if;
-            if O.Has_Power_Ceiling then
-               Add ("Power Ceiling (" & Trim_Img (O.Power_Ceiling) & ")");
-            end if;
-            if O.Scaled_Cost then
-               Add ("Scaled Cost");
-            end if;
-            if O.Combined_Effectiveness then
-               Add ("Combined Effectiveness");
-            end if;
-            if not First then
-               IO.Put_Line
-                 (Bold ("Creation Rules:") & " " &
-                  End_With_Period (To_String (Line)));
-               IO.New_Line;
-            end if;
-         end;
-      end if;
+      Print_Options_If_Shown (E);
    end Print_Tail;
 
    procedure Process_Entity (E : Entities.Entity; Entity_No : Positive) is
