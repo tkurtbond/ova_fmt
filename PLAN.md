@@ -1515,38 +1515,65 @@ for test data and output-format sequencing:
   `test-data/*.yaml` fixture is byte-identical (none of those use
   `options:`); `Options.yaml` itself renders both entities' rules
   correctly with `-O` and shows nothing options-related without it.
-- **TODO: NPC Fragment support** — the rulebook's own minor-NPC format
-  (p. 142, "NPC Fragments"), distinct from the full-character write-up
-  every sample character and `Ova_Fmt.Entities`/`Format_Terse` are
-  currently modeled on. Shape, from the rulebook page directly: the
-  NPC's name bold-italicized inline in a sentence ("The ***Shady
-  Teacher*** is new to the school...") rather than its own heading;
-  one short prose paragraph in place of separate `background`/
-  `personality` sections; then a single compact `Attributes:` line —
-  Abilities then Weaknesses, each list independently alphabetized
-  (confirming, from a second source, the alphabetization already
-  implemented per the audit above), comma-joined within each list,
-  semicolon-separated between the two, parentheticals for a `detail`
-  inline (e.g. `Attributes: Art of Invisibility +2, Perceptive +2,
-  Smart +3; Absent-Minded −1, Quirk −1 (Always Wears Sunglasses),
-  Secret −2 (To Everybody)`) — no `combat:` block, no Attacks, no
-  fluff at all.
+- ~~**TODO: NPC Fragment support**~~ Resolved and implemented. The
+  rulebook's own minor-NPC format (p. 142, "NPC Fragments"), distinct
+  from the full-character write-up every sample character and
+  `Ova_Fmt.Entities`/`Format_Terse` were otherwise modeled on: the
+  NPC's name bolded inline within `background`'s own prose ("The
+  **Shady Teacher** is new to the school...") rather than a separate
+  title/header; then a single compact `Attributes:` line — Abilities
+  then Weaknesses, each list independently alphabetized (confirming,
+  from a second source, the alphabetization already implemented per
+  the audit above), comma-joined within each list, semicolon-separated
+  between the two.
 
-  The data model needs no changes: `Ability`/`Weakness` already carry
-  `detail`, and `combat`/`personality`/`background`/`fluff` are
-  already fully optional, so an NPC Fragment is just an `Entity` with
-  a sparse field set. What's missing is purely a *renderer* for this
-  compact style — today's `Format_Terse` always prints one bulleted
-  line per Ability/Weakness with a bold label, never this single
-  comma-joined paragraph. Raised with the user once already but not
-  yet settled: should `ova_fmt` (a) auto-detect a "fragment" entity
-  from its sparse shape (no `combat:`, no `background`/`personality`)
-  and switch styles automatically, (b) require an explicit CLI flag
-  the user passes per run, (c) require an explicit schema marker
-  (e.g. `fragment: true`) so the author states intent directly rather
-  than it being inferred from which fields happen to be absent, or
-  (d) something else — needs a real conversation, not a default
-  guess, before implementing.
+  Per the user: an explicit `fragment: true` schema marker, not
+  auto-detected from a sparse field set — an NPC Fragment is otherwise
+  the *same shape* as a full character (loaded through the exact same
+  `Load_Entity`/`Load_Ability`/`Load_Weakness` path, same `Entity`
+  type), just missing most of the optional fields a full write-up
+  has. One thing does become required regardless of `fragment:`,
+  though, per the user ("it has to have a name of course"): `Entity`'s
+  `Name` — previously `Has_Name`-guarded like `Tagline`/`Summary`, now
+  goes through `Require_String` like everything else genuinely
+  required, so a nameless entity is now a reported error (Path
+  `/<n>/name`) rather than a silently headerless render.
+
+  Implemented: `Entities.Entity.Is_Fragment` (plain flag, loaded from
+  `fragment:`, `Boolean_Value`). `Format_Terse.Process_Entity` branches
+  on it — `Print_Fragment_Header` prints `Background` raw (the name is
+  expected embedded and bolded by the author within it, matching the
+  rulebook's own convention exactly, so no ova_fmt code tries to
+  auto-generate the "The **X** is..." sentence) or falls back to a
+  bare bolded `Name` if there's no `Background` prose to carry it;
+  `Print_Fragment_Attributes` prints the combined line. Everything
+  else (Combat/Attacks/linked-content sections/Notes/Fluff/Creation
+  Rules) still renders exactly as it would for a full character if
+  present, since a Fragment is only *typically* sparse, not
+  structurally forbidden from having them.
+
+  One real formatting difference found comparing against two
+  independent rulebook examples, not just one (Shady Teacher and
+  Snobbish Upperclassman): a Fragment's `Attributes:` line orders a
+  `detail` *after* the Level (`Quirk −1 (Always Wears Sunglasses)`,
+  `Knowledge +2 (Kendo)`) — the opposite of `Format_Ability_Line`/
+  `Format_Weakness_Line`'s "Name (detail) Level" used everywhere else
+  in this program. Added `Format_Fragment_Ability_Line`/
+  `Format_Fragment_Weakness_Line` rather than reusing the existing
+  formatters, confirmed correct against both examples.
+
+  Added `test-data/Fragment.yaml`: both rulebook NPC Fragment examples
+  above, transcribed (game-mechanical data faithfully, the short
+  descriptions kept close to source as brief captions, same
+  copyright-conscious policy as every other `test-data/*.yaml` file).
+  Verified: `ova_fmt test-data/Fragment.yaml` output matches the
+  rulebook page's own text exactly for both NPCs; a pre-change/
+  post-change binary diff across every other `test-data/*.yaml`
+  fixture is byte-identical (`Entity.Name` going from optional to
+  required doesn't change anything since all of them already have
+  one); a synthetic no-`name` fixture now reports `/0/name: missing
+  required key "name"` and produces no output, as expected from the
+  error-collection redesign.
 - ~~**`combat.defense: "4/5"`**~~ Resolved (§2.2): the pair is the
   character's normal Defense Roll alongside their Barrier-Ability
   Defense Roll (Barrier's rules text: *"Instead of making a normal

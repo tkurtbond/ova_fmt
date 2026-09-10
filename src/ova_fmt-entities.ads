@@ -256,7 +256,11 @@ package Ova_Fmt.Entities is
    end record;
 
    type Entity is record
-      Has_Name        : Boolean := False; Name        : Unbounded_String;
+      --  Required, unlike every other Entity-level field below --
+      --  per the user, an NPC Fragment (Is_Fragment) is otherwise the
+      --  same shape as a full character, missing most of these
+      --  optional fields, but it has to have a Name regardless.
+      Name            : Unbounded_String;
       Has_Tagline     : Boolean := False; Tagline     : Unbounded_String;
       Has_Summary     : Boolean := False; Summary     : Unbounded_String;
       Has_Background  : Boolean := False; Background  : Unbounded_String;
@@ -267,6 +271,15 @@ package Ova_Fmt.Entities is
       Notes           : Note_Vectors.Vector;
       Has_Fluff       : Boolean := False; Fluff : Fluff_Block;
       Has_Options     : Boolean := False; Options : Options_Block;
+      --  NPC Fragment (rulebook p. 142, "NPC Fragments"): a minor
+      --  NPC's minimal write-up -- the character's name embedded
+      --  (and, by rulebook convention, bolded by the author) within
+      --  Background's own prose rather than a separate title/header,
+      --  and a single comma-joined "Attributes:" line instead of
+      --  separate labeled Abilities/Weaknesses sections. An explicit
+      --  marker, per the user, rather than inferred from which
+      --  optional fields happen to be absent.
+      Is_Fragment     : Boolean := False;
    end record;
 
    function Load_Entity (N : Libfyaml.Nodes.Node) return Entity

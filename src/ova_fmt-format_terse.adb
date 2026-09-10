@@ -163,6 +163,34 @@ package body Ova_Fmt.Format_Terse is
    function Format_Weakness_Line (W : Entities.Weakness) return String is
      (Name_Detail (W.Name, W.Has_Detail, W.Detail) & " " & Signed_Img (W.Level));
 
+   --  NPC Fragment (rulebook p. 142) Ability/Weakness line order is
+   --  "Name Level (detail)", confirmed against two of the rulebook's
+   --  own examples ("Quirk -1 (Always Wears Sunglasses)", "Knowledge
+   --  +2 (Kendo)") -- detail *after* the level, the opposite of
+   --  Format_Ability_Line/Format_Weakness_Line's "Name (detail)
+   --  Level" used everywhere else. No rulebook Fragment example has
+   --  Perks/Flaws or a note, so there's nothing to confirm their
+   --  placement against, but appending them after (matching the
+   --  normal lines' own order) is the least surprising choice if a
+   --  Fragment ever needs one.
+   function Format_Fragment_Ability_Line (A : Entities.Ability) return String is
+      Result : Unbounded_String :=
+        To_Unbounded_String (To_String (A.Name) & " " & Signed_Img (A.Level));
+   begin
+      if A.Has_Detail then
+         Result := Result & " (" & A.Detail & ")";
+      end if;
+      Result := Result & Format_Modifiers_Bracket (A.Perks, A.Flaws);
+      if A.Has_Note then
+         Result := Result & " (" & A.Note & ")";
+      end if;
+      return To_String (Result);
+   end Format_Fragment_Ability_Line;
+
+   function Format_Fragment_Weakness_Line (W : Entities.Weakness) return String is
+     (To_String (W.Name) & " " & Signed_Img (W.Level) &
+      (if W.Has_Detail then " (" & To_String (W.Detail) & ")" else ""));
+
    function Format_Sub_Item_Line (S : Entities.Sub_Item) return String is
       Result : Unbounded_String :=
         To_Unbounded_String
@@ -333,9 +361,59 @@ package body Ova_Fmt.Format_Terse is
    --  Process_Entity.
    -----------------------------------------------------------------
 
+   --  NPC Fragment (rulebook p. 142): the name has no separate title/
+   --  header of its own -- it's expected to appear (bolded by the
+   --  author, per rulebook convention) inside Background's own prose,
+   --  same as the rulebook's "The **Shady Teacher** is new to the
+   --  school..." -- so this only falls back to printing a bare bolded
+   --  Name when there's no Background prose to carry it, rather than
+   --  leaving the character unidentified.
+   procedure Print_Fragment_Header (E : Entities.Entity) is
+   begin
+      if E.Has_Background then
+         IO.Put_Line (To_String (E.Background));
+      else
+         IO.Put_Line (Bold (To_String (E.Name)));
+      end if;
+      IO.New_Line;
+   end Print_Fragment_Header;
+
+   --  Abilities then Weaknesses, each already alphabetized (per the
+   --  sort audit), comma-joined within a list and semicolon-separated
+   --  between the two lists -- the rulebook's own compact NPC
+   --  Fragment shape, e.g. "Attributes: Art of Invisibility +2,
+   --  Perceptive +2, Smart +3; Absent-Minded -1, Quirk -1 (...)".
+   procedure Print_Fragment_Attributes (E : Entities.Entity) is
+   begin
+      if E.Abilities.Is_Empty and then E.Weaknesses.Is_Empty then
+         return;
+      end if;
+      IO.Put (Bold ("Attributes:") & " ");
+      for I in E.Abilities.First_Index .. E.Abilities.Last_Index loop
+         if I > E.Abilities.First_Index then
+            IO.Put (", ");
+         end if;
+         IO.Put (Format_Fragment_Ability_Line (E.Abilities (I)));
+      end loop;
+      if not E.Abilities.Is_Empty and then not E.Weaknesses.Is_Empty then
+         IO.Put ("; ");
+      end if;
+      for I in E.Weaknesses.First_Index .. E.Weaknesses.Last_Index loop
+         if I > E.Weaknesses.First_Index then
+            IO.Put (", ");
+         end if;
+         IO.Put (Format_Fragment_Weakness_Line (E.Weaknesses (I)));
+      end loop;
+      IO.Put_Line (".");
+      IO.New_Line;
+   end Print_Fragment_Attributes;
+
    procedure Process_Entity (E : Entities.Entity; Entity_No : Positive) is
    begin
-      if E.Has_Name then
+      if E.Is_Fragment then
+         Print_Fragment_Header (E);
+         Print_Fragment_Attributes (E);
+      else
          declare
             Title : constant String :=
               Name_Detail
@@ -351,54 +429,54 @@ package body Ova_Fmt.Format_Terse is
             IO.Put_Line (String'(1 .. Title'Length => Underline_Char));
             IO.New_Line;
          end;
-      end if;
 
-      if E.Has_Tagline then
-         IO.Put_Line (Italic ("""" & To_String (E.Tagline) & """"));
-         IO.New_Line;
-      end if;
+         if E.Has_Tagline then
+            IO.Put_Line (Italic ("""" & To_String (E.Tagline) & """"));
+            IO.New_Line;
+         end if;
 
-      if E.Has_Summary then
-         IO.Put_Line (Italic (To_String (E.Summary)));
-         IO.New_Line;
-      end if;
+         if E.Has_Summary then
+            IO.Put_Line (Italic (To_String (E.Summary)));
+            IO.New_Line;
+         end if;
 
-      if E.Has_Background then
-         IO.Put_Line (Bold ("Background"));
-         IO.New_Line;
-         IO.Put_Line (To_String (E.Background));
-         IO.New_Line;
-      end if;
+         if E.Has_Background then
+            IO.Put_Line (Bold ("Background"));
+            IO.New_Line;
+            IO.Put_Line (To_String (E.Background));
+            IO.New_Line;
+         end if;
 
-      if E.Has_Personality then
-         IO.Put_Line (Bold ("Personality"));
-         IO.New_Line;
-         IO.Put_Line (To_String (E.Personality));
-         IO.New_Line;
-      end if;
+         if E.Has_Personality then
+            IO.Put_Line (Bold ("Personality"));
+            IO.New_Line;
+            IO.Put_Line (To_String (E.Personality));
+            IO.New_Line;
+         end if;
 
-      if not E.Abilities.Is_Empty then
-         IO.Put ("- " & Bold ("Abilities:") & " ");
-         for I in E.Abilities.First_Index .. E.Abilities.Last_Index loop
-            if I > E.Abilities.First_Index then
-               IO.Put (", ");
-            end if;
-            IO.Put (Format_Ability_Line (E.Abilities (I)));
-         end loop;
-         IO.Put_Line (".");
-         IO.New_Line;
-      end if;
+         if not E.Abilities.Is_Empty then
+            IO.Put ("- " & Bold ("Abilities:") & " ");
+            for I in E.Abilities.First_Index .. E.Abilities.Last_Index loop
+               if I > E.Abilities.First_Index then
+                  IO.Put (", ");
+               end if;
+               IO.Put (Format_Ability_Line (E.Abilities (I)));
+            end loop;
+            IO.Put_Line (".");
+            IO.New_Line;
+         end if;
 
-      if not E.Weaknesses.Is_Empty then
-         IO.Put ("- " & Bold ("Weaknesses:") & " ");
-         for I in E.Weaknesses.First_Index .. E.Weaknesses.Last_Index loop
-            if I > E.Weaknesses.First_Index then
-               IO.Put (", ");
-            end if;
-            IO.Put (Format_Weakness_Line (E.Weaknesses (I)));
-         end loop;
-         IO.Put_Line (".");
-         IO.New_Line;
+         if not E.Weaknesses.Is_Empty then
+            IO.Put ("- " & Bold ("Weaknesses:") & " ");
+            for I in E.Weaknesses.First_Index .. E.Weaknesses.Last_Index loop
+               if I > E.Weaknesses.First_Index then
+                  IO.Put (", ");
+               end if;
+               IO.Put (Format_Weakness_Line (E.Weaknesses (I)));
+            end loop;
+            IO.Put_Line (".");
+            IO.New_Line;
+         end if;
       end if;
 
       Print_Combat_And_Attacks (E.Combat);

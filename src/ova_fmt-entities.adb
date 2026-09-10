@@ -498,9 +498,10 @@ package body Ova_Fmt.Entities is
          Result.Notes.Append (Load_Note (Item));
       end Add_Note;
    begin
-      Result.Has_Name := N.Has_Key ("name");
-      if Result.Has_Name then
-         Result.Name := To_Unbounded_String (N.String_Value ("name"));
+      Result.Name := Require_String (N, "name");
+
+      if N.Has_Key ("fragment") then
+         Result.Is_Fragment := N.Boolean_Value ("fragment");
       end if;
 
       Result.Has_Tagline := N.Has_Key ("tagline");
