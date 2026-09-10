@@ -1287,6 +1287,60 @@ for test data and output-format sequencing:
   correctly, optional: `Load_Entity` only iterates `notes:` when the
   key is present at all, via `Notes_Node.Is_Valid`.)
 
+  **New finding, not originally part of this audit: Abilities/
+  Weaknesses/Perks/Flaws should be alphabetized; `ova_fmt` wasn't doing
+  it at all.** Surfaced by the user pointing out the rulebook's own
+  "NPC Fragments" minor-NPC format (p. 142 — a compact `Attributes:
+  <Abilities>; <Weaknesses>` line, Abilities and Weaknesses each
+  independently alphabetized) and asking whether normal output does
+  this too. It didn't — `Ova_Fmt.Entities` had no sorting anywhere.
+  Checking every other `test-data/*.yaml` file confirmed the same
+  convention holds beyond just Fragments: Entity-level Abilities/
+  Weaknesses, Companion's own Abilities/Weaknesses, a Transformation-
+  granting Ability's linked sub-Abilities/sub-Weaknesses, and every
+  Ability/Attack's Perks and Flaws are alphabetized (each list
+  independently) in the source data — but Attacks and Spells are NOT
+  (Karis's Attack order, Auren's spell order both preserve a
+  non-alphabetical given order). This had gone unnoticed because every
+  transcribed fixture happened to already be alphabetized by hand.
+
+  Implemented, mirroring `besm2_fmt.Entities`' own
+  `CI_Less`/`Generic_Sorting` shape: `Ability_Sorting`/
+  `Weakness_Sorting` (applied to `Entity.Abilities`/`Weaknesses` in
+  `Load_Entity`), and `Perk_Flaw_Sorting`/`Sub_Item_Sorting` applied
+  inside `Load_Perk_Flaw_List`/`Load_Sub_Item_List` themselves — single
+  choke points, so one fix there covers every call site at once
+  (Attack/Sub_Item/Ability's Perks and Flaws; Companion's Abilities/
+  Weaknesses; a Transformation-granting Ability's sub-Abilities/
+  sub-Weaknesses).
+
+  One real bug surfaced while verifying against the existing fixtures:
+  `Ada.Containers.Vectors.Generic_Sorting.Sort` is not guaranteed
+  *stable*, so a plain by-Name comparator left same-named items (e.g.
+  Braun's three "Knowledge" Abilities, distinguished only by `detail`:
+  Computer Whiz/Cosplay/Games, Anime, & Manga; Auren's two "Quirk"
+  Weaknesses) in an arbitrary, sort-algorithm-dependent relative order
+  — confirmed by a pre-change/post-change binary diff across all 12
+  fixtures, which reshuffled exactly those ties and nothing else.
+  Fixed per the user: every comparator (`Ability_CI_Less`/
+  `Weakness_CI_Less`/`Perk_Flaw_CI_Less`/`Sub_Item_CI_Less`) breaks a
+  Name tie by comparing `Detail` next, deterministically. Re-verified:
+  the same binary diff now shows exactly one remaining difference
+  (Miho's attack Perks/Flaws, e.g. "Ranged, Overwhelming" →
+  "Overwhelming, Ranged") — a genuine fix, since that fixture's source
+  data was never actually alphabetized, unlike the others.
+
+  Added `test-data/Unsorted.yaml`: a synthetic (non-rulebook, no
+  copyright concern) fixture exercising every sorted list at once, all
+  deliberately given out of order — top-level Abilities/Weaknesses, an
+  Ability's Perks/Flaws, an Attack's Perks/Flaws, a Companion's own
+  Abilities/Weaknesses, and a Transformation's granted sub-Abilities/
+  sub-Weaknesses — plus an Attacks list and a Spells list also given
+  out of order, to confirm those two are correctly left unsorted.
+  `./ova_fmt test-data/Unsorted.yaml` verified by hand: every sorted
+  list comes out alphabetical, Attacks/Spells preserve their given
+  (non-alphabetical) order.
+
   Also worth deciding, not just auditing: when a genuinely required
   field really is missing, is aborting the *whole file* with a
   `Missing_Key` error (today's behavior, inherited from

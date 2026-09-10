@@ -1,3 +1,4 @@
+with Ada.Characters.Handling;
 with Ada.Strings;
 with Ada.Strings.Fixed;
 with Ada.Strings.Maps;
@@ -15,6 +16,64 @@ package body Ova_Fmt.Entities is
 
    function Trim_Whitespace (S : String) return String is
      (Ada.Strings.Fixed.Trim (S, Whitespace, Whitespace));
+
+   --  Abilities, Weaknesses, Perks, and Flaws are each independently
+   --  alphabetized in the rulebook's own presentation (full character
+   --  write-ups and NPC Fragments alike, PLAN.md's optional-vs-required
+   --  audit) -- same shape as besm2_fmt.Entities' Attribute/Defect/
+   --  Skill sorting, and for the same reason: every test-data/*.yaml
+   --  fixture happens to already be transcribed in alphabetical
+   --  order, so this was invisible until checked against a
+   --  deliberately out-of-order case (test-data/Unsorted.yaml).
+   --  Attacks and Spells are deliberately NOT sorted -- confirmed
+   --  from existing test data (Karis's Attacks, Auren's spells) that
+   --  those preserve their given order rather than alphabetizing.
+   function CI_Less (L, R : Unbounded_String) return Boolean is
+     (Ada.Characters.Handling.To_Lower (To_String (L)) <
+      Ada.Characters.Handling.To_Lower (To_String (R)));
+
+   function CI_Equal (L, R : Unbounded_String) return Boolean is
+     (Ada.Characters.Handling.To_Lower (To_String (L)) =
+      Ada.Characters.Handling.To_Lower (To_String (R)));
+
+   --  Ada.Containers.Vectors.Generic_Sorting.Sort is not guaranteed
+   --  stable, so a Name-only comparator leaves same-named items (e.g.
+   --  Braun's three "Knowledge" Abilities, distinguished only by
+   --  Detail: Computer Whiz/Cosplay/Games, Anime, & Manga; Auren's two
+   --  "Quirk" Weaknesses) in whatever order the sort algorithm happens
+   --  to produce -- confirmed by this session's Braun/Natsuki/Raine/Yuu
+   --  regression check, where adding the plain-Name sort reshuffled
+   --  those ties unpredictably. Breaking ties by Detail, per the user,
+   --  keeps the result deterministic and reproducible. An item with no
+   --  Detail sorts as if Detail were "" (Unbounded_String's default),
+   --  which is fine: no transcribed example mixes a bare and a
+   --  detailed item under the same Name.
+   function Ability_CI_Less (L, R : Ability) return Boolean is
+     (if CI_Equal (L.Name, R.Name) then CI_Less (L.Detail, R.Detail)
+      else CI_Less (L.Name, R.Name));
+   package Ability_Sorting is new Ability_Vectors.Generic_Sorting
+     ("<" => Ability_CI_Less);
+
+   function Weakness_CI_Less (L, R : Weakness) return Boolean is
+     (if CI_Equal (L.Name, R.Name) then CI_Less (L.Detail, R.Detail)
+      else CI_Less (L.Name, R.Name));
+   package Weakness_Sorting is new Weakness_Vectors.Generic_Sorting
+     ("<" => Weakness_CI_Less);
+
+   function Perk_Flaw_CI_Less (L, R : Perk_Flaw) return Boolean is
+     (if CI_Equal (L.Name, R.Name) then CI_Less (L.Detail, R.Detail)
+      else CI_Less (L.Name, R.Name));
+   package Perk_Flaw_Sorting is new Perk_Flaw_Vectors.Generic_Sorting
+     ("<" => Perk_Flaw_CI_Less);
+
+   --  Covers both of Sub_Item's two roles (Companion's own
+   --  Abilities/Weaknesses, and a Transformation-granting Ability's
+   --  linked sub-Abilities/sub-Weaknesses) -- same field, same rule.
+   function Sub_Item_CI_Less (L, R : Sub_Item) return Boolean is
+     (if CI_Equal (L.Name, R.Name) then CI_Less (L.Detail, R.Detail)
+      else CI_Less (L.Name, R.Name));
+   package Sub_Item_Sorting is new Sub_Item_Vectors.Generic_Sorting
+     ("<" => Sub_Item_CI_Less);
 
    -----------------------------------------------------------------
    --  Perks/Flaws.
@@ -53,6 +112,7 @@ package body Ova_Fmt.Entities is
       end Add;
    begin
       N.Iterate (Add'Access);
+      Perk_Flaw_Sorting.Sort (Result);
       return Result;
    end Load_Perk_Flaw_List;
 
@@ -150,6 +210,7 @@ package body Ova_Fmt.Entities is
       end Add;
    begin
       N.Iterate (Add'Access);
+      Sub_Item_Sorting.Sort (Result);
       return Result;
    end Load_Sub_Item_List;
 
@@ -338,10 +399,12 @@ package body Ova_Fmt.Entities is
 
       if Abilities_Node.Is_Valid then
          Abilities_Node.Iterate (Add_Ability'Access);
+         Ability_Sorting.Sort (Result.Abilities);
       end if;
 
       if Weaknesses_Node.Is_Valid then
          Weaknesses_Node.Iterate (Add_Weakness'Access);
+         Weakness_Sorting.Sort (Result.Weaknesses);
       end if;
 
       if Combat_Node.Is_Valid then
