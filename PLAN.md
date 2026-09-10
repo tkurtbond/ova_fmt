@@ -1227,6 +1227,20 @@ for test data and output-format sequencing:
    `~/Reference/Document-Tools/lout/`'s `user.pdf`/`expert.pdf` (§2)
    as needed for anything beyond what that one example already shows.
 
+**`GNUmakefile` convention to keep as each new backend lands, per the
+user:** every existing output-list variable (`TEST_TERSEOUTPUT`,
+`TEST_PDFOUTPUT`) is derived from the single wildcard-based `TEST_DATA`
+(`$(foreach f,$(notdir $(TEST_DATA)),...)`, same shape `besm2_fmt`'s
+own `GNUmakefile` uses for its several output variants), not a
+hardcoded per-fixture list — confirmed this is why `test-data/
+Fragment.yaml` got a `build/Fragment.ms.pdf` automatically the moment
+it was added, no `GNUmakefile` change needed. Each new backend's own
+output-list variable (an eventual `TEST_HTMLOUTPUT`, `TEST_HMMOUTPUT`,
+`TEST_LOUTOUTPUT`, ...) needs to follow the same derived-from-
+`TEST_DATA` shape, not enumerate fixtures by hand, so every existing
+and future `test-data/*.yaml` file keeps getting picked up for every
+format automatically.
+
 ## Open questions
 
 - **TODO: audit which fields are actually optional vs. required, and
