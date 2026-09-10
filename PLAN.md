@@ -1325,10 +1325,16 @@ for test data and output-format sequencing:
   or 3 player books to confirm the exact shape this implies; needs
   either a fabricated test fixture or a wait until a Vehicle-using OVA
   character is available to transcribe from.
-- **Which output formats are actually wanted**: §7/§8 now cover terse,
-  HTML, raw-ms/`hd`, and Lout; still unconfirmed whether an h-m-m
-  outline backend (no OVA attempt exists at all, unlike BESM) is also
-  wanted.
+- ~~**Which output formats are actually wanted**~~: §7/§8 cover terse,
+  HTML, raw-ms/`hd`, and Lout. **Confirmed, per the user: an h-m-m
+  outline backend is also wanted** (no OVA attempt exists yet, unlike
+  BESM, where `besm2_fmt.Format_Hmm` is the reference to follow).
+  **TODO: add an h-m-m backend** (`Ova_Fmt.Format_Hmm`), modeled on
+  `besm2_fmt`'s tab-indented-outline design (its `PLAN.md` §8 item 5)
+  — not yet sequenced into the §9 build order (terse/HTML/`hd`/Lout),
+  and not yet designed against OVA's specific nesting shapes
+  (Transformation/Companion/Magic-spell linked content, Perks/Flaws,
+  paired Defense) the way terse's own outline was.
 - **groff version/`hd` support** (§7): the `hd` table macros are
   reportedly not well supported in groff ~1.24 but are supported in
   1.23, which is what's actually installed here — confirm the
