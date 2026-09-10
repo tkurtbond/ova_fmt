@@ -1256,15 +1256,58 @@ for test data and output-format sequencing:
    author-written `**Shady Teacher**` inside its `background:` prose
    renders unchanged either way, since that's raw author text passed
    through verbatim, not something `Bold`/`Italic` generate.
-4. **HTML-in-reST backend**: raw `.. raw:: html` blocks containing
-   hand-written, potentially-nested `<table>` markup (§7), through the
-   same reST→Pandoc pipeline `besm2_fmt`'s raw-ms backend already
-   demonstrates the shape of (reST→Pandoc→`ms` there;
+4. ~~**HTML-in-reST backend**~~ Done. Raw `.. raw:: html` blocks
+   containing hand-written, potentially-nested `<table>` markup (§7),
+   through the same reST→Pandoc pipeline `besm2_fmt`'s raw-ms backend
+   already demonstrates the shape of (reST→Pandoc→`ms` there;
    reST→Pandoc→HTML here). Named "HTML-in-reST," not just "HTML," per
    the user — it's a reST document with one raw HTML block spliced in
    for nested tables, still run through Pandoc, not a standalone HTML
    document generated directly (§ open questions has the full
    reasoning for this naming).
+
+   Table structure confirmed with the user *before* implementing (a
+   full worked Karis/Arasuni example, since — unlike Terse — there's
+   no rulebook layout to match; this is a genuinely new design):
+   header/tagline/summary/background/personality/Notes/Fluff/Creation
+   Rules stay plain reST, byte-identical to Terse (factored into a
+   shared `Print_Header_And_Prose`, called by both); one `<table>` per
+   section (Abilities, Weaknesses, Combat, Combat's own Attacks); an
+   Ability row that grants linked content (Companion/Vehicle via
+   `Sub_Entity`, Transformation's `Sub_Abilities`/`Sub_Weaknesses`, or
+   Magic's `Spells`) gets one extra `<td>` holding a full nested set of
+   `<table>`s for that content — genuine `<table>`-inside-`<td>`
+   nesting, the entire reason this backend exists over reST's own
+   table syntax. NPC Fragments render identically to Terse regardless
+   of `-H` — a Fragment's whole point is being flat/minimal, so there's
+   nothing to nest.
+
+   Implemented as a third `Config.Output_Format` value (`Html_In_Rst`,
+   `-H`/`--html`) inside `Ova_Fmt.Format_Terse` — no reorganization
+   needed, confirming this session's earlier naming-question analysis
+   was right that these Pandoc-embedded backends are extensions of the
+   same family, not a reason to split `Format_Terse` apart.
+   `Html_Escape` (`&`/`<`/`>`) is applied to every piece of free-form
+   text placed in a table cell — the one genuinely new correctness
+   concern Terse/Gemtext never had, since plain text needs no escaping
+   there. Added `test-data/Escaping.yaml` (synthetic, since none of
+   the other fixtures happen to contain `&`/`<`/`>`) as the only
+   regression coverage for `Html_Escape` actually firing.
+
+   Verified: a pre-change/post-change binary diff of Terse and Gemtext
+   output across every `test-data/*.yaml` fixture is byte-identical
+   (the new format value touches nothing else); `-H` on every fixture
+   (`Vehicle.yaml`'s nested Vehicle content, `Fragment.yaml`'s
+   unaffected flat rendering, `Escaping.yaml`'s special characters,
+   Karis/Arasuni's full nested example included) produces output that
+   parses as valid HTML with Python's `html.parser` after a real
+   `pandoc -r rst -w html` pass, and the nested `<table>`s survive
+   Pandoc's raw-HTML passthrough genuinely nested, not flattened or
+   escaped — confirmed by inspecting the actual rendered HTML, not
+   just the intermediate reST. `GNUmakefile` gained `TEST_HTMLOUTPUT`/
+   `TEST_HTMLRENDEROUTPUT`/`html` (`build/%.html.gen.rst` via `-H`,
+   `build/%.html` via Pandoc), following the same wildcard-derived-
+   from-`TEST_DATA` convention as every other output-list variable.
 5. **h-m-m outline backend** (`Ova_Fmt.Format_Hmm`), per the user —
    sequenced here, right after HTML-in-reST: needs no table-layout
    work at all (like terse, unlike HTML-in-reST/groff-in-reST), so
@@ -1296,19 +1339,21 @@ for test data and output-format sequencing:
 
 **`GNUmakefile` convention to keep as each new backend lands, per the
 user:** every existing output-list variable (`TEST_TERSEOUTPUT`,
-`TEST_PDFOUTPUT`, and now `TEST_GEMTEXTOUTPUT`) is derived from the
-single wildcard-based `TEST_DATA`
-(`$(foreach f,$(notdir $(TEST_DATA)),...)`, same shape `besm2_fmt`'s
-own `GNUmakefile` uses for its several output variants), not a
-hardcoded per-fixture list — confirmed this is why `test-data/
-Fragment.yaml` got a `build/Fragment.ms.pdf` (and, once Gemtext
-landed, a `build/Fragment.gmi`) automatically the moment it was added,
-no `GNUmakefile` change needed. Each remaining backend's own
-output-list variable (an eventual `TEST_HTMLOUTPUT`, `TEST_HMMOUTPUT`,
-`TEST_LOUTOUTPUT`, ...) needs to follow the same derived-from-
-`TEST_DATA` shape, not enumerate fixtures by hand, so every existing
-and future `test-data/*.yaml` file keeps getting picked up for every
-format automatically.
+`TEST_PDFOUTPUT`, `TEST_GEMTEXTOUTPUT`, and now `TEST_HTMLOUTPUT`/
+`TEST_HTMLRENDEROUTPUT`) is derived from the single wildcard-based
+`TEST_DATA` (`$(foreach f,$(notdir $(TEST_DATA)),...)`, same shape
+`besm2_fmt`'s own `GNUmakefile` uses for its several output variants),
+not a hardcoded per-fixture list — confirmed this is why `test-data/
+Fragment.yaml` got a `build/Fragment.ms.pdf` (and, once Gemtext/
+HTML-in-reST landed, a `build/Fragment.gmi`/`build/Fragment.html`)
+automatically the moment it was added, no `GNUmakefile` change needed
+(`test-data/Escaping.yaml`, added for the HTML-in-reST work itself,
+confirmed the same thing again). Each remaining backend's own
+output-list variable (an eventual `TEST_HMMOUTPUT`, `TEST_LOUTOUTPUT`,
+...) needs to follow the same derived-from-`TEST_DATA` shape, not
+enumerate fixtures by hand, so every existing and future
+`test-data/*.yaml` file keeps getting picked up for every format
+automatically.
 
 ## Open questions
 

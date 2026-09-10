@@ -29,7 +29,15 @@ TEST_GEMTEXTOUTPUT=$(foreach f,$(notdir $(TEST_DATA)),build/$(addsuffix .gmi,$(b
 # included, for comparison against the plain .gmi output above.
 TEST_GEMTEXT_EMPHASIS_OUTPUT=$(foreach f,$(notdir $(TEST_DATA)),build/$(addsuffix .emp.gmi,$(basename $(f))))
 
-.PHONY: all rst pdf gemtext install clean testclean
+# HTML-in-reST output (-H/--html, PLAN.md §9 step 4) -- a reST document
+# with one raw <table>-nesting HTML block, `.html.gen.rst`, still run
+# through Pandoc to a real standalone `.html` file (unlike Gemtext,
+# this genuinely does need Pandoc: the deliverable is HTML, not the
+# intermediate reST).
+TEST_HTMLOUTPUT=$(foreach f,$(notdir $(TEST_DATA)),build/$(addsuffix .html.gen.rst,$(basename $(f))))
+TEST_HTMLRENDEROUTPUT=$(foreach f,$(notdir $(TEST_DATA)),build/$(addsuffix .html,$(basename $(f))))
+
+.PHONY: all rst pdf gemtext html install clean testclean
 
 all: $(PROGRAM)
 
@@ -48,6 +56,8 @@ pdf: rst $(TEST_PDFOUTPUT)
 
 gemtext: $(PROGRAM) $(TEST_GEMTEXTOUTPUT) $(TEST_GEMTEXT_EMPHASIS_OUTPUT)
 
+html: $(PROGRAM) $(TEST_HTMLOUTPUT) $(TEST_HTMLRENDEROUTPUT)
+
 build/%.gen.rst : test-data/%.yaml $(PROGRAM)
 	./$(PROGRAM) $< >$@
 
@@ -57,6 +67,12 @@ build/%.gmi : test-data/%.yaml $(PROGRAM)
 build/%.emp.gmi : test-data/%.yaml $(PROGRAM)
 	./$(PROGRAM) -g -e $< >$@
 
+build/%.html.gen.rst : test-data/%.yaml $(PROGRAM)
+	./$(PROGRAM) -H $< >$@
+
+build/%.html : build/%.html.gen.rst
+	pandoc -r rst -w html --standalone -o $@ $<
+
 #MS_COLUMNS=-V twocolumns
 build/%.ms.pdf : build/%.gen.rst
 	pandoc -r rst -w ms --template=tkb $(MS_COLUMNS) -o $@ $<
@@ -65,8 +81,8 @@ clean:
 	-rm -f $(PROGRAM)
 
 testclean:
-	-rm -v build/*.gen.rst build/*.ms.pdf build/*.gmi
+	-rm -v build/*.gen.rst build/*.ms.pdf build/*.gmi build/*.html
 
-.PRECIOUS: build/%.gen.rst build/%.ms.pdf build/%.gmi build/%.emp.gmi
+.PRECIOUS: build/%.gen.rst build/%.ms.pdf build/%.gmi build/%.emp.gmi build/%.html.gen.rst build/%.html
 
 print-%  : ; @echo $* = $($*)

@@ -27,6 +27,7 @@ private
 
    function Do_Help return Boolean;
    function Do_Gemtext return Boolean;
+   function Do_Html return Boolean;
    function Do_Subunderliner (Arg : String) return Boolean;
    function Do_Underliner (Arg : String) return Boolean;
    function Do_Argument (Start_With : Positive; Arg : String) return Boolean;
@@ -43,6 +44,13 @@ private
          Short_Name  => 'g',
          Long_Name   => "gemtext",
          Handler     => Do_Gemtext'Access),
+      Arg_Parser.Make_Option
+        (Description => "Output reST with nested HTML tables (a `.. raw:: " &
+                         "html` block) for Abilities/Weaknesses/Combat/" &
+                         "Attacks, instead of terse prose.",
+         Short_Name  => 'H',
+         Long_Name   => "html",
+         Handler     => Do_Html'Access),
       Arg_Parser.Make_Set_Boolean_True_Option
         (Description => "With -g/--gemtext, emit *italic*/**bold** markers " &
                          "anyway -- gemtext's spec has no inline emphasis " &

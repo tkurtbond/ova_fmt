@@ -17,9 +17,17 @@ package Ova_Fmt.Config is
    --  only in a handful of low-level primitives (inline emphasis,
    --  heading syntax, list-item prefix) -- per the user, parameterized
    --  in that one package rather than duplicated into a second one.
-   type Output_Format is (Terse, Gemtext);
+   --  Html_In_Rst: a reST document (same header/tagline/summary/
+   --  background/personality/Notes/Fluff/Creation-Rules rendering as
+   --  Terse -- unaffected by this value) with one `.. raw:: html`
+   --  block for the genuinely tabular/nestable content (Abilities/
+   --  Weaknesses/Combat/Attacks), still run through Pandoc -- not a
+   --  standalone HTML document generated directly (PLAN.md's Open
+   --  Questions has the full "HTML-in-reST, not just HTML" naming
+   --  rationale).
+   type Output_Format is (Terse, Gemtext, Html_In_Rst);
 
-   Format : aliased Output_Format := Terse;  -- -g/--gemtext switches to Gemtext
+   Format : aliased Output_Format := Terse;  -- -g/--gemtext or -H/--html
 
    --  Gemtext's spec has no inline emphasis at all (no bold/italic) --
    --  confirmed against <https://geminiprotocol.net/docs/gemtext.gmi>
