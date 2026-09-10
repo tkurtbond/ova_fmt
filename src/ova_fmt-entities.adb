@@ -447,6 +447,30 @@ package body Ova_Fmt.Entities is
    end Load_Fluff;
 
    -----------------------------------------------------------------
+   --  options:
+   -----------------------------------------------------------------
+
+   function Load_Options (N : Nod.Node) return Options_Block is
+      Result : Options_Block;
+   begin
+      if N.Has_Key ("base-zero") then
+         Result.Has_Base_Zero := True;
+         Result.Base_Zero := N.Integer_Value ("base-zero");
+      end if;
+      if N.Has_Key ("power-ceiling") then
+         Result.Has_Power_Ceiling := True;
+         Result.Power_Ceiling := N.Integer_Value ("power-ceiling");
+      end if;
+      if N.Has_Key ("scaled-cost") then
+         Result.Scaled_Cost := N.Boolean_Value ("scaled-cost");
+      end if;
+      if N.Has_Key ("combined-effectiveness") then
+         Result.Combined_Effectiveness := N.Boolean_Value ("combined-effectiveness");
+      end if;
+      return Result;
+   end Load_Options;
+
+   -----------------------------------------------------------------
    --  Load_Entity.
    -----------------------------------------------------------------
 
@@ -457,6 +481,7 @@ package body Ova_Fmt.Entities is
       Combat_Node     : constant Nod.Node := N.Value ("combat");
       Notes_Node      : constant Nod.Node := N.Value ("notes");
       Fluff_Node      : constant Nod.Node := N.Value ("fluff");
+      Options_Node    : constant Nod.Node := N.Value ("options");
 
       procedure Add_Ability (Item : Nod.Node) is
       begin
@@ -523,6 +548,11 @@ package body Ova_Fmt.Entities is
       if Fluff_Node.Is_Valid then
          Result.Has_Fluff := True;
          Result.Fluff := Load_Fluff (Fluff_Node);
+      end if;
+
+      if Options_Node.Is_Valid then
+         Result.Has_Options := True;
+         Result.Options := Load_Options (Options_Node);
       end if;
 
       return Result;

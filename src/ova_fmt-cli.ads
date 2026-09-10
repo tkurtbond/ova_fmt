@@ -58,7 +58,14 @@ private
                          "numbers, reverting to ASCII hyphen-minus.",
          Short_Name  => 'n',
          Long_Name   => "no-unicode-minus",
-         Variable    => Ova_Fmt.Config.Unicode_Minus'Access));
+         Variable    => Ova_Fmt.Config.Unicode_Minus'Access),
+      Arg_Parser.Make_Set_Boolean_True_Option
+        (Description => "Render an entity's options: block (which " &
+                         "character-creation limiting rules were used), " &
+                         "off by default.",
+         Short_Name  => 'O',
+         Long_Name   => "options",
+         Variable    => Ova_Fmt.Config.Show_Options'Access));
 
    The_Parser : Arg_Parser.Parser :=
      Arg_Parser.Make_Parser

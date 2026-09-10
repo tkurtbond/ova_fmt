@@ -233,6 +233,28 @@ package Ova_Fmt.Entities is
       Has_Love_Interests : Boolean := False; Love_Interests : Unbounded_String;
    end record;
 
+   -----------------------------------------------------------------
+   --  options: block. Character-creation limiting rules (rulebook
+   --  p. 20-21, "Limiting the Character") -- GM/author metadata about
+   --  how the character was built, not part of its stats. Each of the
+   --  four is independently optional; Base_Zero/Power_Ceiling carry a
+   --  GM-set number (Base Zero's default tolerance is 5 per the
+   --  rulebook, but an author who wants the default doesn't need to
+   --  write anything -- the key is simply absent), Scaled_Cost/
+   --  Combined_Effectiveness are flags (their mechanics are fixed by
+   --  the rules text, nothing to parameterize). Rendered only when
+   --  asked for (-O/--options, Config.Show_Options), per the user:
+   --  useful to a player updating their character or a GM, but not
+   --  something a player-facing write-up needs by default.
+   -----------------------------------------------------------------
+
+   type Options_Block is record
+      Has_Base_Zero              : Boolean := False; Base_Zero     : Integer;
+      Has_Power_Ceiling          : Boolean := False; Power_Ceiling : Integer;
+      Scaled_Cost                : Boolean := False;
+      Combined_Effectiveness     : Boolean := False;
+   end record;
+
    type Entity is record
       Has_Name        : Boolean := False; Name        : Unbounded_String;
       Has_Tagline     : Boolean := False; Tagline     : Unbounded_String;
@@ -244,6 +266,7 @@ package Ova_Fmt.Entities is
       Combat          : Combat_Stats;
       Notes           : Note_Vectors.Vector;
       Has_Fluff       : Boolean := False; Fluff : Fluff_Block;
+      Has_Options     : Boolean := False; Options : Options_Block;
    end record;
 
    function Load_Entity (N : Libfyaml.Nodes.Node) return Entity

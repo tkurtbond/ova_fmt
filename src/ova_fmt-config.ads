@@ -27,4 +27,12 @@ package Ova_Fmt.Config is
    --  rendering is gated on this.
    Unicode_Minus : aliased Boolean := True;  -- -n/--no-unicode-minus clears this
 
+   --  Per the user: an entity's options: block (which character-
+   --  creation limiting rules -- Base Zero/Power Ceiling/Scaled Cost/
+   --  Combined Effectiveness, rulebook p. 20-21 -- were used to build
+   --  it) is GM/author metadata, useful when updating a character but
+   --  not something every player-facing render should show, so it's
+   --  off unless asked for.
+   Show_Options : aliased Boolean := False;  -- -O/--options sets this
+
 end Ova_Fmt.Config;

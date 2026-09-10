@@ -1458,11 +1458,92 @@ for test data and output-format sequencing:
   `<table>` markup in raw HTML blocks, groff `hd` macros (not `tbl`)
   in raw-ms blocks, and a genuinely separate directly-rendered Lout
   backend (no Pandoc involvement) modeled on `Fukiko-experiment.lout`.
-- **YAML schema**: `name:`/`level:`-keyed items (`Fukiko.yaml`-style)
-  vs. "key names the attribute" (`Auren.yaml`-style) — recommend the
-  former (§6) but not yet decided/committed with the user.
-- **`options` block**: character-creation-limit metadata — rendered in
-  any output format, or purely for the YAML author's own reference?
+- ~~**YAML schema**: `name:`/`level:`-keyed items (`Fukiko.yaml`-style)
+  vs. "key names the attribute" (`Auren.yaml`-style)~~ Resolved, per
+  the user: **confirmed as final, matching what's already in use.**
+  All 12 sample-character fixtures, `Unsorted.yaml`, and
+  `Broken.yaml` already use the `name:`/`level:`-keyed form
+  throughout (the old `Auren.yaml`-style was only ever a property of
+  the *original*, since-superseded `Auren.yaml` transcription in the
+  old Scheme project's test-data — this repo's from-scratch
+  `test-data/Auren.yaml` was written in the `name:`/`level:` form from
+  the start, §9 step 1). Nothing to change in the schema or
+  `Ova_Fmt.Entities`; this just closes out the "recommended but not
+  committed" status.
+- ~~**`options` block**: character-creation-limit metadata — rendered
+  in any output format, or purely for the YAML author's own
+  reference?~~ Resolved, per the user: **both** — useful to a player
+  updating their character and to the GM, but not something every
+  render needs, so it's gated behind a new `-O`/`--options` flag
+  (`Config.Show_Options`), off by default.
+
+  Checked the actual rulebook mechanics before designing the schema
+  (`~/Reference/RPG/OVA/ova-rulebook.txt`, "Limiting the Character,"
+  p. 20-21) rather than guessing from PLAN.md's own earlier candidate
+  field list: there are exactly four named rules, not all simple
+  flags. **Base Zero** (total Ability Bonuses minus Weakness
+  Penalties should stay within a tolerance of zero — ±5 by rulebook
+  default, "or another number at the GM's discretion") and **Power
+  Ceiling** (total Ability Levels can never exceed a GM-set number)
+  each carry a GM-set integer; **Scaled Cost** (a fixed 1/2/4/8/15
+  point cost curve for Levels 1-5, not GM-adjustable) and **Combined
+  Effectiveness** (a fixed guideline, rarely more than +5 total Bonus
+  to any one roll) are just flags, nothing to parameterize.
+
+  Implemented as `Ova_Fmt.Entities.Options_Block`
+  (`Has_Base_Zero`/`Base_Zero`, `Has_Power_Ceiling`/`Power_Ceiling`,
+  `Scaled_Cost`, `Combined_Effectiveness` — each of the four
+  independently optional, matching `Fluff_Block`'s own per-field
+  `Has_*` shape) and `Entity.Has_Options`/`Options`, loaded from a new
+  `options:` block:
+  ```yaml
+  options:
+    base-zero: 5
+    power-ceiling: 15
+    scaled-cost: true
+    combined-effectiveness: true
+  ```
+  `Format_Terse` renders a `**Creation Rules:** Base Zero (±5), Power
+  Ceiling (15), Scaled Cost, Combined Effectiveness.` line (only the
+  rules actually present, comma-joined, same shape as the existing
+  `Fluff` line) right after `Fluff`, but only when `Config.Show_Options`
+  is set. Verified: a pre-change/post-change binary diff across every
+  `test-data/*.yaml` fixture is byte-identical (none use `options:`
+  yet); a synthetic fixture with all four rules renders correctly with
+  `-O` and not at all without it; a partial-options fixture (only
+  `base-zero` set) renders just that one rule.
+- **TODO: NPC Fragment support** — the rulebook's own minor-NPC format
+  (p. 142, "NPC Fragments"), distinct from the full-character write-up
+  every sample character and `Ova_Fmt.Entities`/`Format_Terse` are
+  currently modeled on. Shape, from the rulebook page directly: the
+  NPC's name bold-italicized inline in a sentence ("The ***Shady
+  Teacher*** is new to the school...") rather than its own heading;
+  one short prose paragraph in place of separate `background`/
+  `personality` sections; then a single compact `Attributes:` line —
+  Abilities then Weaknesses, each list independently alphabetized
+  (confirming, from a second source, the alphabetization already
+  implemented per the audit above), comma-joined within each list,
+  semicolon-separated between the two, parentheticals for a `detail`
+  inline (e.g. `Attributes: Art of Invisibility +2, Perceptive +2,
+  Smart +3; Absent-Minded −1, Quirk −1 (Always Wears Sunglasses),
+  Secret −2 (To Everybody)`) — no `combat:` block, no Attacks, no
+  fluff at all.
+
+  The data model needs no changes: `Ability`/`Weakness` already carry
+  `detail`, and `combat`/`personality`/`background`/`fluff` are
+  already fully optional, so an NPC Fragment is just an `Entity` with
+  a sparse field set. What's missing is purely a *renderer* for this
+  compact style — today's `Format_Terse` always prints one bulleted
+  line per Ability/Weakness with a bold label, never this single
+  comma-joined paragraph. Raised with the user once already but not
+  yet settled: should `ova_fmt` (a) auto-detect a "fragment" entity
+  from its sparse shape (no `combat:`, no `background`/`personality`)
+  and switch styles automatically, (b) require an explicit CLI flag
+  the user passes per run, (c) require an explicit schema marker
+  (e.g. `fragment: true`) so the author states intent directly rather
+  than it being inferred from which fields happen to be absent, or
+  (d) something else — needs a real conversation, not a default
+  guess, before implementing.
 - ~~**`combat.defense: "4/5"`**~~ Resolved (§2.2): the pair is the
   character's normal Defense Roll alongside their Barrier-Ability
   Defense Roll (Barrier's rules text: *"Instead of making a normal
