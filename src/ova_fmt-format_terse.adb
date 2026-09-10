@@ -176,7 +176,7 @@ package body Ova_Fmt.Format_Terse is
    end Format_Sub_Item_Line;
 
    function Format_Spell_Line (S : Entities.Spell) return String is
-     (To_String (S.Name) & " (mimics " & To_String (S.Mimics) & " " &
+     (To_String (S.Name) & " (" & To_String (S.Ability) & " " &
       Signed_Img (S.Level) & "; " & To_String (S.Endurance) & " Endurance)");
 
    -----------------------------------------------------------------

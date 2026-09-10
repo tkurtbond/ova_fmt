@@ -122,13 +122,16 @@ package Ova_Fmt.Entities is
 
    -----------------------------------------------------------------
    --  A Magic-ability spell (PLAN.md §2.2's resolved understanding:
-   --  a spell has no Level of its own -- it mimics another Ability at
-   --  that Ability's Level).
+   --  a spell has no Level of its own -- it grants access, at that
+   --  Ability's own Level, to an Ability the caster already has. Not
+   --  a copy/imitation ("mimics") of the Ability -- it IS that
+   --  Ability, just reached through Magic instead of bought directly,
+   --  per the user).
    -----------------------------------------------------------------
 
    type Spell is record
       Name      : Unbounded_String;
-      Mimics    : Unbounded_String;
+      Ability   : Unbounded_String;
       Level     : Integer;
       --  A string: usually a plain number of Endurance, but Auren's
       --  Mana Shield is "10+" (an apparently open-ended cost).

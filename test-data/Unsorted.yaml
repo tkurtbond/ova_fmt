@@ -34,11 +34,11 @@
       level: 2
       spells:
         - name: Zephyr Blast
-          mimics: Attack
+          ability: Attack
           level: 2
           endurance: 5
         - name: Aegis Ward
-          mimics: Combat Expert
+          ability: Combat Expert
           level: 1
           endurance: 3
     - name: Transformation

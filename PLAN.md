@@ -1258,7 +1258,8 @@ for test data and output-format sequencing:
   `Load_Attack`'s existing required accessors for all three are
   correct as-is; no code change needed.
 
-  Still worth auditing: every Spell's `mimics`/`level`/`endurance`.
+  Still worth auditing: every Spell's `ability`/`level`/`endurance`
+  (renamed from `mimics` — see "Decisions already made" below).
 
   ~~The `combat:` block's `defense`/`health`/`endurance`/`threat-value`
   as a set (could a Companion legitimately have Health/Endurance but
@@ -1398,6 +1399,25 @@ for test data and output-format sequencing:
   Transformation-linked sub-ability's plain `{name, level}`.
   `Ova_Fmt.Entities`' domain model needs (at least) these two distinct
   "linked ability content" shapes, not one reused everywhere.
+
+  **Renamed, per the user: `mimics` → `ability` (schema key, `Spell`
+  record field, and rendered text).** A spell doesn't *mimic* (copy or
+  imitate) another Ability — it grants access, through Magic instead
+  of buying it directly, to an Ability the caster already has; it
+  literally *is* that Ability, just reached a different way. Every
+  mention of `mimics` above is the historical term used while this was
+  being worked out — current schema/code/rendering all say `ability`
+  now. Changed: `Ova_Fmt.Entities.Spell.Mimics` → `.Ability`,
+  `Load_Spell`'s `"mimics"` YAML key → `"ability"`,
+  `Format_Terse.Format_Spell_Line`'s rendered `"(mimics X +N; ...)"` →
+  `"(X +N; ...)"` (dropping the connecting word entirely, per the
+  user). Updated `test-data/Auren.yaml` and `test-data/Unsorted.yaml`
+  (the only two fixtures using `spells:`), including Auren.yaml's
+  header comment. Verified: builds clean (`Ability` as a `Spell`
+  record component doesn't collide with the `Ability` *type* also
+  declared in this package — Ada component names have their own
+  scope); a pre-change/post-change binary diff shows only the expected
+  wording change in both files' Spells line, nothing else.
 - **Vehicle (Mecha) may need its own nested `combat` sub-block**
   (§2.2, new finding, strengthened by §2.3): the rulebook states a
   Vehicle's Health and Endurance are tracked completely separately

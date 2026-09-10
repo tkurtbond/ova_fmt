@@ -11,16 +11,19 @@
 # from-scratch transcription for *this* repo, not a fix-up of that one.
 #
 # Introduces the Magic-spell schema (PLAN.md §2.2's resolved
-# understanding: a spell has no Level of its own -- it mimics another
-# Ability at that Ability's Level, with an Endurance cost looked up
-# from a table keyed on (mimicked Ability Level, caster's Magic
-# Level)). Represented here as a `spells:` list under the Magic
+# understanding: a spell has no Level of its own -- it grants access,
+# at that Ability's own Level, to an Ability the caster already has
+# (not a copy/imitation of it -- it IS that Ability, just reached
+# through Magic instead of bought directly), with an Endurance cost
+# looked up from a table keyed on (that Ability's Level, caster's
+# Magic Level)). Represented here as a `spells:` list under the Magic
 # ability item -- deliberately a different shape from Transformation/
 # Companion's `abilities:`/`weaknesses:` nesting (Fukiko.yaml,
 # Karis.yaml), since a spell isn't itself an Ability/Weakness the way
 # Transformation's/Companion's granted items are: each spell entry is
-# `{name, mimics, level, endurance}` (flavor name, the Ability it
-# mimics, that Ability's Level, and the Endurance cost). Mana Shield's
+# `{name, ability, level, endurance}` (flavor name, the Ability it
+# grants access to, that Ability's Level, and the Endurance cost).
+# Mana Shield's
 # "10+ Endurance" (a "+" suffix, apparently an open-ended/variable
 # cost -- Barrier itself can cost more to maintain, per its own rules
 # text) is kept as the string "10+" rather than forced into a plain
@@ -60,27 +63,27 @@
       level: 3
       spells:
         - name: Mana Shield
-          mimics: Barrier
+          ability: Barrier
           level: 2
           endurance: "10+"
         - name: Wings of Dezantis
-          mimics: Flight
+          ability: Flight
           level: 2
           endurance: 10
         - name: Feeblemind
-          mimics: Intimidating
+          ability: Intimidating
           level: 2
           endurance: 10
         - name: Breath
-          mimics: Life Support
+          ability: Life Support
           level: 2
           endurance: 10
         - name: Hasten
-          mimics: Quick
+          ability: Quick
           level: 3
           endurance: 20
         - name: Atlas Arm
-          mimics: Strong
+          ability: Strong
           level: 3
           endurance: 20
     - name: Smart

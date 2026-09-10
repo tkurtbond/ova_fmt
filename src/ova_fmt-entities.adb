@@ -216,7 +216,7 @@ package body Ova_Fmt.Entities is
 
    function Load_Spell (N : Nod.Node) return Spell is
      (Name      => To_Unbounded_String (N.String_Value ("name")),
-      Mimics    => To_Unbounded_String (N.String_Value ("mimics")),
+      Ability   => To_Unbounded_String (N.String_Value ("ability")),
       Level     => N.Integer_Value ("level"),
       Endurance => To_Unbounded_String (N.String_Value ("endurance")));
 
