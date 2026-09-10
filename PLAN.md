@@ -1202,14 +1202,26 @@ for test data and output-format sequencing:
    same reST→Pandoc pipeline `besm2_fmt`'s raw-ms backend already
    demonstrates the shape of (reST→Pandoc→`ms` there; reST→Pandoc→HTML
    here).
-4. **`hd`-table raw-ms backend**: groff `hd` macros, not `tbl` (§7),
+4. **h-m-m outline backend** (`Ova_Fmt.Format_Hmm`), per the user —
+   sequenced here, right after HTML: needs no table-layout work at all
+   (like terse, unlike HTML/`hd`), so there's no reason to make it wait
+   for the harder nested-table backends below, and having it land right
+   after terse/HTML keeps the two simplest backends' lessons fresh
+   while designing it. Modeled on `besm2_fmt.Format_Hmm`'s tab-indented-
+   outline shape (its `PLAN.md` §8 item 5), but needs its own design
+   pass against OVA's specific nesting shapes — Transformation/
+   Companion/Magic-spell linked content, Perks/Flaws, paired Defense —
+   the way terse's own outline already got (§ "Decisions already made"
+   below has no h-m-m-specific entries yet; this is genuinely
+   unstarted, not just unsequenced).
+5. **`hd`-table raw-ms backend**: groff `hd` macros, not `tbl` (§7),
    in a `.. raw:: ms` block, through Pandoc's `ms` writer. Sequenced
    after HTML deliberately — `hd`'s actual nested-table support still
    needs hands-on confirmation against the installed groff version
    (§ open questions), and having a working HTML nested-table
    reference in hand first gives something concrete to compare `hd`'s
    real rendered output against while sorting that out.
-5. **Direct-to-Lout backend last.** No Pandoc involvement (§7) — a
+6. **Direct-to-Lout backend last.** No Pandoc involvement (§7) — a
    structurally separate output mode from the other three, modeled on
    the existing `Fukiko-experiment.lout` worked example (§3), using
    `~/Reference/Document-Tools/lout/`'s `user.pdf`/`expert.pdf` (§2)
@@ -1509,13 +1521,13 @@ for test data and output-format sequencing:
 - ~~**Which output formats are actually wanted**~~: §7/§8 cover terse,
   HTML, raw-ms/`hd`, and Lout. **Confirmed, per the user: an h-m-m
   outline backend is also wanted** (no OVA attempt exists yet, unlike
-  BESM, where `besm2_fmt.Format_Hmm` is the reference to follow).
-  **TODO: add an h-m-m backend** (`Ova_Fmt.Format_Hmm`), modeled on
-  `besm2_fmt`'s tab-indented-outline design (its `PLAN.md` §8 item 5)
-  — not yet sequenced into the §9 build order (terse/HTML/`hd`/Lout),
-  and not yet designed against OVA's specific nesting shapes
+  BESM, where `besm2_fmt.Format_Hmm` is the reference to follow). Now
+  sequenced into §9's build order too, per the user: right after the
+  HTML backend (step 4, ahead of `hd`/Lout) — see §9 for why. Still
+  needs its own design pass against OVA's specific nesting shapes
   (Transformation/Companion/Magic-spell linked content, Perks/Flaws,
-  paired Defense) the way terse's own outline was.
+  paired Defense) the way terse's own outline got, once its turn in
+  the build order comes up.
 - **groff version/`hd` support** (§7): the `hd` table macros are
   reportedly not well supported in groff ~1.24 but are supported in
   1.23, which is what's actually installed here — confirm the
