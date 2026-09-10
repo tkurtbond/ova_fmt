@@ -1197,12 +1197,54 @@ for test data and output-format sequencing:
    flattened by pandoc's reST reader (a real risk worth checking,
    since the nested-bullet structure is whitespace-sensitive).
    `testclean` now also removes `build/*.ms.pdf`.
-3. **HTML backend**: raw `.. raw:: html` blocks containing
+3. **TODO: Gemtext backend**, per the user — sequenced here, right
+   after terse and before HTML: no table-layout work needed (like
+   terse), and it's structurally the closest thing to terse of any
+   planned backend, so it makes sense to build while terse's own
+   lessons are freshest, before the harder nested-table backends.
+   Genuinely unstarted, not just unsequenced — recorded here from the
+   user's own description plus the actual spec
+   (<https://geminiprotocol.net/docs/gemtext.gmi>,
+   <https://geminiprotocol.net/docs/>), not assumed.
+
+   Gemtext is the hypertext markup of the Gemini protocol (MIME type
+   `text/gemini`, `.gmi` files) — deliberately much simpler than HTML
+   or reST. Its line types, confirmed against the spec: plain text
+   lines (long lines, client-wrapped, no manual line breaks); `#`/`##`/
+   `###` headings (one space required after the hashes, three levels
+   only); `* item` list items (a literal `*`, one space, no nesting);
+   `> quoted text` blockquotes; `` ``` `` toggles preformatted/fixed-
+   width mode (parses nothing inside); and `=> URL [label]` links,
+   which **must be on their own line** — gemtext has no way to make a
+   word mid-sentence a link, unlike reST/HTML/Markdown. **No inline
+   emphasis (bold/italic) exists in the spec at all.**
+
+   Per the user: since many gemtext authors use `*italic*`/`**bold**`/
+   `***bold italic***` literally anyway (unenforced by the format, but
+   a real convention), there should be a command-line option
+   controlling whether ova_fmt emits them — off by default (spec-
+   compliant plain text), on if asked for. Otherwise, per the user,
+   Gemtext output should be *the same as Terse* in content and
+   organization — same information, same order — just through
+   gemtext's own line syntax instead of reST's: terse's underlined
+   "Name\n======" header becomes a `# Name` heading line; terse's
+   "- **Abilities:** ..." bullet becomes gemtext's `* ` list-item
+   prefix (dropping the leading `- `); section labels currently
+   rendered as a bolded line ("Notes", "Fluff", "Companion: X", ...)
+   likely become `##` headings instead, matching gemtext's own
+   heading levels rather than emphasis. Suggests implementation as a
+   shared content-assembly layer with Terse (same information/order,
+   same domain-formatting calls) behind a pluggable low-level "emit"
+   step (line syntax, and whether Bold/Italic wrap in anything at all)
+   rather than a fully separate backend duplicating Terse's logic --
+   worth confirming that approach once implementation actually starts,
+   not assumed final here.
+4. **HTML backend**: raw `.. raw:: html` blocks containing
    hand-written, potentially-nested `<table>` markup (§7), through the
    same reST→Pandoc pipeline `besm2_fmt`'s raw-ms backend already
    demonstrates the shape of (reST→Pandoc→`ms` there; reST→Pandoc→HTML
    here).
-4. **h-m-m outline backend** (`Ova_Fmt.Format_Hmm`), per the user —
+5. **h-m-m outline backend** (`Ova_Fmt.Format_Hmm`), per the user —
    sequenced here, right after HTML: needs no table-layout work at all
    (like terse, unlike HTML/`hd`), so there's no reason to make it wait
    for the harder nested-table backends below, and having it land right
@@ -1214,14 +1256,14 @@ for test data and output-format sequencing:
    the way terse's own outline already got (§ "Decisions already made"
    below has no h-m-m-specific entries yet; this is genuinely
    unstarted, not just unsequenced).
-5. **`hd`-table raw-ms backend**: groff `hd` macros, not `tbl` (§7),
+6. **`hd`-table raw-ms backend**: groff `hd` macros, not `tbl` (§7),
    in a `.. raw:: ms` block, through Pandoc's `ms` writer. Sequenced
    after HTML deliberately — `hd`'s actual nested-table support still
    needs hands-on confirmation against the installed groff version
    (§ open questions), and having a working HTML nested-table
    reference in hand first gives something concrete to compare `hd`'s
    real rendered output against while sorting that out.
-6. **Direct-to-Lout backend last.** No Pandoc involvement (§7) — a
+7. **Direct-to-Lout backend last.** No Pandoc involvement (§7) — a
    structurally separate output mode from the other three, modeled on
    the existing `Fukiko-experiment.lout` worked example (§3), using
    `~/Reference/Document-Tools/lout/`'s `user.pdf`/`expert.pdf` (§2)
@@ -1235,11 +1277,11 @@ own `GNUmakefile` uses for its several output variants), not a
 hardcoded per-fixture list — confirmed this is why `test-data/
 Fragment.yaml` got a `build/Fragment.ms.pdf` automatically the moment
 it was added, no `GNUmakefile` change needed. Each new backend's own
-output-list variable (an eventual `TEST_HTMLOUTPUT`, `TEST_HMMOUTPUT`,
-`TEST_LOUTOUTPUT`, ...) needs to follow the same derived-from-
-`TEST_DATA` shape, not enumerate fixtures by hand, so every existing
-and future `test-data/*.yaml` file keeps getting picked up for every
-format automatically.
+output-list variable (an eventual `TEST_GEMTEXTOUTPUT`,
+`TEST_HTMLOUTPUT`, `TEST_HMMOUTPUT`, `TEST_LOUTOUTPUT`, ...) needs to
+follow the same derived-from-`TEST_DATA` shape, not enumerate fixtures
+by hand, so every existing and future `test-data/*.yaml` file keeps
+getting picked up for every format automatically.
 
 ## Open questions
 
