@@ -25,6 +25,10 @@ TEST_PDFOUTPUT=$(foreach f,$(notdir $(TEST_DATA)),build/$(addsuffix .ms.pdf,$(ba
 # Pandoc reader, and it's meant to be read as gemtext, not typeset.
 TEST_GEMTEXTOUTPUT=$(foreach f,$(notdir $(TEST_DATA)),build/$(addsuffix .gmi,$(basename $(f))))
 
+# Same, with -e/--gemtext-emphasis on -- *italic*/**bold** markers
+# included, for comparison against the plain .gmi output above.
+TEST_GEMTEXT_EMPHASIS_OUTPUT=$(foreach f,$(notdir $(TEST_DATA)),build/$(addsuffix .emp.gmi,$(basename $(f))))
+
 .PHONY: all rst pdf gemtext install clean testclean
 
 all: $(PROGRAM)
@@ -42,13 +46,16 @@ rst: $(PROGRAM) $(TEST_TERSEOUTPUT)
 
 pdf: rst $(TEST_PDFOUTPUT)
 
-gemtext: $(PROGRAM) $(TEST_GEMTEXTOUTPUT)
+gemtext: $(PROGRAM) $(TEST_GEMTEXTOUTPUT) $(TEST_GEMTEXT_EMPHASIS_OUTPUT)
 
 build/%.gen.rst : test-data/%.yaml $(PROGRAM)
 	./$(PROGRAM) $< >$@
 
 build/%.gmi : test-data/%.yaml $(PROGRAM)
 	./$(PROGRAM) -g $< >$@
+
+build/%.emp.gmi : test-data/%.yaml $(PROGRAM)
+	./$(PROGRAM) -g -e $< >$@
 
 #MS_COLUMNS=-V twocolumns
 build/%.ms.pdf : build/%.gen.rst
@@ -60,6 +67,6 @@ clean:
 testclean:
 	-rm -v build/*.gen.rst build/*.ms.pdf build/*.gmi
 
-.PRECIOUS: build/%.gen.rst build/%.ms.pdf build/%.gmi
+.PRECIOUS: build/%.gen.rst build/%.ms.pdf build/%.gmi build/%.emp.gmi
 
 print-%  : ; @echo $* = $($*)
