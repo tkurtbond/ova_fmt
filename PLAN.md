@@ -1507,11 +1507,14 @@ for test data and output-format sequencing:
   Ceiling (15), Scaled Cost, Combined Effectiveness.` line (only the
   rules actually present, comma-joined, same shape as the existing
   `Fluff` line) right after `Fluff`, but only when `Config.Show_Options`
-  is set. Verified: a pre-change/post-change binary diff across every
-  `test-data/*.yaml` fixture is byte-identical (none use `options:`
-  yet); a synthetic fixture with all four rules renders correctly with
-  `-O` and not at all without it; a partial-options fixture (only
-  `base-zero` set) renders just that one rule.
+  is set. Added `test-data/Options.yaml` (synthetic, not from the
+  rulebook): one entity with all four rules set, a second with only
+  `power-ceiling` set, confirming a partial `options:` block renders
+  just that one rule rather than placeholders for the other three.
+  Verified: a pre-change/post-change binary diff across every other
+  `test-data/*.yaml` fixture is byte-identical (none of those use
+  `options:`); `Options.yaml` itself renders both entities' rules
+  correctly with `-O` and shows nothing options-related without it.
 - **TODO: NPC Fragment support** — the rulebook's own minor-NPC format
   (p. 142, "NPC Fragments"), distinct from the full-character write-up
   every sample character and `Ova_Fmt.Entities`/`Format_Terse` are
