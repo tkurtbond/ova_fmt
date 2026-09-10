@@ -1630,19 +1630,41 @@ format automatically.
   declared in this package — Ada component names have their own
   scope); a pre-change/post-change binary diff shows only the expected
   wording change in both files' Spells line, nothing else.
-- **Vehicle (Mecha) may need its own nested `combat` sub-block**
-  (§2.2, new finding, strengthened by §2.3): the rulebook states a
-  Vehicle's Health and Endurance are tracked completely separately
-  from its pilot/character's, and its granted Abilities/Weaknesses
-  aren't necessarily cumulative with the pilot's own either —
-  structurally more like an embedded second (partial) character than
-  a simple nested ability list. Karis/Arasuni (§2.3) now confirms
-  exactly this "full nested sub-entity" shape is real for Companion,
-  which makes it likely (not yet certain) Vehicle works the same way.
-  No worked Vehicle example exists in any of the 12 sample characters
-  or 3 player books to confirm the exact shape this implies; needs
-  either a fabricated test fixture or a wait until a Vehicle-using OVA
-  character is available to transcribe from.
+- ~~**Vehicle (Mecha) may need its own nested `combat` sub-block**~~
+  Resolved and implemented. Read the actual rulebook text before
+  designing anything (`ova-rulebook.txt` ~2820-2833, "Vehicle
+  (Mecha)"), rather than assuming from the Companion analogy alone:
+  Vehicle is an Ability that lets you "build" its own Abilities/
+  Weaknesses "much as you would a character," they're **not
+  necessarily cumulative** with the pilot's own, and it has its own
+  separate Health/Endurance (both default 40) — one rules nuance
+  found along the way that's GM-adjudication, not data (unlike a
+  character, a vehicle's Endurance-draining effects can never spill
+  into Health once Endurance runs out — "no longer linked"). Net
+  result: **Vehicle needs nothing new at all** — it's structurally
+  identical to what Companion already provides.
+
+  So the real question was just how `Ability` attaches one, given it
+  already had a `Companion : Companion_Access` field hardcoded to
+  that one concept. Per the user: generalized rather than adding a
+  parallel field. `Companion_Record`/`Companion_Access` renamed to
+  `Sub_Entity_Record`/`Sub_Entity_Access` (gained a `Label` field —
+  "Companion" or "Vehicle" — used only so `Format_Terse` can print the
+  right heading); `Ability.Companion` renamed to `Ability.Sub_Entity`;
+  `Load_Companion` renamed to `Load_Sub_Entity (N, Label)`;
+  `Load_Ability` now checks both `companion:` and `vehicle:` keys
+  (mutually exclusive in practice) and calls it with the matching
+  Label. `Print_Linked_Section` prints `**<Label>: <name>**` generically
+  instead of a hardcoded `**Companion: ...**`.
+
+  Added `test-data/Vehicle.yaml` (synthetic, since no worked example
+  exists anywhere to transcribe from): a pilot with a Vehicle Ability
+  granting a full nested sub-entity (its own Abilities/Weaknesses/
+  combat block). Verified: renders `**Vehicle: Thunderhawk**` correctly
+  through the same linked-content machinery Companion already uses; a
+  pre-change/post-change binary diff across every other
+  `test-data/*.yaml` fixture (Karis's Arasuni, Yuu's Fenrir included)
+  is byte-identical, confirming the rename touched nothing observable.
 - ~~**Which output formats are actually wanted**~~: §7/§8 cover terse,
   HTML, raw-ms/`hd`, and Lout. **Confirmed, per the user: an h-m-m
   outline backend is also wanted** (no OVA attempt exists yet, unlike

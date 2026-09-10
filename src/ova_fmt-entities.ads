@@ -142,21 +142,31 @@ package Ova_Fmt.Entities is
      (Index_Type => Positive, Element_Type => Spell);
 
    -----------------------------------------------------------------
-   --  A Companion sub-entity (nested under the granting Ability item,
-   --  in a `companion:` key -- PLAN.md §2.3's "one shape, optional
-   --  depth" finding: every Companion gets Abilities/Weaknesses;
+   --  A full nested sub-entity (nested under the granting Ability
+   --  item), one level deep -- PLAN.md §2.3's "one shape, optional
+   --  depth" finding: every one of these gets Abilities/Weaknesses;
    --  Combat.Has_Combat is only True when the source actually gives
-   --  the companion its own attacks/stats).
+   --  it its own attacks/stats. Covers both of this shape's two real
+   --  cases, per the user: Companion (a `companion:` key) and Vehicle
+   --  (a `vehicle:` key, rulebook p. 63-64, "Vehicle (Mecha)") --
+   --  confirmed structurally identical (a Vehicle's own Abilities/
+   --  Weaknesses aren't necessarily cumulative with the pilot's,
+   --  same as Companion; it has its own separate Health/Endurance,
+   --  same Combat_Stats shape Companion already uses). Label ("
+   --  Companion" or "Vehicle") records which, purely so
+   --  Format_Terse can print the right heading -- nothing else
+   --  depends on which one it is.
    -----------------------------------------------------------------
 
-   type Companion_Record is record
+   type Sub_Entity_Record is record
+      Label      : Unbounded_String;
       Name       : Unbounded_String;
       Abilities  : Sub_Item_Vectors.Vector;
       Weaknesses : Sub_Item_Vectors.Vector;
       Combat     : Combat_Stats;
    end record;
 
-   type Companion_Access is access Companion_Record;
+   type Sub_Entity_Access is access Sub_Entity_Record;
    --  Never explicitly freed: ova_fmt is a short-lived batch CLI tool
    --  (parse input, print output, exit), so leaking these along with
    --  the rest of the process's memory at exit is fine -- same
@@ -165,9 +175,10 @@ package Ova_Fmt.Entities is
    -----------------------------------------------------------------
    --  A top-level Ability (abilities[] list item). Everything below
    --  Endurance is "linked content" -- at most one of Sub_Abilities/
-   --  Sub_Weaknesses (Transformation), Spells (Magic), or Companion
-   --  (Companion) is populated for any given real Ability, but
-   --  nothing stops more than one being present at the type level.
+   --  Sub_Weaknesses (Transformation), Spells (Magic), or Sub_Entity
+   --  (Companion/Vehicle) is populated for any given real Ability,
+   --  but nothing stops more than one being present at the type
+   --  level.
    -----------------------------------------------------------------
 
    type Ability is record
@@ -184,7 +195,7 @@ package Ova_Fmt.Entities is
       Sub_Abilities  : Sub_Item_Vectors.Vector;
       Sub_Weaknesses : Sub_Item_Vectors.Vector;
       Spells         : Spell_Vectors.Vector;
-      Companion      : Companion_Access := null;
+      Sub_Entity     : Sub_Entity_Access := null;
    end record;
 
    package Ability_Vectors is new Ada.Containers.Vectors

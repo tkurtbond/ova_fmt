@@ -316,12 +316,13 @@ package body Ova_Fmt.Entities is
       return Result;
    end Load_Spell;
 
-   function Load_Companion (N : Nod.Node) return Companion_Access is
-      Result           : constant Companion_Access := new Companion_Record;
+   function Load_Sub_Entity (N : Nod.Node; Label : String) return Sub_Entity_Access is
+      Result           : constant Sub_Entity_Access := new Sub_Entity_Record;
       Abilities_Node   : constant Nod.Node := N.Value ("abilities");
       Weaknesses_Node  : constant Nod.Node := N.Value ("weaknesses");
       Combat_Node      : constant Nod.Node := N.Value ("combat");
    begin
+      Result.Label := To_Unbounded_String (Label);
       Result.Name := Require_String (N, "name");
       if Abilities_Node.Is_Valid then
          Result.Abilities := Load_Sub_Item_List (Abilities_Node);
@@ -333,7 +334,7 @@ package body Ova_Fmt.Entities is
          Result.Combat := Load_Combat (Combat_Node);
       end if;
       return Result;
-   end Load_Companion;
+   end Load_Sub_Entity;
 
    -----------------------------------------------------------------
    --  Top-level Ability / Weakness / Note.
@@ -347,6 +348,7 @@ package body Ova_Fmt.Entities is
       Sub_Weaknesses_Node : constant Nod.Node := N.Value ("weaknesses");
       Spells_Node         : constant Nod.Node := N.Value ("spells");
       Companion_Node      : constant Nod.Node := N.Value ("companion");
+      Vehicle_Node        : constant Nod.Node := N.Value ("vehicle");
       procedure Add_Spell (Item : Nod.Node) is
       begin
          Result.Spells.Append (Load_Spell (Item));
@@ -382,7 +384,9 @@ package body Ova_Fmt.Entities is
          Spells_Node.Iterate (Add_Spell'Access);
       end if;
       if Companion_Node.Is_Valid then
-         Result.Companion := Load_Companion (Companion_Node);
+         Result.Sub_Entity := Load_Sub_Entity (Companion_Node, "Companion");
+      elsif Vehicle_Node.Is_Valid then
+         Result.Sub_Entity := Load_Sub_Entity (Vehicle_Node, "Vehicle");
       end if;
       return Result;
    end Load_Ability;

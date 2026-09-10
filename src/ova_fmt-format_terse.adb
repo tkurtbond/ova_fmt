@@ -8,7 +8,7 @@ package body Ova_Fmt.Format_Terse is
 
    package Config renames Ova_Fmt.Config;
    package IO renames Ada.Text_IO;
-   use type Entities.Companion_Access;
+   use type Entities.Sub_Entity_Access;
 
    function Bold (S : String) return String is ("**" & S & "**");
    function Italic (S : String) return String is ("*" & S & "*");
@@ -210,7 +210,7 @@ package body Ova_Fmt.Format_Terse is
    -----------------------------------------------------------------
    --  Combat: Health/Endurance/Defense/TV line, then an Attacks
    --  bullet with one nested bullet per attack. Shared between the
-   --  main entity and a Companion sub-entity that has its own
+   --  main entity and a Companion/Vehicle sub-entity that has its own
    --  combat: block (Karis's Arasuni, Yuu's Fenrir).
    -----------------------------------------------------------------
 
@@ -259,25 +259,27 @@ package body Ova_Fmt.Format_Terse is
    -----------------------------------------------------------------
    --  Linked-content expansion: one section per top-level Ability
    --  that has Transformation-style nested Abilities/Weaknesses,
-   --  Magic-style Spells, or a Companion -- printed after the main
-   --  entity's own Attacks, in Abilities list order. First-pass
-   --  design (PLAN.md/this package's header comment), not yet
-   --  user-reviewed.
+   --  Magic-style Spells, or a Companion/Vehicle sub-entity -- printed
+   --  after the main entity's own Attacks, in Abilities list order.
+   --  First-pass design (PLAN.md/this package's header comment), not
+   --  yet user-reviewed.
    -----------------------------------------------------------------
 
    procedure Print_Linked_Section (A : Entities.Ability) is
       Has_Transformation : constant Boolean :=
         not A.Sub_Abilities.Is_Empty or else not A.Sub_Weaknesses.Is_Empty;
       Has_Spells         : constant Boolean := not A.Spells.Is_Empty;
-      Has_Companion      : constant Boolean := A.Companion /= null;
+      Has_Sub_Entity      : constant Boolean := A.Sub_Entity /= null;
    begin
-      if not (Has_Transformation or else Has_Spells or else Has_Companion) then
+      if not (Has_Transformation or else Has_Spells or else Has_Sub_Entity) then
          return;
       end if;
 
-      if Has_Companion then
+      if Has_Sub_Entity then
          IO.Put_Line
-           (Bold ("Companion: " & Name_Detail (A.Companion.Name, False, Null_Unbounded_String)));
+           (Bold
+              (To_String (A.Sub_Entity.Label) & ": " &
+               Name_Detail (A.Sub_Entity.Name, False, Null_Unbounded_String)));
       else
          IO.Put_Line (Bold (Name_Detail (A.Name, A.Has_Detail, A.Detail)));
       end if;
@@ -324,36 +326,36 @@ package body Ova_Fmt.Format_Terse is
          end;
       end if;
 
-      if Has_Companion then
-         if not A.Companion.Abilities.Is_Empty then
+      if Has_Sub_Entity then
+         if not A.Sub_Entity.Abilities.Is_Empty then
             declare
                Line : Unbounded_String := To_Unbounded_String ("Abilities: ");
             begin
-               for I in A.Companion.Abilities.First_Index .. A.Companion.Abilities.Last_Index loop
-                  if I > A.Companion.Abilities.First_Index then
+               for I in A.Sub_Entity.Abilities.First_Index .. A.Sub_Entity.Abilities.Last_Index loop
+                  if I > A.Sub_Entity.Abilities.First_Index then
                      Line := Line & ", ";
                   end if;
-                  Line := Line & Format_Sub_Item_Line (A.Companion.Abilities (I));
+                  Line := Line & Format_Sub_Item_Line (A.Sub_Entity.Abilities (I));
                end loop;
                IO.Put_Line (End_With_Period (To_String (Line)));
                IO.New_Line;
             end;
          end if;
-         if not A.Companion.Weaknesses.Is_Empty then
+         if not A.Sub_Entity.Weaknesses.Is_Empty then
             declare
                Line : Unbounded_String := To_Unbounded_String ("Weaknesses: ");
             begin
-               for I in A.Companion.Weaknesses.First_Index .. A.Companion.Weaknesses.Last_Index loop
-                  if I > A.Companion.Weaknesses.First_Index then
+               for I in A.Sub_Entity.Weaknesses.First_Index .. A.Sub_Entity.Weaknesses.Last_Index loop
+                  if I > A.Sub_Entity.Weaknesses.First_Index then
                      Line := Line & ", ";
                   end if;
-                  Line := Line & Format_Sub_Item_Line (A.Companion.Weaknesses (I));
+                  Line := Line & Format_Sub_Item_Line (A.Sub_Entity.Weaknesses (I));
                end loop;
                IO.Put_Line (End_With_Period (To_String (Line)));
                IO.New_Line;
             end;
          end if;
-         Print_Combat_And_Attacks (A.Companion.Combat);
+         Print_Combat_And_Attacks (A.Sub_Entity.Combat);
       end if;
    end Print_Linked_Section;
 
