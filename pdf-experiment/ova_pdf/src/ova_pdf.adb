@@ -10,6 +10,12 @@ procedure Ova_Pdf is
 
    Pdf : PDF_Out_File;
 
+   --  Attacks & Combat Stats row geometry, shared between the labels
+   --  (name/tag/ROLL-DX-END) and text (lorem-ipsum description) passes.
+   Attack_X  : constant := 180.0;
+   Roll_X    : constant := 293.0;
+   Row_Tops  : constant array (1 .. 4) of Real := (216.0, 259.0, 304.0, 348.0);
+
    ------------------------------------------------------------------
    --  Page 36 (left page): name banner + section-heading rules.    --
    ------------------------------------------------------------------
@@ -54,19 +60,85 @@ procedure Ova_Pdf is
    begin
       Text (Pdf, 34.0, 73.0, Helvetica_Bold, 30.0, White, "Fukiko");
 
-      Text
-        (Pdf, 160.0, 57.0, Helvetica_Bold, 7.5, White,
-         "IN THE MEMORY OF MY MOTHER, I'LL BE JUST");
-      Text
-        (Pdf, 160.0, 67.0, Helvetica_Bold, 7.5, White,
-         "LIKE MY FAVORITE MAGICAL GIRLS!");
-
       Text (Pdf, 43.0, 97.0, Helvetica_Bold, 13.0, Maroon, "Background");
       Text (Pdf, 214.0, 390.0, Helvetica_Bold, 13.0, Maroon, "Personality");
       Text
         (Pdf, 214.0, 499.0, Helvetica_Bold, 11.0, Maroon,
          "Lovely Savior Myu Myu");
    end Draw_Page_36_Labels;
+
+   ------------------------------------------------------------------
+   --  Page 36 prose: the tagline (a short flavor quote in the      --
+   --  original) and the Background/Personality/Lovely Savior Myu   --
+   --  Myu body paragraphs -- lorem ipsum throughout, per PLAN.md's  --
+   --  copyright-conscious scope (only game-mechanical data is      --
+   --  transcribed faithfully; narrative prose is not).             --
+   ------------------------------------------------------------------
+
+   procedure Draw_Page_36_Text is
+      Lorem_1 : constant String :=
+        "Lorem ipsum dolor sit amet, consectetur adipiscing elit, " &
+        "sed do eiusmod tempor incididunt ut labore et dolore magna " &
+        "aliqua. Ut enim ad minim veniam, quis nostrud exercitation " &
+        "ullamco laboris nisi ut aliquip ex ea commodo consequat.";
+      Lorem_2 : constant String :=
+        "Duis aute irure dolor in reprehenderit in voluptate velit " &
+        "esse cillum dolore eu fugiat nulla pariatur. Excepteur sint " &
+        "occaecat cupidatat non proident, sunt in culpa qui officia " &
+        "deserunt mollit anim id est laborum.";
+      Lorem_3 : constant String :=
+        "Sed ut perspiciatis unde omnis iste natus error sit " &
+        "voluptatem accusantium doloremque laudantium, totam rem " &
+        "aperiam, eaque ipsa quae ab illo inventore veritatis.";
+      Lorem_4 : constant String :=
+        "Nemo enim ipsam voluptatem quia voluptas sit aspernatur " &
+        "aut odit aut fugit, sed quia consequuntur magni dolores " &
+        "eos qui ratione voluptatem sequi nesciunt.";
+      Lorem_5 : constant String :=
+        "Neque porro quisquam est, qui dolorem ipsum quia dolor " &
+        "sit amet, consectetur adipisci velit.";
+   begin
+      Text
+        (Pdf, 160.0, 57.0, Helvetica_Bold, 7.5, White,
+         "LOREM IPSUM DOLOR SIT AMET CONSECTETUR");
+      Text
+        (Pdf, 160.0, 67.0, Helvetica_Bold, 7.5, White,
+         "ADIPISCING ELIT SED DO EIUSMOD TEMPOR!");
+
+      declare
+         Y : constant Real :=
+           Paragraph
+             (Pdf, 43.0, 114.0, 154.0, Times_Roman, 9.0, 11.5, Ink, Lorem_1);
+         Ignore : constant Real :=
+           Paragraph
+             (Pdf, 43.0, Y + 5.0, 154.0, Times_Roman, 9.0, 11.5, Ink, Lorem_2);
+         pragma Unreferenced (Ignore);
+      begin
+         null;
+      end;
+
+      declare
+         Ignore : constant Real :=
+           Paragraph
+             (Pdf, 214.0, 403.0, 175.0, Times_Roman, 9.0, 11.5, Ink, Lorem_3);
+         pragma Unreferenced (Ignore);
+      begin
+         null;
+      end;
+
+      declare
+         Y : constant Real :=
+           Paragraph
+             (Pdf, 214.0, 512.0, 175.0, Times_Roman, 9.0, 11.5, Ink, Lorem_4);
+         Ignore : constant Real :=
+           Paragraph
+             (Pdf, 214.0, Y + 5.0, 175.0, Times_Roman, 9.0, 11.5, Ink,
+              Lorem_5);
+         pragma Unreferenced (Ignore);
+      begin
+         null;
+      end;
+   end Draw_Page_36_Text;
 
    ------------------------------------------------------------------
    --  Page 37 (right page): Abilities/Weaknesses panel and the      --
@@ -192,12 +264,8 @@ procedure Ova_Pdf is
             Times_Roman, 7.5, Ink, Value);
       end Field;
 
-      Attack_X   : constant := 180.0;
-      Roll_X     : constant := 293.0;
       Dx_X       : constant := 324.0;
       End_X      : constant := 355.0;
-      Row_Tops   : constant array (1 .. 4) of Real :=
-        (216.0, 259.0, 304.0, 348.0);
 
       --  Tag_2 is the (optional) wrapped second line of a tag line too
       --  long to fit the name column's width in one line -- as happens
@@ -308,6 +376,70 @@ procedure Ova_Pdf is
       Text (Pdf, 347.0, 432.0, Helvetica_Bold, 20.0, White, "12");
    end Draw_Page_37_Labels;
 
+   ------------------------------------------------------------------
+   --  Page 37 prose: the four attack descriptions, the paragraph   --
+   --  continuing from page 36's "Lovely Savior Myu Myu" section,   --
+   --  and the "Azyrus" heading + paragraph (its "Attributes:" line --
+   --  is game-mechanical data, so it is transcribed as a label).   --
+   ------------------------------------------------------------------
+
+   procedure Draw_Page_37_Text is
+      Desc_1 : constant String :=
+        "Lorem ipsum dolor sit amet consectetur adipiscing elit sed " &
+        "do eiusmod tempor incididunt ut labore.";
+      Desc_2 : constant String :=
+        "Ut enim ad minim veniam quis nostrud exercitation ullamco " &
+        "laboris nisi ut aliquip ex ea commodo.";
+      Desc_3 : constant String := "Duis aute irure dolor in reprehenderit.";
+      Desc_4 : constant String :=
+        "In voluptate velit esse cillum dolore eu fugiat nulla " &
+        "pariatur excepteur sint occaecat.";
+      Continuation : constant String :=
+        "Cupidatat non proident, sunt in culpa qui officia deserunt " &
+        "mollit anim id est laborum. Sed ut perspiciatis unde omnis " &
+        "iste natus error sit voluptatem accusantium doloremque " &
+        "laudantium, totam rem aperiam.";
+      Azyrus_Para : constant String :=
+        "Eaque ipsa quae ab illo inventore veritatis et quasi " &
+        "architecto beatae vitae dicta sunt explicabo. Nemo enim " &
+        "ipsam voluptatem quia voluptas sit aspernatur aut odit.";
+      Ignore : Real;
+      pragma Unreferenced (Ignore);
+   begin
+      Ignore :=
+        Paragraph
+          (Pdf, Attack_X, Row_Tops (1) + 28.0, Roll_X - Attack_X - 6.0,
+           Times_Italic, 6.5, 6.5, Ink, Desc_1);
+      Ignore :=
+        Paragraph
+          (Pdf, Attack_X, Row_Tops (2) + 28.0, Roll_X - Attack_X - 6.0,
+           Times_Italic, 6.5, 6.5, Ink, Desc_2);
+      Ignore :=
+        Paragraph
+          (Pdf, Attack_X, Row_Tops (3) + 34.0, Roll_X - Attack_X - 6.0,
+           Times_Italic, 6.5, 6.5, Ink, Desc_3);
+      Ignore :=
+        Paragraph
+          (Pdf, Attack_X, Row_Tops (4) + 28.0, Roll_X - Attack_X - 6.0,
+           Times_Italic, 6.5, 6.5, Ink, Desc_4);
+
+      Ignore :=
+        Paragraph
+          (Pdf, 43.0, 470.0, 154.0, Times_Roman, 9.0, 11.5, Ink, Continuation);
+
+      Text (Pdf, 214.0, 470.0, Helvetica_Bold, 12.0, Maroon, "Azyrus");
+      Ignore :=
+        Paragraph
+          (Pdf, 214.0, 484.0, 175.0, Times_Roman, 9.0, 11.5, Ink, Azyrus_Para);
+
+      Text (Pdf, 214.0, 550.0, Helvetica_Bold, 8.0, Ink, "Attributes:");
+      Ignore :=
+        Paragraph
+          (Pdf, 214.0, 560.0, 175.0, Times_Roman, 8.0, 9.5, Ink,
+           "Flight +2, Quick +1, Smart +2; Awkward Size (Small) -1, " &
+           "Frail -1, Short-Tempered -1");
+   end Draw_Page_37_Text;
+
 begin
    Pdf.Create ("Fukiko-experiment.pdf");
    Pdf.Page_Setup (Page_Rect);
@@ -315,9 +447,11 @@ begin
 
    Draw_Page_36_Graphics;
    Draw_Page_36_Labels;
+   Draw_Page_36_Text;
    Pdf.New_Page;
    Draw_Page_37_Graphics;
    Draw_Page_37_Labels;
+   Draw_Page_37_Text;
 
    Pdf.Close;
 end Ova_Pdf;

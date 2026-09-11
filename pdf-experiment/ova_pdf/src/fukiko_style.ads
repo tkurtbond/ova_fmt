@@ -105,6 +105,25 @@ package Fukiko_Style is
    --  common case, since almost every piece of text on these two pages
    --  is a single short line with its own font/size/color combination.
 
+   function Paragraph
+     (Pdf     : in out PDF_Out_Stream'Class;
+      X, Y    :        Real;
+      Width   :        Real;
+      Font    :        Standard_Font_Type;
+      Size    :        Real;
+      Leading :        Real;
+      Col     :        Color_Type;
+      S       :        String) return Real;
+   --  Greedily word-wrap S (a single space-separated run of text, no
+   --  embedded newlines) to fit Width, and draw it as left-aligned lines
+   --  of the given font/size/color, starting with the first line's
+   --  baseline at (X, Y) and moving down by Leading per line. PDF_Out
+   --  has no built-in text wrapping -- this is the whole-word Bounding_Box
+   --  measure-and-break used for every prose block on both pages. Returns
+   --  the Y (top-down) where a following line would start, so callers can
+   --  chain paragraphs (with their own added gap) without having to
+   --  predict how many lines S will wrap to.
+
    procedure Solid_VRule
      (Pdf                          : in out PDF_Out_Stream'Class;
       X, Y1_From_Top, Y2_From_Top :        Real;

@@ -1,5 +1,20 @@
 # pdf-experiment / ova_pdf — PLAN
 
+## Status (2026-09-10)
+
+All three build-order phases below are implemented in
+`src/ova_pdf.adb` / `src/fukiko_style.ads/.adb` and render correctly
+(`alr build && ./bin/ova_pdf`, checked against `fukiko-038.png`/
+`fukiko-039.png` reference renders at each phase). One deviation from
+the original plan: the banner *tagline* turned out to be prose (a
+flavor quote), not a label -- it was drafted verbatim in phase 2 by
+mistake and corrected to lorem ipsum in phase 3, per the copyright
+scope below. The two open questions from "Risks to watch for" did not
+end up mattering: `Bounding_Box`-driven greedy word-wrap (the
+`Fukiko_Style.Paragraph` helper) was sufficient with no
+`besm2_fmt`-style layout package needed, and the page-37 panel overlap
+reproduced correctly on the first attempt.
+
 ## Purpose
 
 A standalone, hand-written experiment (same role as `Fukiko-experiment.lout`

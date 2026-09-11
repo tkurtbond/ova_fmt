@@ -1,3 +1,5 @@
+with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
+
 package body Fukiko_Style is
 
    function Top_XY (X, Y : Real) return Point is
@@ -90,6 +92,58 @@ package body Fukiko_Style is
       Pdf.Insert_Graphics_PDF_Code ("[] 0 d");  --  Restore a solid stroke.
       Pdf.Insert_Graphics_PDF_Code ("0 J");     --  Restore a butt cap.
    end Dotted_HRule;
+
+   function Paragraph
+     (Pdf     : in out PDF_Out_Stream'Class;
+      X, Y    :        Real;
+      Width   :        Real;
+      Font    :        Standard_Font_Type;
+      Size    :        Real;
+      Leading :        Real;
+      Col     :        Color_Type;
+      S       :        String) return Real
+   is
+      Cur_Y : Real := Y;
+      Pos   : Positive := S'First;
+      Line  : Unbounded_String := Null_Unbounded_String;
+   begin
+      Pdf.Font (Font);
+      Pdf.Font_Size (Size);
+      Pdf.Color (Col);
+      while Pos <= S'Last loop
+         declare
+            Word_Start : constant Positive := Pos;
+         begin
+            while Pos <= S'Last and then S (Pos) /= ' ' loop
+               Pos := Pos + 1;
+            end loop;
+            declare
+               Word      : constant String := S (Word_Start .. Pos - 1);
+               Candidate : constant String :=
+                 (if Length (Line) = 0
+                  then Word else To_String (Line) & ' ' & Word);
+            begin
+               if Length (Line) > 0
+                 and then Pdf.Bounding_Box (Candidate).width > Width
+               then
+                  Pdf.Put_XY (Top_XY (X, Cur_Y), To_String (Line));
+                  Cur_Y := Cur_Y + Leading;
+                  Line := To_Unbounded_String (Word);
+               else
+                  Line := To_Unbounded_String (Candidate);
+               end if;
+            end;
+         end;
+         while Pos <= S'Last and then S (Pos) = ' ' loop
+            Pos := Pos + 1;
+         end loop;
+      end loop;
+      if Length (Line) > 0 then
+         Pdf.Put_XY (Top_XY (X, Cur_Y), To_String (Line));
+         Cur_Y := Cur_Y + Leading;
+      end if;
+      return Cur_Y;
+   end Paragraph;
 
    procedure Text
      (Pdf   : in out PDF_Out_Stream'Class;
