@@ -31,6 +31,7 @@ package Fukiko_Style is
    Bright_Maroon : constant Color_Type := RGB (16#A1#, 16#1E#, 16#22#);
    Panel_Bg      : constant Color_Type := RGB (16#EB#, 16#E1#, 16#E1#);
    White         : constant Color_Type := RGB (16#FF#, 16#FF#, 16#FF#);
+   Ink           : constant Color_Type := RGB (16#00#, 16#00#, 16#00#);
 
    --------------------------------------------------------
    --  Top-down coordinate convenience (see package note)  --
@@ -87,6 +88,22 @@ package Fukiko_Style is
    --  with a round line cap, the standard PDF "dotted line" trick: a
    --  0-length dash segment, stroked with a round cap, paints as a disc
    --  of diameter = line width.
+
+   ----------------------------
+   --  Text placement helper  --
+   ----------------------------
+
+   procedure Text
+     (Pdf   : in out PDF_Out_Stream'Class;
+      X, Y  :        Real;
+      Font  :        Standard_Font_Type;
+      Size  :        Real;
+      Col   :        Color_Type;
+      S     :        String);
+   --  Set font/size/color and place S with its baseline-left origin at
+   --  (X, Y) in top-down coordinates -- a one-call shorthand for the
+   --  common case, since almost every piece of text on these two pages
+   --  is a single short line with its own font/size/color combination.
 
    procedure Solid_VRule
      (Pdf                          : in out PDF_Out_Stream'Class;

@@ -91,6 +91,21 @@ package body Fukiko_Style is
       Pdf.Insert_Graphics_PDF_Code ("0 J");     --  Restore a butt cap.
    end Dotted_HRule;
 
+   procedure Text
+     (Pdf   : in out PDF_Out_Stream'Class;
+      X, Y  :        Real;
+      Font  :        Standard_Font_Type;
+      Size  :        Real;
+      Col   :        Color_Type;
+      S     :        String)
+   is
+   begin
+      Pdf.Font (Font);
+      Pdf.Font_Size (Size);
+      Pdf.Color (Col);
+      Pdf.Put_XY (Top_XY (X, Y), S);
+   end Text;
+
    procedure Solid_VRule
      (Pdf                          : in out PDF_Out_Stream'Class;
       X, Y1_From_Top, Y2_From_Top :        Real;

@@ -34,7 +34,7 @@ procedure Ova_Pdf is
 
       --  Left column: "Background" heading rule (narrow column, leaving
       --  room at its right for where the character art used to be).
-      Solid_HRule (Pdf, 43.0, 197.0, 100.0);
+      Solid_HRule (Pdf, 43.0, 197.0, 102.0);
 
       --  Right column, below where the art ends: "Personality" and
       --  "Lovely Savior Myu Myu" heading rules.
@@ -44,6 +44,29 @@ procedure Ova_Pdf is
       --  Bottom dotted rule (mirrors the one under the banner).
       Dotted_HRule (Pdf, 24.0, 384.0, 566.0);
    end Draw_Page_36_Graphics;
+
+   --------------------------------------------------------------
+   --  Page 36 labels: name, tagline, and the three section     --
+   --  headings (no body prose yet -- that is phase 3).         --
+   --------------------------------------------------------------
+
+   procedure Draw_Page_36_Labels is
+   begin
+      Text (Pdf, 34.0, 73.0, Helvetica_Bold, 30.0, White, "Fukiko");
+
+      Text
+        (Pdf, 160.0, 57.0, Helvetica_Bold, 7.5, White,
+         "IN THE MEMORY OF MY MOTHER, I'LL BE JUST");
+      Text
+        (Pdf, 160.0, 67.0, Helvetica_Bold, 7.5, White,
+         "LIKE MY FAVORITE MAGICAL GIRLS!");
+
+      Text (Pdf, 43.0, 97.0, Helvetica_Bold, 13.0, Maroon, "Background");
+      Text (Pdf, 214.0, 390.0, Helvetica_Bold, 13.0, Maroon, "Personality");
+      Text
+        (Pdf, 214.0, 499.0, Helvetica_Bold, 11.0, Maroon,
+         "Lovely Savior Myu Myu");
+   end Draw_Page_36_Labels;
 
    ------------------------------------------------------------------
    --  Page 37 (right page): Abilities/Weaknesses panel and the      --
@@ -58,8 +81,8 @@ procedure Ova_Pdf is
       Attacks_Top    : constant := 190.0;
       Header_H       : constant := 26.0;
       Attacks_H      : constant := 266.0;
-      Stat_Row_Y     : constant := 415.0;  --  Divider above DEFENSE/../TV
-      Row_Ys : constant array (1 .. 4) of Real := (259.0, 304.0, 348.0, 394.0);
+      Stat_Row_Y     : constant := 394.0;  --  Divider above DEFENSE/../TV
+      Row_Ys : constant array (1 .. 3) of Real := (259.0, 304.0, 348.0);
       Col_Xs : constant array (1 .. 3) of Real := (288.0, 319.0, 350.0);
       Stat_Col_Xs : constant array (1 .. 3) of Real := (222.0, 271.0, 331.0);
    begin
@@ -129,14 +152,172 @@ procedure Ova_Pdf is
          (Bottom_Right => Box_Radius, others => 0.0), fill);
    end Draw_Page_37_Graphics;
 
+   ------------------------------------------------------------------
+   --  Page 37 labels: headings, ability/weakness names & values,   --
+   --  Other Statistics fields, and the Attacks & Combat Stats      --
+   --  table's names/tags/numbers (attack *descriptions* are prose  --
+   --  and come in phase 3).                                        --
+   ------------------------------------------------------------------
+
+   procedure Draw_Page_37_Labels is
+
+      Val_Font   : constant Standard_Font_Type := Helvetica_Bold;
+      Trait_Font : constant Standard_Font_Type := Times_Italic;
+      List_Size  : constant := 8.5;
+      Line_H     : constant := 9.6;
+
+      --  One Abilities/Weaknesses line: a bold value in the gutter and
+      --  an italic trait name/description to its right.
+      procedure Ability_Line
+        (X_Val, X_Trait, Y : Real;
+         Value, Trait      : String;
+         Size               : Real := List_Size)
+      is
+      begin
+         Text (Pdf, X_Val, Y, Val_Font, Size, Maroon, Value);
+         Text (Pdf, X_Trait, Y, Trait_Font, Size, Ink, Trait);
+      end Ability_Line;
+
+      Y : Real;
+
+      --  Other Statistics: a small-caps-style bold label followed by a
+      --  plain value on the same line, the value positioned right after
+      --  the label's actual rendered width (via Bounding_Box).
+      procedure Field (Label, Value : String; Y : Real) is
+         X : constant := 42.0;
+      begin
+         Text (Pdf, X, Y, Helvetica_Bold, 7.5, Ink, Label & ' ');
+         Text
+           (Pdf, X + Pdf.Bounding_Box (Label & ' ').width, Y,
+            Times_Roman, 7.5, Ink, Value);
+      end Field;
+
+      Attack_X   : constant := 180.0;
+      Roll_X     : constant := 293.0;
+      Dx_X       : constant := 324.0;
+      End_X      : constant := 355.0;
+      Row_Tops   : constant array (1 .. 4) of Real :=
+        (216.0, 259.0, 304.0, 348.0);
+
+      --  Tag_2 is the (optional) wrapped second line of a tag line too
+      --  long to fit the name column's width in one line -- as happens
+      --  in the rulebook itself for a couple of these attacks.
+      procedure Attack_Row
+        (Top : Real; Name, Tag, Tag_2 : String; Roll, Dx, End_V : String)
+      is
+      begin
+         Text (Pdf, Attack_X, Top + 11.0, Helvetica_Bold, 8.0, Maroon, Name);
+         Text (Pdf, Attack_X, Top + 19.5, Helvetica_Bold, 6.0, Ink, Tag);
+         if Tag_2'Length > 0 then
+            Text (Pdf, Attack_X, Top + 26.5, Helvetica_Bold, 6.0, Ink, Tag_2);
+         end if;
+         Text (Pdf, Roll_X, Top + 11.0, Helvetica_Bold, 7.5, Maroon, "ROLL");
+         Text (Pdf, Dx_X, Top + 11.0, Helvetica_Bold, 7.5, Maroon, "DX");
+         Text (Pdf, End_X, Top + 11.0, Helvetica_Bold, 7.5, Maroon, "END");
+         Text (Pdf, Roll_X + 3.0, Top + 36.0, Helvetica_Bold, 20.0, Ink, Roll);
+         Text (Pdf, Dx_X + 3.0, Top + 36.0, Helvetica_Bold, 20.0, Ink, Dx);
+         Text (Pdf, End_X + 3.0, Top + 36.0, Helvetica_Bold, 20.0, Ink, End_V);
+      end Attack_Row;
+
+   begin
+      Text (Pdf, 42.0, 56.0, Helvetica_Bold, 13.0, Maroon, "ABILITIES");
+      Text (Pdf, 221.0, 56.0, Helvetica_Bold, 13.0, Maroon, "WEAKNESSES");
+
+      --  Abilities column.
+      Y := 68.0;
+      Ability_Line (50.0, 68.0, Y, "+2", "Companion (Azyrus)");
+      Y := Y + Line_H;
+      Ability_Line (50.0, 68.0, Y, "+2", "Cute!"); Y := Y + Line_H;
+      Ability_Line (50.0, 68.0, Y, "+1", "Iron-Willed"); Y := Y + Line_H;
+      Ability_Line (50.0, 68.0, Y, "+2", "Knowledge (Shoujo Manga)");
+      Y := Y + Line_H;
+      Ability_Line (50.0, 68.0, Y, "+2", "Quick"); Y := Y + Line_H;
+      Ability_Line (50.0, 68.0, Y, "+2", "Shape-Shifter"); Y := Y + Line_H;
+      Ability_Line (50.0, 68.0, Y, "+4", "Transformation"); Y := Y + Line_H;
+      Ability_Line (88.0, 104.0, Y, "+2", "Attack", 7.5); Y := Y + 8.5;
+      Ability_Line
+        (88.0, 104.0, Y, "+3", "Barrier (Area Effect; Elaborate", 7.5);
+      Y := Y + 8.5;
+      Text (Pdf, 112.0, Y, Trait_Font, 7.5, Ink, "Gestures; 5 End)");
+      Y := Y + 8.5;
+      Ability_Line (88.0, 104.0, Y, "+2", "Combat Expert", 7.5); Y := Y + 8.5;
+      Ability_Line (88.0, 104.0, Y, "+2", "Healer", 7.5); Y := Y + 8.5;
+      Ability_Line
+        (88.0, 104.0, Y, "-1", "Bizarre Appearance (Cat Features)", 7.5);
+
+      --  Weaknesses column.
+      Y := 68.0;
+      Ability_Line (229.0, 247.0, Y, "-2", "Ageism"); Y := Y + Line_H;
+      Ability_Line (229.0, 247.0, Y, "-2", "Crybaby"); Y := Y + Line_H;
+      Ability_Line (229.0, 247.0, Y, "-1", "Easily Distracted");
+      Y := Y + Line_H;
+      Ability_Line (229.0, 247.0, Y, "-2", "Focus (Powers Require Neko");
+      Y := Y + Line_H;
+      Text
+        (Pdf, 255.0, Y, Trait_Font, List_Size, Ink, "Transformation Locket)");
+      Y := Y + Line_H;
+      Ability_Line (229.0, 247.0, Y, "-1", "Frail"); Y := Y + Line_H;
+      Ability_Line (229.0, 247.0, Y, "-1", "Naive");
+
+      --  Other Statistics.
+      Text
+        (Pdf, 42.0, 203.0, Helvetica_Bold, 10.0, Maroon, "OTHER STATISTICS");
+      Y := 216.0;
+      Field ("CONCEPT:", "Magical Meow Meow Girl", Y); Y := Y + 11.0;
+      Field ("BIRTHDAY:", "July 26", Y); Y := Y + 11.0;
+      Field ("AGE:", "12", Y); Y := Y + 11.0;
+      Field ("GENDER:", "Female", Y); Y := Y + 11.0;
+      Field ("HEIGHT:", "4'10""", Y); Y := Y + 11.0;
+      Field ("WEIGHT:", "85 lbs.", Y); Y := Y + 11.0;
+      Field ("HAIR:", "Blonde", Y); Y := Y + 11.0;
+      Field ("EYES:", "Blue", Y); Y := Y + 11.0;
+      Field ("ASSOCIATION:", "Middle School", Y); Y := Y + 11.0;
+      Field ("HOBBIES:", "Shoujo Manga", Y); Y := Y + 11.0;
+      Field ("FAVE FOOD:", "Chocolate", Y); Y := Y + 11.0;
+      Field ("ALLIES:", "Azyrus", Y); Y := Y + 11.0;
+      Field ("ENEMIES:", "Sinister Folk and Their Minions", Y);
+
+      --  Attacks & Combat Stats.
+      Text
+        (Pdf, Attack_X, 211.0, Helvetica_Bold, 15.0, White,
+         "Attacks & Combat Stats");
+
+      Attack_Row
+        (Row_Tops (1), "Neko Neko Catnip Cantrip",
+         "RANGED, AFFINITY: LOVE", "", "4", "3", "0");
+      Attack_Row
+        (Row_Tops (2), "Neko Neko Heart Burst",
+         "EFFECTIVE X2, RANGED, AFFINITY: LOVE", "", "4", "5", "10");
+      Attack_Row
+        (Row_Tops (3), "Neko Neko Wave",
+         "AREA EFFECT X2, STUNNING, AFFINITY:", "LOVE; NO DAMAGE",
+         "4", "0", "10");
+      Attack_Row
+        (Row_Tops (4), "Neko Neko Yarn Entangle",
+         "PARALYZING, AFFINITY: LOVE", "", "4", "3", "10");
+
+      --  Closing DEFENSE / HEALTH / ENDURANCE / TV stat row.
+      Text (Pdf, 178.0, 406.0, Helvetica_Bold, 8.5, Maroon, "DEFENSE");
+      Text (Pdf, 230.0, 406.0, Helvetica_Bold, 8.5, Maroon, "HEALTH");
+      Text (Pdf, 274.0, 406.0, Helvetica_Bold, 8.0, Maroon, "ENDURANCE");
+      Text (Pdf, 347.0, 406.0, Helvetica_Bold, 8.5, White, "TV");
+
+      Text (Pdf, 178.0, 432.0, Helvetica_Bold, 20.0, Ink, "4/5");
+      Text (Pdf, 238.0, 432.0, Helvetica_Bold, 20.0, Ink, "30");
+      Text (Pdf, 288.0, 432.0, Helvetica_Bold, 20.0, Ink, "40");
+      Text (Pdf, 347.0, 432.0, Helvetica_Bold, 20.0, White, "12");
+   end Draw_Page_37_Labels;
+
 begin
    Pdf.Create ("Fukiko-experiment.pdf");
    Pdf.Page_Setup (Page_Rect);
    Pdf.Margins ((0.0, 0.0, 0.0, 0.0));
 
    Draw_Page_36_Graphics;
+   Draw_Page_36_Labels;
    Pdf.New_Page;
    Draw_Page_37_Graphics;
+   Draw_Page_37_Labels;
 
    Pdf.Close;
 end Ova_Pdf;
