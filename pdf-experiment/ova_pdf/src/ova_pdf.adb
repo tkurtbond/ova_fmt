@@ -46,9 +46,6 @@ procedure Ova_Pdf is
 
       Pdf.Stroking_Color (Maroon);
 
-      --  Dotted rule below the banner.
-      Dotted_HRule (Pdf, 24.0, 384.0, 85.0);
-
       --  Left column: "Background" heading rule (narrow column, leaving
       --  room at its right for where the character art used to be).
       Solid_HRule (Pdf, 43.0, 197.0, 102.0);
@@ -57,9 +54,6 @@ procedure Ova_Pdf is
       --  "Lovely Savior Myu Myu" heading rules.
       Solid_HRule (Pdf, 214.0, 389.0, 393.0);
       Solid_HRule (Pdf, 214.0, 389.0, 502.0);
-
-      --  Bottom dotted rule (mirrors the one under the banner).
-      Dotted_HRule (Pdf, 24.0, 384.0, 566.0);
    end Draw_Page_36_Graphics;
 
    --------------------------------------------------------------
@@ -169,10 +163,7 @@ procedure Ova_Pdf is
       Col_Xs : constant array (1 .. 3) of Real := (288.0, 319.0, 350.0);
       Stat_Col_Xs : constant array (1 .. 3) of Real := (222.0, 271.0, 331.0);
    begin
-      --  Top dotted rule (mirrors the one that would sit under the page
-      --  header, and the one on page 36).
       Pdf.Stroking_Color (Maroon);
-      Dotted_HRule (Pdf, 17.0, 384.0, 31.0);
 
       --  Abilities/Weaknesses panel.
       Pdf.Color (Panel_Bg);
