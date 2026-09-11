@@ -1,7 +1,8 @@
 --  ova_fmt - convert a YAML OVA character file into reST/Gemtext/
---  HTML-in-reST/groff-in-reST/h-m-m. Dispatches to Ova_Fmt.Format_Rst
---  (Terse, Html_In_Rst, Groff_In_Rst), Ova_Fmt.Format_Gemini (Gemtext),
---  or Ova_Fmt.Format_Hmm (Hmm) by Config.Format -- see
+--  Markdown/HTML-in-reST/groff-in-reST/h-m-m. Dispatches to
+--  Ova_Fmt.Format_Rst (Terse, Html_In_Rst, Groff_In_Rst),
+--  Ova_Fmt.Format_Gemini (Gemtext), Ova_Fmt.Format_Markdown
+--  (Markdown), or Ova_Fmt.Format_Hmm (Hmm) by Config.Format -- see
 --  Ova_Fmt.Format_Common's header comment for why those are split this
 --  way. Direct-to-Lout is still unimplemented (PLAN.md §9 step 7).
 --  Structure mirrors besm2_fmt_main.adb.
@@ -21,6 +22,7 @@ with Ova_Fmt.Config;
 with Ova_Fmt.Entities;
 with Ova_Fmt.Format_Gemini;
 with Ova_Fmt.Format_Hmm;
+with Ova_Fmt.Format_Markdown;
 with Ova_Fmt.Format_Rst;
 
 procedure Ova_Fmt_Main is
@@ -137,6 +139,8 @@ procedure Ova_Fmt_Main is
             case Ova_Fmt.Config.Format is
                when Ova_Fmt.Config.Gemtext =>
                   Ova_Fmt.Format_Gemini.Process_Entity (Loaded (I), I);
+               when Ova_Fmt.Config.Markdown =>
+                  Ova_Fmt.Format_Markdown.Process_Entity (Loaded (I), I);
                when Ova_Fmt.Config.Hmm =>
                   Ova_Fmt.Format_Hmm.Process_Entity (Loaded (I), I);
                when Ova_Fmt.Config.Terse | Ova_Fmt.Config.Html_In_Rst |

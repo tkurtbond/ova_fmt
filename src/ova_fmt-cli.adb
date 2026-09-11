@@ -15,6 +15,12 @@ package body Ova_Fmt.Cli is
       return True;
    end Do_Gemtext;
 
+   function Do_Markdown return Boolean is
+   begin
+      Config.Format := Config.Markdown;
+      return True;
+   end Do_Markdown;
+
    function Do_Html return Boolean is
    begin
       Config.Format := Config.Html_In_Rst;

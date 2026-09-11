@@ -27,6 +27,7 @@ private
 
    function Do_Help return Boolean;
    function Do_Gemtext return Boolean;
+   function Do_Markdown return Boolean;
    function Do_Html return Boolean;
    function Do_Groff return Boolean;
    function Do_Hmm return Boolean;
@@ -46,6 +47,11 @@ private
          Short_Name  => 'g',
          Long_Name   => "gemtext",
          Handler     => Do_Gemtext'Access),
+      Arg_Parser.Make_Option
+        (Description => "Output plain Markdown prose instead of reST.",
+         Short_Name  => 'M',
+         Long_Name   => "markdown",
+         Handler     => Do_Markdown'Access),
       Arg_Parser.Make_Option
         (Description => "Output reST with nested HTML tables (a `.. raw:: " &
                          "html` block) for Abilities/Weaknesses/Combat/" &

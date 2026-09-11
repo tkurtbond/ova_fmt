@@ -1700,6 +1700,58 @@ for test data and output-format sequencing:
    `Fukiko-experiment.lout` worked example (§3), using
    `~/Reference/Document-Tools/lout/`'s `user.pdf`/`expert.pdf` (§2)
    as needed for anything beyond what that one example already shows.
+   Still unimplemented.
+8. **Markdown backend, added out of the original build order** (the
+   user asked for it directly, after step 6/groff-in-reST landed, not
+   at the point §9 originally scheduled it): `-M/--markdown`,
+   `Ova_Fmt.Format_Markdown` — a thin entry point into
+   `Ova_Fmt.Format_Common`, same shape as `Ova_Fmt.Format_Gemini`, since
+   Markdown Terse-equivalent content is byte-for-byte the same
+   bulleted-list/prose shape as Terse (reST) and Gemtext (§2.3's
+   already-settled "only heading/list syntax differs, inline
+   `**bold**`/`*italic*` markup is unchanged" finding, now cashed out a
+   second time). The only new code is the entity title's own heading
+   line: per the user (asked directly, since reST's `Underliner`/
+   `Subunderliner`-by-character convention has no clean Markdown
+   equivalent), a flat `# Title` ATX heading for every entity
+   regardless of `Entity_No`, matching Gemtext's own choice and for the
+   same reason (no character to swap, only a `#`-count depth, and flat
+   was picked over nesting subsequent entities to `##`). No nested-
+   table Markdown mode (an eventual Html_In_Rst/Groff_In_Rst analog)
+   designed yet — this is Terse-equivalent only.
+
+   Verified: a pre-change/post-change binary diff of Terse/Gemtext/
+   Html_In_Rst/Groff_In_Rst/Hmm output (plain, and every existing flag
+   combination — `-e`, `-c`, `-p`) across every `test-data/*.yaml`
+   fixture (`Broken.yaml` excluded, same as every other such diff) is
+   byte-identical — the new `Output_Format` value and the
+   `Print_Header_And_Prose` branch touch nothing else. `-M` on every
+   fixture produces Markdown that Pandoc's real `-r markdown -w html`
+   reader parses with no errors, confirmed by grepping the rendered
+   HTML for Karis's own `<h1>` title and a plausible `<strong>`/`<em>`
+   count, not just eyeballing the `.md` output. `GNUmakefile` gained
+   `TEST_MARKDOWNOUTPUT`/`markdown` (`build/%.md` via `-M`), following
+   the same wildcard-derived-from-`TEST_DATA` convention as every other
+   output-list variable.
+
+   **Update, per the user:** Markdown *does* get a PDF pipeline after
+   all (unlike Gemtext/h-m-m) — `pandoc -r markdown -w ms
+   --template=tkb`, the same writer/template Terse's own PDF uses, just
+   with `markdown` instead of `rst` as the reader — built automatically
+   by `make markdown` alongside the plain `.md` files, not left as a
+   separate opt-in step. Since Terse's reST-sourced PDF and Markdown's
+   own now sit in the same `build/` directory through the same `ms`
+   writer, both filenames were changed to carry their *source* format
+   ahead of `.ms.pdf` so they can't collide or be confused: Terse's own
+   `build/%.ms.pdf` became `build/%.rst.ms.pdf` (`TEST_PDFOUTPUT`,
+   `make pdf`), and Markdown's new one is `build/%.md.ms.pdf`
+   (`TEST_MARKDOWN_PDFOUTPUT`, `make markdown`) — `%.groff.pdf` was left
+   alone (already unambiguous, and not asked for). Verified: `make pdf`
+   and `make markdown` both rebuild cleanly for every fixture under the
+   new names, `make gemtext html groff hmm rst` are all unaffected
+   (`GNUmakefile`-only change, no `Ova_Fmt` source touched this pass),
+   and `build/Karis.md.ms.pdf`'s extracted text (`pdftotext`) matches
+   `build/Karis.rst.ms.pdf`'s content line for line.
 
 **`GNUmakefile` convention to keep as each new backend lands, per the
 user:** every existing output-list variable (`TEST_TERSEOUTPUT`,
@@ -2363,3 +2415,10 @@ automatically.
   settled policy, not a per-file judgment call. Game-mechanical data,
   fluff, `tagline`, and short attack captions are still transcribed
   faithfully.
+- **Markdown backend's entity-title heading is a flat `# Title` for
+  every entity** (§9 step 8, asked directly of the user, offered
+  alongside a heading-depth-nesting alternative and a literal-Setext
+  alternative): matches Gemtext's own already-settled choice and for
+  the same reason — no per-entity underline character to swap the way
+  reST's `Underliner`/`Subunderliner` do, only a heading depth, and
+  flat was preferred over nesting subsequent entities under `##`.

@@ -559,11 +559,14 @@ package body Ova_Fmt.Format_Common is
               E.Has_Fluff and then E.Fluff.Has_Concept,
               (if E.Has_Fluff then E.Fluff.Concept else Null_Unbounded_String));
       begin
-         if Config.Format = Config.Gemtext then
-            --  Gemtext's only heading syntax; -U/--subunderliner's
-            --  "distinguish entities after the first" concept has no
-            --  equivalent here (no underline character to swap) and
-            --  doesn't apply.
+         if Config.Format = Config.Gemtext or else Config.Format = Config.Markdown then
+            --  Gemtext's only heading syntax, and (per the user)
+            --  Markdown's own choice too, for the same reason:
+            --  -U/--subunderliner's "distinguish entities after the
+            --  first" concept has no equivalent here (no underline
+            --  character to swap, only a `#`-count depth) and doesn't
+            --  apply -- always a flat `# Title` regardless of
+            --  Entity_No.
             IO.Put_Line ("# " & Title);
          else
             declare

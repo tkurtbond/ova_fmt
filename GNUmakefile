@@ -17,8 +17,12 @@ TEST_TERSEOUTPUT=$(foreach f,$(notdir $(TEST_DATA)),build/$(addsuffix .gen.rst,$
 # PDF renderings of the above, via pandoc's ms writer -- same
 # pipeline/template besm2_fmt's GNUmakefile uses (reST -> pandoc -r
 # rst -w ms --template=tkb -> groff/ms -> PDF), just with one output
-# variant instead of besm2_fmt's several.
-TEST_PDFOUTPUT=$(foreach f,$(notdir $(TEST_DATA)),build/$(addsuffix .ms.pdf,$(basename $(f))))
+# variant instead of besm2_fmt's several. Named `.rst.ms.pdf`, not just
+# `.ms.pdf`, so the source format (reST) and the intermediate pandoc
+# writer (`ms`) are both visible in the filename -- needed now that
+# Markdown's own PDF pipeline below produces a same-writer `.md.ms.pdf`
+# alongside it.
+TEST_PDFOUTPUT=$(foreach f,$(notdir $(TEST_DATA)),build/$(addsuffix .rst.ms.pdf,$(basename $(f))))
 
 # Gemtext output (-g/--gemtext, PLAN.md §9 step 3) -- .gmi files, the
 # Gemini protocol's own convention. No PDF rendering: gemtext isn't a
@@ -28,6 +32,18 @@ TEST_GEMTEXTOUTPUT=$(foreach f,$(notdir $(TEST_DATA)),build/$(addsuffix .gmi,$(b
 # Same, with -e/--gemtext-emphasis on -- *italic*/**bold** markers
 # included, for comparison against the plain .gmi output above.
 TEST_GEMTEXT_EMPHASIS_OUTPUT=$(foreach f,$(notdir $(TEST_DATA)),build/$(addsuffix .emp.gmi,$(basename $(f))))
+
+# Markdown output (-M/--markdown) -- .md files, plain Markdown prose,
+# the same terse content Terse's own reST renders.
+TEST_MARKDOWNOUTPUT=$(foreach f,$(notdir $(TEST_DATA)),build/$(addsuffix .md,$(basename $(f))))
+
+# PDF renderings of the above, via pandoc's ms writer -- same
+# `pandoc -r <format> -w ms --template=tkb` pipeline Terse's own PDF
+# uses (just with `markdown` instead of `rst` as the reader), so per
+# the user, both PDF pipelines are built by default and both carry
+# their source format in the filename (`.rst.ms.pdf`/`.md.ms.pdf`) to
+# tell them apart.
+TEST_MARKDOWN_PDFOUTPUT=$(foreach f,$(notdir $(TEST_DATA)),build/$(addsuffix .md.ms.pdf,$(basename $(f))))
 
 # HTML-in-reST output (-H/--html, PLAN.md §9 step 4) -- a reST document
 # with one raw <table>-nesting HTML block, `.html.gen.rst`, still run
@@ -63,7 +79,7 @@ TEST_HMM_COMPACT_OUTPUT=$(foreach f,$(notdir $(TEST_DATA)),build/$(addsuffix .co
 # above.
 TEST_HMM_PLAIN_OUTPUT=$(foreach f,$(notdir $(TEST_DATA)),build/$(addsuffix .plain.hmm,$(basename $(f))))
 
-.PHONY: all rst pdf gemtext html groff hmm install clean testclean
+.PHONY: all rst pdf gemtext markdown html groff hmm install clean testclean
 
 all: $(PROGRAM)
 
@@ -82,6 +98,8 @@ pdf: rst $(TEST_PDFOUTPUT)
 
 gemtext: $(PROGRAM) $(TEST_GEMTEXTOUTPUT) $(TEST_GEMTEXT_EMPHASIS_OUTPUT)
 
+markdown: $(PROGRAM) $(TEST_MARKDOWNOUTPUT) $(TEST_MARKDOWN_PDFOUTPUT)
+
 html: $(PROGRAM) $(TEST_HTMLOUTPUT) $(TEST_HTMLRENDEROUTPUT)
 
 groff: $(PROGRAM) $(TEST_GROFFOUTPUT) $(TEST_GROFFRENDEROUTPUT)
@@ -96,6 +114,9 @@ build/%.gmi : test-data/%.yaml $(PROGRAM)
 
 build/%.emp.gmi : test-data/%.yaml $(PROGRAM)
 	./$(PROGRAM) -g -e $< >$@
+
+build/%.md : test-data/%.yaml $(PROGRAM)
+	./$(PROGRAM) -M $< >$@
 
 build/%.html.gen.rst : test-data/%.yaml $(PROGRAM)
 	./$(PROGRAM) -H $< >$@
@@ -119,15 +140,18 @@ build/%.plain.hmm : test-data/%.yaml $(PROGRAM)
 	./$(PROGRAM) -m -p $< >$@
 
 #MS_COLUMNS=-V twocolumns
-build/%.ms.pdf : build/%.gen.rst
+build/%.rst.ms.pdf : build/%.gen.rst
 	pandoc -r rst -w ms --template=tkb $(MS_COLUMNS) -o $@ $<
+
+build/%.md.ms.pdf : build/%.md
+	pandoc -r markdown -w ms --template=tkb $(MS_COLUMNS) -o $@ $<
 
 clean:
 	-rm -f $(PROGRAM)
 
 testclean:
-	-rm -v build/*.gen.rst build/*.ms.pdf build/*.gmi build/*.html build/*.hmm build/*.groff.gen.rst build/*.groff.pdf
+	-rm -v build/*.gen.rst build/*.rst.ms.pdf build/*.gmi build/*.md build/*.md.ms.pdf build/*.html build/*.hmm build/*.groff.gen.rst build/*.groff.pdf
 
-.PRECIOUS: build/%.gen.rst build/%.ms.pdf build/%.gmi build/%.emp.gmi build/%.html.gen.rst build/%.html build/%.hmm build/%.compact.hmm build/%.plain.hmm build/%.groff.gen.rst build/%.groff.pdf
+.PRECIOUS: build/%.gen.rst build/%.rst.ms.pdf build/%.gmi build/%.emp.gmi build/%.md build/%.md.ms.pdf build/%.html.gen.rst build/%.html build/%.hmm build/%.compact.hmm build/%.plain.hmm build/%.groff.gen.rst build/%.groff.pdf
 
 print-%  : ; @echo $* = $($*)

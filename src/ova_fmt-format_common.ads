@@ -1,7 +1,8 @@
 --  Ova_Fmt.Format_Common - content-assembly logic shared by every
---  plain-text-markup backend (Ova_Fmt.Format_Rst's Terse mode, and
---  Ova_Fmt.Format_Gemini) plus the prose/tail scaffolding shared by
---  ALL backends, including Ova_Fmt.Format_Rst's Html_In_Rst mode.
+--  plain-text-markup backend (Ova_Fmt.Format_Rst's Terse mode,
+--  Ova_Fmt.Format_Gemini, and Ova_Fmt.Format_Markdown) plus the
+--  prose/tail scaffolding shared by ALL backends, including
+--  Ova_Fmt.Format_Rst's Html_In_Rst mode.
 --
 --  Split out per the user, discussing the naming/architecture
 --  question PLAN.md's Open Questions raised: rather than one package
@@ -126,9 +127,10 @@ package Ova_Fmt.Format_Common is
 
    procedure Print_Header_And_Prose (E : Entities.Entity; Entity_No : Positive);
    --  Title/tagline/summary/Background/Personality -- byte-identical
-   --  across Terse, Gemtext, and Html_In_Rst. Public: Format_Rst's
-   --  Html_In_Rst path calls this directly (its own content differs
-   --  only in what comes after).
+   --  across Terse, Gemtext, Markdown, and Html_In_Rst except for the
+   --  title line's own heading syntax (underline vs. flat `# `).
+   --  Public: Format_Rst's Html_In_Rst path calls this directly (its
+   --  own content differs only in what comes after).
 
    procedure Print_Notes (E : Entities.Entity);
    --  Notes only, extracted out of Print_Tail so Format_Rst's
@@ -151,8 +153,8 @@ package Ova_Fmt.Format_Common is
    procedure Process_Entity (E : Entities.Entity; Entity_No : Positive);
    --  Full Fragment-or-flat-bulleted-list rendering (header/prose,
    --  Abilities, Weaknesses, Combat/Attacks, linked-content
-   --  expansion) plus Print_Tail -- everything Terse and Gemtext need
-   --  end to end. Does NOT handle Html_In_Rst's nested-table
+   --  expansion) plus Print_Tail -- everything Terse, Gemtext, and
+   --  Markdown need end to end. Does NOT handle Html_In_Rst's nested-table
    --  rendering; Format_Rst.Process_Entity only calls this for Terse
    --  mode (or for any Fragment, regardless of mode -- a Fragment
    --  renders identically under every format, PLAN.md/this package's

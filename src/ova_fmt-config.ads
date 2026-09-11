@@ -11,11 +11,27 @@ with Arg_Parser;
 
 package Ova_Fmt.Config is
 
-   --  Terse (reST) and Gemtext (gemtext.gmi, the Gemini protocol's
-   --  hypertext markup -- PLAN.md's build order §9) share almost all
-   --  of their content-assembly logic (Ova_Fmt.Format_Common),
-   --  differing only in a handful of low-level primitives (inline
-   --  emphasis, heading syntax, list-item prefix). Html_In_Rst: a
+   --  Terse (reST), Gemtext (gemtext.gmi, the Gemini protocol's
+   --  hypertext markup -- PLAN.md's build order §9), and Markdown
+   --  share almost all of their content-assembly logic
+   --  (Ova_Fmt.Format_Common), differing only in a handful of
+   --  low-level primitives (inline emphasis, heading syntax, list-item
+   --  prefix). Markdown: plain Markdown prose -- same bulleted-list
+   --  shape and `**bold**`/`*italic*` inline markup as Terse (only
+   --  reST/Markdown's heading *syntax* differs, not the inline markup
+   --  -- PLAN.md's already-settled "Terse output is reST, not
+   --  Markdown" rationale), rendered by Ova_Fmt.Format_Markdown, a
+   --  thin entry point into Ova_Fmt.Format_Common the same way
+   --  Ova_Fmt.Format_Gemini is. Per the user: entity titles always use
+   --  a flat `# Title` ATX heading, the same one Gemtext already uses
+   --  and for the same reason -- no equivalent to -U/--subunderliner's
+   --  "distinguish entities after the first via a different underline
+   --  character" (Markdown's ATX headings have no character to swap,
+   --  only a depth, and flat was chosen over nesting subsequent
+   --  entities to `##` instead). This is Format_Markdown's first-pass
+   --  design (PLAN.md's build order): a nested-table mode analogous to
+   --  Html_In_Rst/Groff_In_Rst, if OVA's tabular content ever needs one
+   --  in Markdown, is not yet designed. Html_In_Rst: a
    --  reST document (same header/tagline/summary/background/
    --  personality/Notes/Fluff/Creation-Rules rendering as Terse --
    --  unaffected by this value) with one `.. raw:: html` block for
@@ -52,10 +68,10 @@ package Ova_Fmt.Config is
    --  Combat Stats (ARASUNI)"), not just a workaround for `hd`'s own
    --  undocumented per-table pagination ceiling (found this session)
    --  that this move happens to also fix.
-   type Output_Format is (Terse, Gemtext, Html_In_Rst, Groff_In_Rst, Hmm);
+   type Output_Format is (Terse, Gemtext, Markdown, Html_In_Rst, Groff_In_Rst, Hmm);
 
    Format : aliased Output_Format := Terse;
-   --  -g/--gemtext, -H/--html, -G/--groff, or -m/--hmm
+   --  -g/--gemtext, -M/--markdown, -H/--html, -G/--groff, or -m/--hmm
 
    --  Indentation baseline for -m/--hmm output, in tab stops -- lets
    --  the output be embedded under an existing outline node elsewhere
