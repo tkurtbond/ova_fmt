@@ -1,0 +1,15 @@
+name = "ova_pdf"
+description = ""
+version = "0.1.0-dev"
+
+authors = ["T. Kurt Bond"]
+maintainers = ["T. Kurt Bond <tkurtbond@gmail.com>"]
+maintainers-logins = ["tkurtbond"]
+licenses = "MIT OR Apache-2.0 WITH LLVM-exception"
+website = ""
+tags = []
+
+executables = ["ova_pdf"]
+
+[[depends-on]]
+apdf = "=9.0.0"
