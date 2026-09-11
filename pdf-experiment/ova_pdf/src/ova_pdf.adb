@@ -241,24 +241,39 @@ procedure Ova_Pdf is
       Line_H     : constant := 9.6;
 
       --  One Abilities/Weaknesses line: a bold value right-aligned in
-      --  the gutter just before X_Trait (so +N/-N levels line up on
-      --  their right/digit side, regardless of the sign glyph's width),
-      --  and an italic trait name/description at X_Trait.
+      --  the gutter just before X_Trait, and an italic trait
+      --  name/description at X_Trait.
+      --
+      --  The Sign ('+' or Fukiko_Style.En_Dash) is taken separately from
+      --  the Digit and given a fixed-width slot to its left, rather than
+      --  right-aligning the whole "+2"/en-dash-1 string by its measured
+      --  width: apdf's own Bounding_Box metrics table (distinct from
+      --  what a PDF viewer actually renders) is all-zero for the
+      --  WinAnsiEncoding 0x80-0x9F block En_Dash lives in, so measuring
+      --  a string containing it badly underestimates its width and
+      --  throws off right-alignment. Measuring only the Digit (always
+      --  plain ASCII) sidesteps that entirely.
       Value_Gap : constant := 4.0;
 
       procedure Ability_Line
-        (X_Trait, Y   : Real;
-         Value, Trait : String;
-         Size         : Real := List_Size)
+        (X_Trait, Y : Real;
+         Sign       : Character;
+         Digit      : String;
+         Trait      : String;
+         Size       : Real := List_Size)
       is
-         Value_W : Real;
+         Sign_Slot : constant Real := Size * 0.65;
+         Digit_W   : Real;
+         Digit_X   : Real;
       begin
          Pdf.Font (Val_Font);
          Pdf.Font_Size (Size);
-         Value_W := Pdf.Bounding_Box (Value).width;
+         Digit_W := Pdf.Bounding_Box (Digit).width;
+         Digit_X := X_Trait - Value_Gap - Digit_W;
          Text
-           (Pdf, X_Trait - Value_Gap - Value_W, Y, Val_Font, Size, Maroon,
-            Value);
+           (Pdf, Digit_X - Sign_Slot, Y, Val_Font, Size, Maroon,
+            (1 => Sign));
+         Text (Pdf, Digit_X, Y, Val_Font, Size, Maroon, Digit);
          Text (Pdf, X_Trait, Y, Trait_Font, Size, Ink, Trait);
       end Ability_Line;
 
@@ -336,39 +351,39 @@ procedure Ova_Pdf is
 
       --  Abilities column.
       Y := 68.0;
-      Ability_Line (68.0, Y, "+2", "Companion (Azyrus)"); Y := Y + Line_H;
-      Ability_Line (68.0, Y, "+2", "Cute!"); Y := Y + Line_H;
-      Ability_Line (68.0, Y, "+1", "Iron-Willed"); Y := Y + Line_H;
-      Ability_Line (68.0, Y, "+2", "Knowledge (Shoujo Manga)");
+      Ability_Line (68.0, Y, '+', "2", "Companion (Azyrus)"); Y := Y + Line_H;
+      Ability_Line (68.0, Y, '+', "2", "Cute!"); Y := Y + Line_H;
+      Ability_Line (68.0, Y, '+', "1", "Iron-Willed"); Y := Y + Line_H;
+      Ability_Line (68.0, Y, '+', "2", "Knowledge (Shoujo Manga)");
       Y := Y + Line_H;
-      Ability_Line (68.0, Y, "+2", "Quick"); Y := Y + Line_H;
-      Ability_Line (68.0, Y, "+2", "Shape-Shifter"); Y := Y + Line_H;
-      Ability_Line (68.0, Y, "+4", "Transformation"); Y := Y + Line_H;
-      Ability_Line (84.0, Y, "+2", "Attack", 7.5); Y := Y + 8.5;
+      Ability_Line (68.0, Y, '+', "2", "Quick"); Y := Y + Line_H;
+      Ability_Line (68.0, Y, '+', "2", "Shape-Shifter"); Y := Y + Line_H;
+      Ability_Line (68.0, Y, '+', "4", "Transformation"); Y := Y + Line_H;
+      Ability_Line (84.0, Y, '+', "2", "Attack", 7.5); Y := Y + 8.5;
       Ability_Line
-        (84.0, Y, "+3", "Barrier (Area Effect; Elaborate", 7.5);
+        (84.0, Y, '+', "3", "Barrier (Area Effect; Elaborate", 7.5);
       Y := Y + 8.5;
       Text (Pdf, 92.0, Y, Trait_Font, 7.5, Ink, "Gestures; 5 End)");
       Y := Y + 8.5;
-      Ability_Line (84.0, Y, "+2", "Combat Expert", 7.5); Y := Y + 8.5;
-      Ability_Line (84.0, Y, "+2", "Healer", 7.5); Y := Y + 8.5;
+      Ability_Line (84.0, Y, '+', "2", "Combat Expert", 7.5); Y := Y + 8.5;
+      Ability_Line (84.0, Y, '+', "2", "Healer", 7.5); Y := Y + 8.5;
       Ability_Line
-        (84.0, Y, En_Dash & "1", "Bizarre Appearance (Cat Features)", 7.5);
+        (84.0, Y, En_Dash, "1", "Bizarre Appearance (Cat Features)", 7.5);
 
       --  Weaknesses column.
       Y := 68.0;
-      Ability_Line (247.0, Y, En_Dash & "2", "Ageism"); Y := Y + Line_H;
-      Ability_Line (247.0, Y, En_Dash & "2", "Crybaby"); Y := Y + Line_H;
-      Ability_Line (247.0, Y, En_Dash & "1", "Easily Distracted");
+      Ability_Line (247.0, Y, En_Dash, "2", "Ageism"); Y := Y + Line_H;
+      Ability_Line (247.0, Y, En_Dash, "2", "Crybaby"); Y := Y + Line_H;
+      Ability_Line (247.0, Y, En_Dash, "1", "Easily Distracted");
       Y := Y + Line_H;
       Ability_Line
-        (247.0, Y, En_Dash & "2", "Focus (Powers Require Neko");
+        (247.0, Y, En_Dash, "2", "Focus (Powers Require Neko");
       Y := Y + Line_H;
       Text
         (Pdf, 255.0, Y, Trait_Font, List_Size, Ink, "Transformation Locket)");
       Y := Y + Line_H;
-      Ability_Line (247.0, Y, En_Dash & "1", "Frail"); Y := Y + Line_H;
-      Ability_Line (247.0, Y, En_Dash & "1", "Naive");
+      Ability_Line (247.0, Y, En_Dash, "1", "Frail"); Y := Y + Line_H;
+      Ability_Line (247.0, Y, En_Dash, "1", "Naive");
 
       --  Other Statistics.
       Text
