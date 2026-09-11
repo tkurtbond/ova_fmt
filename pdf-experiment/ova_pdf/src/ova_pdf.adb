@@ -10,11 +10,22 @@ procedure Ova_Pdf is
 
    Pdf : PDF_Out_File;
 
-   --  Attacks & Combat Stats row geometry, shared between the labels
+   --  Attacks & Combat Stats geometry, shared between the labels
    --  (name/tag/ROLL-DX-END) and text (lorem-ipsum description) passes.
-   Attack_X  : constant := 180.0;
-   Roll_X    : constant := 293.0;
-   Row_Tops  : constant array (1 .. 4) of Real := (216.0, 259.0, 304.0, 348.0);
+   Attack_X   : constant := 180.0;
+   Roll_Col_L : constant := 288.0;
+   Dx_Col_L   : constant := 319.0;
+   End_Col_L  : constant := 350.0;
+   Box_Right  : constant := 380.0;
+   Name_Col_W : constant := Roll_Col_L - Attack_X - 6.0;
+   Row_Tops   : constant array (1 .. 4) of Real :=
+     (216.0, 259.0, 304.0, 348.0);
+
+   --  Y position just below each row's (possibly word-wrapped) tag line,
+   --  filled in by Draw_Page_37_Labels and read back by Draw_Page_37_Text
+   --  so each lorem-ipsum description starts right after the actual tag
+   --  text instead of a guessed fixed offset.
+   Tag_End_Y : array (1 .. 4) of Real := (others => 0.0);
 
    ------------------------------------------------------------------
    --  Page 36 (left page): name banner + section-heading rules.    --
@@ -264,27 +275,58 @@ procedure Ova_Pdf is
             Times_Roman, 7.5, Ink, Value);
       end Field;
 
-      Dx_X       : constant := 324.0;
-      End_X      : constant := 355.0;
+      --  Same as Field, but word-wraps a value too long to fit before
+      --  the Attacks & Combat Stats box (e.g. ENEMIES), continuing at
+      --  the same indent as the value's first line.
+      procedure Field_Wrap (Label, Value : String; Y : Real) is
+         X     : constant := 42.0;
+         Val_X : Real;
+      begin
+         Text (Pdf, X, Y, Helvetica_Bold, 7.5, Ink, Label & ' ');
+         Val_X := X + Pdf.Bounding_Box (Label & ' ').width;
+         declare
+            Next_Y : constant Real :=
+              Paragraph
+                (Pdf, Val_X, Y, Attack_X - 8.0 - Val_X, Times_Roman, 7.5,
+                 9.0, Ink, Value);
+            pragma Unreferenced (Next_Y);
+         begin
+            null;
+         end;
+      end Field_Wrap;
 
-      --  Tag_2 is the (optional) wrapped second line of a tag line too
-      --  long to fit the name column's width in one line -- as happens
-      --  in the rulebook itself for a couple of these attacks.
+      --  Each attack row's name, word-wrapped tag line (its perks/flaws
+      --  and affinities), and centered ROLL / DX / END caption+number.
       procedure Attack_Row
-        (Top : Real; Name, Tag, Tag_2 : String; Roll, Dx, End_V : String)
+        (Idx : Positive; Name, Tag : String; Roll, Dx, End_V : String)
       is
+         Top : constant Real := Row_Tops (Idx);
       begin
          Text (Pdf, Attack_X, Top + 11.0, Helvetica_Bold, 8.0, Maroon, Name);
-         Text (Pdf, Attack_X, Top + 19.5, Helvetica_Bold, 6.0, Ink, Tag);
-         if Tag_2'Length > 0 then
-            Text (Pdf, Attack_X, Top + 26.5, Helvetica_Bold, 6.0, Ink, Tag_2);
-         end if;
-         Text (Pdf, Roll_X, Top + 11.0, Helvetica_Bold, 7.5, Maroon, "ROLL");
-         Text (Pdf, Dx_X, Top + 11.0, Helvetica_Bold, 7.5, Maroon, "DX");
-         Text (Pdf, End_X, Top + 11.0, Helvetica_Bold, 7.5, Maroon, "END");
-         Text (Pdf, Roll_X + 3.0, Top + 36.0, Helvetica_Bold, 20.0, Ink, Roll);
-         Text (Pdf, Dx_X + 3.0, Top + 36.0, Helvetica_Bold, 20.0, Ink, Dx);
-         Text (Pdf, End_X + 3.0, Top + 36.0, Helvetica_Bold, 20.0, Ink, End_V);
+         Tag_End_Y (Idx) :=
+           Paragraph
+             (Pdf, Attack_X, Top + 19.5, Name_Col_W, Helvetica_Bold, 5.5,
+              6.2, Ink, Tag);
+
+         Centered_Text
+           (Pdf, Roll_Col_L, Dx_Col_L - Roll_Col_L, Top + 11.0,
+            Helvetica_Bold, 7.5, Maroon, "ROLL");
+         Centered_Text
+           (Pdf, Dx_Col_L, End_Col_L - Dx_Col_L, Top + 11.0,
+            Helvetica_Bold, 7.5, Maroon, "DX");
+         Centered_Text
+           (Pdf, End_Col_L, Box_Right - End_Col_L, Top + 11.0,
+            Helvetica_Bold, 7.5, Maroon, "END");
+
+         Centered_Text
+           (Pdf, Roll_Col_L, Dx_Col_L - Roll_Col_L, Top + 36.0,
+            Helvetica_Bold, 20.0, Ink, Roll);
+         Centered_Text
+           (Pdf, Dx_Col_L, End_Col_L - Dx_Col_L, Top + 36.0,
+            Helvetica_Bold, 20.0, Ink, Dx);
+         Centered_Text
+           (Pdf, End_Col_L, Box_Right - End_Col_L, Top + 36.0,
+            Helvetica_Bold, 20.0, Ink, End_V);
       end Attack_Row;
 
    begin
@@ -302,16 +344,16 @@ procedure Ova_Pdf is
       Ability_Line (50.0, 68.0, Y, "+2", "Quick"); Y := Y + Line_H;
       Ability_Line (50.0, 68.0, Y, "+2", "Shape-Shifter"); Y := Y + Line_H;
       Ability_Line (50.0, 68.0, Y, "+4", "Transformation"); Y := Y + Line_H;
-      Ability_Line (88.0, 104.0, Y, "+2", "Attack", 7.5); Y := Y + 8.5;
+      Ability_Line (68.0, 84.0, Y, "+2", "Attack", 7.5); Y := Y + 8.5;
       Ability_Line
-        (88.0, 104.0, Y, "+3", "Barrier (Area Effect; Elaborate", 7.5);
+        (68.0, 84.0, Y, "+3", "Barrier (Area Effect; Elaborate", 7.5);
       Y := Y + 8.5;
-      Text (Pdf, 112.0, Y, Trait_Font, 7.5, Ink, "Gestures; 5 End)");
+      Text (Pdf, 92.0, Y, Trait_Font, 7.5, Ink, "Gestures; 5 End)");
       Y := Y + 8.5;
-      Ability_Line (88.0, 104.0, Y, "+2", "Combat Expert", 7.5); Y := Y + 8.5;
-      Ability_Line (88.0, 104.0, Y, "+2", "Healer", 7.5); Y := Y + 8.5;
+      Ability_Line (68.0, 84.0, Y, "+2", "Combat Expert", 7.5); Y := Y + 8.5;
+      Ability_Line (68.0, 84.0, Y, "+2", "Healer", 7.5); Y := Y + 8.5;
       Ability_Line
-        (88.0, 104.0, Y, "-1", "Bizarre Appearance (Cat Features)", 7.5);
+        (68.0, 84.0, Y, "-1", "Bizarre Appearance (Cat Features)", 7.5);
 
       --  Weaknesses column.
       Y := 68.0;
@@ -343,7 +385,7 @@ procedure Ova_Pdf is
       Field ("HOBBIES:", "Shoujo Manga", Y); Y := Y + 11.0;
       Field ("FAVE FOOD:", "Chocolate", Y); Y := Y + 11.0;
       Field ("ALLIES:", "Azyrus", Y); Y := Y + 11.0;
-      Field ("ENEMIES:", "Sinister Folk and Their Minions", Y);
+      Field_Wrap ("ENEMIES:", "Sinister Folk and Their Minions", Y);
 
       --  Attacks & Combat Stats.
       Text
@@ -351,18 +393,18 @@ procedure Ova_Pdf is
          "Attacks & Combat Stats");
 
       Attack_Row
-        (Row_Tops (1), "Neko Neko Catnip Cantrip",
-         "RANGED, AFFINITY: LOVE", "", "4", "3", "0");
+        (1, "Neko Neko Catnip Cantrip",
+         "RANGED, AFFINITY: LOVE", "4", "3", "0");
       Attack_Row
-        (Row_Tops (2), "Neko Neko Heart Burst",
-         "EFFECTIVE X2, RANGED, AFFINITY: LOVE", "", "4", "5", "10");
+        (2, "Neko Neko Heart Burst",
+         "EFFECTIVE X2, RANGED, AFFINITY: LOVE", "4", "5", "10");
       Attack_Row
-        (Row_Tops (3), "Neko Neko Wave",
-         "AREA EFFECT X2, STUNNING, AFFINITY:", "LOVE; NO DAMAGE",
+        (3, "Neko Neko Wave",
+         "AREA EFFECT X2, STUNNING, AFFINITY: LOVE; NO DAMAGE",
          "4", "0", "10");
       Attack_Row
-        (Row_Tops (4), "Neko Neko Yarn Entangle",
-         "PARALYZING, AFFINITY: LOVE", "", "4", "3", "10");
+        (4, "Neko Neko Yarn Entangle",
+         "PARALYZING, AFFINITY: LOVE", "4", "3", "10");
 
       --  Closing DEFENSE / HEALTH / ENDURANCE / TV stat row.
       Text (Pdf, 178.0, 406.0, Helvetica_Bold, 8.5, Maroon, "DEFENSE");
@@ -408,20 +450,20 @@ procedure Ova_Pdf is
    begin
       Ignore :=
         Paragraph
-          (Pdf, Attack_X, Row_Tops (1) + 28.0, Roll_X - Attack_X - 6.0,
-           Times_Italic, 6.5, 6.5, Ink, Desc_1);
+          (Pdf, Attack_X, Tag_End_Y (1) + 1.5, Name_Col_W,
+           Times_Italic, 6.0, 6.2, Ink, Desc_1);
       Ignore :=
         Paragraph
-          (Pdf, Attack_X, Row_Tops (2) + 28.0, Roll_X - Attack_X - 6.0,
-           Times_Italic, 6.5, 6.5, Ink, Desc_2);
+          (Pdf, Attack_X, Tag_End_Y (2) + 1.5, Name_Col_W,
+           Times_Italic, 6.0, 6.2, Ink, Desc_2);
       Ignore :=
         Paragraph
-          (Pdf, Attack_X, Row_Tops (3) + 34.0, Roll_X - Attack_X - 6.0,
-           Times_Italic, 6.5, 6.5, Ink, Desc_3);
+          (Pdf, Attack_X, Tag_End_Y (3) + 1.5, Name_Col_W,
+           Times_Italic, 6.0, 6.2, Ink, Desc_3);
       Ignore :=
         Paragraph
-          (Pdf, Attack_X, Row_Tops (4) + 28.0, Roll_X - Attack_X - 6.0,
-           Times_Italic, 6.5, 6.5, Ink, Desc_4);
+          (Pdf, Attack_X, Tag_End_Y (4) + 1.5, Name_Col_W,
+           Times_Italic, 6.0, 6.2, Ink, Desc_4);
 
       Ignore :=
         Paragraph

@@ -105,6 +105,18 @@ package Fukiko_Style is
    --  common case, since almost every piece of text on these two pages
    --  is a single short line with its own font/size/color combination.
 
+   procedure Centered_Text
+     (Pdf             : in out PDF_Out_Stream'Class;
+      Col_X, Col_W, Y :        Real;
+      Font            :        Standard_Font_Type;
+      Size            :        Real;
+      Col             :        Color_Type;
+      S               :        String);
+   --  Like Text, but horizontally centered (via Bounding_Box) within a
+   --  column of width Col_W starting at Col_X, rather than left-anchored
+   --  at X -- used for the ROLL/DX/END captions and numbers, which sit
+   --  centered under each other in the rulebook rather than left-aligned.
+
    function Paragraph
      (Pdf     : in out PDF_Out_Stream'Class;
       X, Y    :        Real;

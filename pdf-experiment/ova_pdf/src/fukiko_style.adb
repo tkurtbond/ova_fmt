@@ -93,6 +93,22 @@ package body Fukiko_Style is
       Pdf.Insert_Graphics_PDF_Code ("0 J");     --  Restore a butt cap.
    end Dotted_HRule;
 
+   procedure Centered_Text
+     (Pdf             : in out PDF_Out_Stream'Class;
+      Col_X, Col_W, Y :        Real;
+      Font            :        Standard_Font_Type;
+      Size            :        Real;
+      Col             :        Color_Type;
+      S               :        String)
+   is
+   begin
+      Pdf.Font (Font);
+      Pdf.Font_Size (Size);
+      Pdf.Color (Col);
+      Pdf.Put_XY
+        (Top_XY (Col_X + (Col_W - Pdf.Bounding_Box (S).width) / 2.0, Y), S);
+   end Centered_Text;
+
    function Paragraph
      (Pdf     : in out PDF_Out_Stream'Class;
       X, Y    :        Real;
