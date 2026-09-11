@@ -16,6 +16,20 @@ package Fukiko_Style is
 
    Page_Rect : constant Rectangle := (0.0, 0.0, Page_Width, Page_Height);
 
+   -----------------
+   --  Character  --
+   -----------------
+
+   --  The standard 14 PDF fonts are encoded with WinAnsiEncoding, whose
+   --  256 codepoints do not include U+2212 MINUS SIGN (and PDF_Out's
+   --  wide-string entry points reject anything outside Latin-1 range
+   --  anyway, since they route through Ada.Characters.Conversions).
+   --  0x96 is the one WinAnsiEncoding byte that reads as a dash-like
+   --  glyph rather than a plain hyphen -- EN DASH (U+2013) -- and is the
+   --  conventional substitute for a minus sign in body text for exactly
+   --  this reason (its width better matches a "+").
+   En_Dash : constant Character := Character'Val (16#96#);
+
    --------------
    --  Colors  --
    --------------

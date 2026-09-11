@@ -240,15 +240,25 @@ procedure Ova_Pdf is
       List_Size  : constant := 8.5;
       Line_H     : constant := 9.6;
 
-      --  One Abilities/Weaknesses line: a bold value in the gutter and
-      --  an italic trait name/description to its right.
+      --  One Abilities/Weaknesses line: a bold value right-aligned in
+      --  the gutter just before X_Trait (so +N/-N levels line up on
+      --  their right/digit side, regardless of the sign glyph's width),
+      --  and an italic trait name/description at X_Trait.
+      Value_Gap : constant := 4.0;
+
       procedure Ability_Line
-        (X_Val, X_Trait, Y : Real;
-         Value, Trait      : String;
-         Size               : Real := List_Size)
+        (X_Trait, Y   : Real;
+         Value, Trait : String;
+         Size         : Real := List_Size)
       is
+         Value_W : Real;
       begin
-         Text (Pdf, X_Val, Y, Val_Font, Size, Maroon, Value);
+         Pdf.Font (Val_Font);
+         Pdf.Font_Size (Size);
+         Value_W := Pdf.Bounding_Box (Value).width;
+         Text
+           (Pdf, X_Trait - Value_Gap - Value_W, Y, Val_Font, Size, Maroon,
+            Value);
          Text (Pdf, X_Trait, Y, Trait_Font, Size, Ink, Trait);
       end Ability_Line;
 
@@ -326,39 +336,39 @@ procedure Ova_Pdf is
 
       --  Abilities column.
       Y := 68.0;
-      Ability_Line (50.0, 68.0, Y, "+2", "Companion (Azyrus)");
+      Ability_Line (68.0, Y, "+2", "Companion (Azyrus)"); Y := Y + Line_H;
+      Ability_Line (68.0, Y, "+2", "Cute!"); Y := Y + Line_H;
+      Ability_Line (68.0, Y, "+1", "Iron-Willed"); Y := Y + Line_H;
+      Ability_Line (68.0, Y, "+2", "Knowledge (Shoujo Manga)");
       Y := Y + Line_H;
-      Ability_Line (50.0, 68.0, Y, "+2", "Cute!"); Y := Y + Line_H;
-      Ability_Line (50.0, 68.0, Y, "+1", "Iron-Willed"); Y := Y + Line_H;
-      Ability_Line (50.0, 68.0, Y, "+2", "Knowledge (Shoujo Manga)");
-      Y := Y + Line_H;
-      Ability_Line (50.0, 68.0, Y, "+2", "Quick"); Y := Y + Line_H;
-      Ability_Line (50.0, 68.0, Y, "+2", "Shape-Shifter"); Y := Y + Line_H;
-      Ability_Line (50.0, 68.0, Y, "+4", "Transformation"); Y := Y + Line_H;
-      Ability_Line (68.0, 84.0, Y, "+2", "Attack", 7.5); Y := Y + 8.5;
+      Ability_Line (68.0, Y, "+2", "Quick"); Y := Y + Line_H;
+      Ability_Line (68.0, Y, "+2", "Shape-Shifter"); Y := Y + Line_H;
+      Ability_Line (68.0, Y, "+4", "Transformation"); Y := Y + Line_H;
+      Ability_Line (84.0, Y, "+2", "Attack", 7.5); Y := Y + 8.5;
       Ability_Line
-        (68.0, 84.0, Y, "+3", "Barrier (Area Effect; Elaborate", 7.5);
+        (84.0, Y, "+3", "Barrier (Area Effect; Elaborate", 7.5);
       Y := Y + 8.5;
       Text (Pdf, 92.0, Y, Trait_Font, 7.5, Ink, "Gestures; 5 End)");
       Y := Y + 8.5;
-      Ability_Line (68.0, 84.0, Y, "+2", "Combat Expert", 7.5); Y := Y + 8.5;
-      Ability_Line (68.0, 84.0, Y, "+2", "Healer", 7.5); Y := Y + 8.5;
+      Ability_Line (84.0, Y, "+2", "Combat Expert", 7.5); Y := Y + 8.5;
+      Ability_Line (84.0, Y, "+2", "Healer", 7.5); Y := Y + 8.5;
       Ability_Line
-        (68.0, 84.0, Y, "-1", "Bizarre Appearance (Cat Features)", 7.5);
+        (84.0, Y, En_Dash & "1", "Bizarre Appearance (Cat Features)", 7.5);
 
       --  Weaknesses column.
       Y := 68.0;
-      Ability_Line (229.0, 247.0, Y, "-2", "Ageism"); Y := Y + Line_H;
-      Ability_Line (229.0, 247.0, Y, "-2", "Crybaby"); Y := Y + Line_H;
-      Ability_Line (229.0, 247.0, Y, "-1", "Easily Distracted");
+      Ability_Line (247.0, Y, En_Dash & "2", "Ageism"); Y := Y + Line_H;
+      Ability_Line (247.0, Y, En_Dash & "2", "Crybaby"); Y := Y + Line_H;
+      Ability_Line (247.0, Y, En_Dash & "1", "Easily Distracted");
       Y := Y + Line_H;
-      Ability_Line (229.0, 247.0, Y, "-2", "Focus (Powers Require Neko");
+      Ability_Line
+        (247.0, Y, En_Dash & "2", "Focus (Powers Require Neko");
       Y := Y + Line_H;
       Text
         (Pdf, 255.0, Y, Trait_Font, List_Size, Ink, "Transformation Locket)");
       Y := Y + Line_H;
-      Ability_Line (229.0, 247.0, Y, "-1", "Frail"); Y := Y + Line_H;
-      Ability_Line (229.0, 247.0, Y, "-1", "Naive");
+      Ability_Line (247.0, Y, En_Dash & "1", "Frail"); Y := Y + Line_H;
+      Ability_Line (247.0, Y, En_Dash & "1", "Naive");
 
       --  Other Statistics.
       Text
@@ -469,8 +479,9 @@ procedure Ova_Pdf is
       Ignore :=
         Paragraph
           (Pdf, 214.0, 560.0, 175.0, Times_Roman, 8.0, 9.5, Ink,
-           "Flight +2, Quick +1, Smart +2; Awkward Size (Small) -1, " &
-           "Frail -1, Short-Tempered -1");
+           "Flight +2, Quick +1, Smart +2; Awkward Size (Small) " &
+           En_Dash & "1, Frail " & En_Dash & "1, Short-Tempered " &
+           En_Dash & "1");
    end Draw_Page_37_Text;
 
 begin
