@@ -77,7 +77,7 @@ package body Ova_Fmt.Format_Rst is
       IO.Put_Line (Raw_Prefix & Indent & "<caption>" & Html_Escape (Caption) & "</caption>");
       IO.Put_Line
         (Raw_Prefix & Indent &
-         "<tr><th>Name</th><th>Level</th><th>Detail</th><th>Perks/Flaws</th></tr>");
+         "<tr><th>Name</th><th>Level</th><th>Detail</th><th>Perks/Flaws/Endurance</th></tr>");
       for I of Items loop
          IO.Put_Line
            (Raw_Prefix & Indent & "<tr><td>" & Html_Escape (To_String (I.Name)) &
@@ -85,7 +85,10 @@ package body Ova_Fmt.Format_Rst is
             Common.Half_TV_Text (I.Has_Threat_Value_Half, I.Threat_Value_Half) & "</td><td>" &
             (if I.Has_Detail then Html_Escape (To_String (I.Detail)) else "") &
             "</td><td>" &
-            Html_Escape (Strip_Parens (Common.Format_Modifiers_Bracket (I.Perks, I.Flaws))) &
+            Html_Escape (Strip_Parens (Common.Format_Modifiers_Bracket
+                (I.Perks, I.Flaws, I.Has_Endurance, I.Endurance, I.Overrides (Entities.Endurance),
+           Raw => True))) &
+            (if I.Has_Note then Html_Escape (" (" & To_String (I.Note) & ")") else "") &
             "</td></tr>");
       end loop;
       IO.Put_Line (Raw_Prefix & Indent & "</table>");
@@ -249,7 +252,11 @@ package body Ova_Fmt.Format_Rst is
          Common.Half_TV_Text (A.Has_Threat_Value_Half, A.Threat_Value_Half) & "</td><td>" &
          (if A.Has_Detail then Html_Escape (To_String (A.Detail)) else "") &
          "</td><td>" &
-         Html_Escape (Strip_Parens (Common.Format_Modifiers_Bracket (A.Perks, A.Flaws))) &
+         Html_Escape (Strip_Parens (Common.Format_Modifiers_Bracket
+          (A.Perks, A.Flaws, A.Has_Endurance, A.Endurance, A.Overrides (Entities.Endurance),
+           Raw => True))) &
+         --  The note after the bracket, as every other format has it.
+         (if A.Has_Note then Html_Escape (" (" & To_String (A.Note) & ")") else "") &
          "</td>");
       if not Has_Linked then
          IO.Put_Line ("</tr>");
@@ -270,7 +277,7 @@ package body Ova_Fmt.Format_Rst is
       IO.Put_Line (Raw_Prefix & "<table>");
       IO.Put_Line (Raw_Prefix & "<caption>Abilities</caption>");
       IO.Put_Line
-        (Raw_Prefix & "<tr><th>Name</th><th>Level</th><th>Detail</th><th>Perks/Flaws</th></tr>");
+        (Raw_Prefix & "<tr><th>Name</th><th>Level</th><th>Detail</th><th>Perks/Flaws/Endurance</th></tr>");
       for A of Abilities loop
          Print_Ability_Row (A, "");
       end loop;
@@ -402,7 +409,9 @@ package body Ova_Fmt.Format_Rst is
           (Common.Name_Detail (A.Name, A.Has_Detail, A.Detail) &
            Common.Half_TV_Text (A.Has_Threat_Value_Half, A.Threat_Value_Half));
    begin
-      Result := Result & Common.Format_Modifiers_Bracket (A.Perks, A.Flaws);
+      Result := Result & Common.Format_Modifiers_Bracket
+          (A.Perks, A.Flaws, A.Has_Endurance, A.Endurance, A.Overrides (Entities.Endurance),
+           Raw => True);
       if A.Has_Note then
          Result := Result & " (" & A.Note & ")";
       end if;
@@ -430,7 +439,9 @@ package body Ova_Fmt.Format_Rst is
           (Common.Name_Detail (S.Name, S.Has_Detail, S.Detail) &
            Common.Half_TV_Text (S.Has_Threat_Value_Half, S.Threat_Value_Half));
    begin
-      Result := Result & Common.Format_Modifiers_Bracket (S.Perks, S.Flaws);
+      Result := Result & Common.Format_Modifiers_Bracket
+        (S.Perks, S.Flaws, S.Has_Endurance, S.Endurance, S.Overrides (Entities.Endurance),
+         Raw => True);
       if S.Has_Note then
          Result := Result & " (" & S.Note & ")";
       end if;

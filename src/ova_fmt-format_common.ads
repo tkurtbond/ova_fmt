@@ -81,9 +81,18 @@ package Ova_Fmt.Format_Common is
    --  The Creation Rules, comma-joined: "Base Zero (±5), ...", or "".
 
    function Format_Modifiers_Bracket
-     (Perks, Flaws : Entities.Perk_Flaw_Vectors.Vector) return String;
-   --  "[Perks: ...; Flaws: ...]", empty string if neither is present.
-   --  Public: Format_Rst's Html_In_Rst table cells need this too.
+     (Perks, Flaws         : Entities.Perk_Flaw_Vectors.Vector;
+      Has_Endurance        : Boolean := False;
+      Endurance            : Integer := 0;
+      Endurance_Overridden : Boolean := False;
+      Raw                  : Boolean := False) return String;
+   --  " [Perks: ...; Flaws: ...; 5 Endurance]", empty string if none
+   --  is present. The Endurance is an Ability's or Sub_Item's own
+   --  (Barrier's), worded like a Spell's, per the user, and inside
+   --  the bracket because the book puts it in the same parenthetical
+   --  as the Perks ("Barrier (no gesture; 5 end)", p. 41). Raw is
+   --  Override_Mark's. Public: Format_Rst's Html_In_Rst and
+   --  Groff_In_Rst table cells need this too.
 
    function Format_Attack_Clause (A : Entities.Attack) return String;
    --  "(Affinity: ...; Perks: ...; Flaws: ...)", "" if none apply.

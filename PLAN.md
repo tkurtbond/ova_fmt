@@ -2577,3 +2577,18 @@ automatically.
   `7f50d3b`): Pandoc ends a paragraph without a break, so the
   paragraph's last output line printed after hd's tables. A `.br`
   at the top of each raw ms block flushes it.
+- **How an Ability's (or Sub_Item's) `endurance` prints** (designed
+  with the user from a mock-up of Ai's sheet run through the real
+  pipelines, 2026-10-10; it was loaded but printed nowhere): inside
+  the existing modifiers bracket, after the Perks/Flaws, worded like
+  a Spell's -- `Barrier +3 [Perks: No Gesture; 5 Endurance]`,
+  `Telekinesis +2 [5* Endurance]` -- since the book puts it in the
+  same parenthetical as the Perks ("Barrier (no gesture; 5 end)").
+  One change in Format_Modifiers_Bracket covers every backend;
+  Html_In_Rst's column header became "Perks/Flaws/Endurance". Fixed
+  alongside it, per the user: Html_In_Rst dropped an Ability's or
+  Sub_Item's `note` (Ai's Barrier "provides an alternate Defense
+  Roll..."), which every other backend prints; it now follows the
+  bracket in the same cell. Verified: only the five fixtures with an
+  `endurance` change outside Html_In_Rst; in Html_In_Rst, beyond
+  those, only the header and the notes.

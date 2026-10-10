@@ -191,18 +191,30 @@ package body Ova_Fmt.Format_Common is
    end Format_Perk_Flaw_List;
 
    function Format_Modifiers_Bracket
-     (Perks, Flaws : Entities.Perk_Flaw_Vectors.Vector) return String
+     (Perks, Flaws         : Entities.Perk_Flaw_Vectors.Vector;
+      Has_Endurance        : Boolean := False;
+      Endurance            : Integer := 0;
+      Endurance_Overridden : Boolean := False;
+      Raw                  : Boolean := False) return String
    is
       Parts : Unbounded_String;
-   begin
-      if not Perks.Is_Empty then
-         Parts := Parts & "Perks: " & Format_Perk_Flaw_List (Perks);
-      end if;
-      if not Flaws.Is_Empty then
+
+      procedure Add (Text : String) is
+      begin
          if Length (Parts) > 0 then
             Parts := Parts & "; ";
          end if;
-         Parts := Parts & "Flaws: " & Format_Perk_Flaw_List (Flaws);
+         Parts := Parts & Text;
+      end Add;
+   begin
+      if not Perks.Is_Empty then
+         Add ("Perks: " & Format_Perk_Flaw_List (Perks));
+      end if;
+      if not Flaws.Is_Empty then
+         Add ("Flaws: " & Format_Perk_Flaw_List (Flaws));
+      end if;
+      if Has_Endurance then
+         Add (Trim_Img (Endurance) & Override_Mark (Endurance_Overridden, Raw) & " Endurance");
       end if;
       if Length (Parts) = 0 then
          return "";
@@ -260,7 +272,8 @@ package body Ova_Fmt.Format_Common is
           (Name_Detail (A.Name, A.Has_Detail, A.Detail) & " " & Signed_Img (A.Level) &
            Half_TV_Text (A.Has_Threat_Value_Half, A.Threat_Value_Half));
    begin
-      Result := Result & Format_Modifiers_Bracket (A.Perks, A.Flaws);
+      Result := Result & Format_Modifiers_Bracket
+        (A.Perks, A.Flaws, A.Has_Endurance, A.Endurance, A.Overrides (Entities.Endurance));
       if A.Has_Note then
          Result := Result & " (" & A.Note & ")";
       end if;
@@ -289,7 +302,8 @@ package body Ova_Fmt.Format_Common is
       if A.Has_Detail then
          Result := Result & " (" & A.Detail & ")";
       end if;
-      Result := Result & Format_Modifiers_Bracket (A.Perks, A.Flaws);
+      Result := Result & Format_Modifiers_Bracket
+        (A.Perks, A.Flaws, A.Has_Endurance, A.Endurance, A.Overrides (Entities.Endurance));
       if A.Has_Note then
          Result := Result & " (" & A.Note & ")";
       end if;
@@ -306,7 +320,8 @@ package body Ova_Fmt.Format_Common is
           (Name_Detail (S.Name, S.Has_Detail, S.Detail) & " " & Signed_Img (S.Level) &
            Half_TV_Text (S.Has_Threat_Value_Half, S.Threat_Value_Half));
    begin
-      Result := Result & Format_Modifiers_Bracket (S.Perks, S.Flaws);
+      Result := Result & Format_Modifiers_Bracket
+        (S.Perks, S.Flaws, S.Has_Endurance, S.Endurance, S.Overrides (Entities.Endurance));
       if S.Has_Note then
          Result := Result & " (" & S.Note & ")";
       end if;
@@ -326,7 +341,8 @@ package body Ova_Fmt.Format_Common is
       if S.Has_Detail then
          Result := Result & " (" & S.Detail & ")";
       end if;
-      Result := Result & Format_Modifiers_Bracket (S.Perks, S.Flaws);
+      Result := Result & Format_Modifiers_Bracket
+        (S.Perks, S.Flaws, S.Has_Endurance, S.Endurance, S.Overrides (Entities.Endurance));
       if S.Has_Note then
          Result := Result & " (" & S.Note & ")";
       end if;
