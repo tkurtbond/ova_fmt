@@ -880,6 +880,10 @@ package body Ova_Fmt.Format_Rst is
          if not In_Raw then
             IO.Put_Line (".. raw:: ms");
             IO.New_Line;
+            --  Pandoc ends the preceding prose paragraph without a
+            --  break, so its last, still-filling output line would
+            --  otherwise print after hd's tables, not before them.
+            IO.Put_Line (Raw_Prefix & ".br");
             IO.Put_Line (Raw_Prefix & ".mso hdtbl.tmac");
             In_Raw := True;
          end if;
