@@ -56,6 +56,30 @@ package Ova_Fmt.Format_Common is
    function Name_Detail (Name : Unbounded_String; Has_Detail : Boolean;
                           Detail : Unbounded_String) return String;
 
+   function All_One_Line (S : String) return String;
+   --  S with each line feed made a space: for a node of h-m-m's
+   --  outline, or a raw table's cell, which hold one line of text.
+
+   function Override_Mark (Overridden : Boolean; Raw : Boolean := False) return String;
+   --  What follows a number its mapping's `overrides:` lists (PLAN.md
+   --  §9 step 9): "" if not Overridden; "*"; or "\*" where the text
+   --  is reST or Markdown, so the `*` isn't read as emphasis. Raw:
+   --  the number goes in a raw HTML or groff table, so it's "*".
+
+   function Defense_Text (C : Entities.Combat_Stats; Raw : Boolean := False) return String;
+   --  C.Defense with an Override_Mark after each overridden half: a
+   --  paired "4/5" Defense's halves are `defense` and `barrier`.
+
+   function Half_TV_Text (Has, Half : Boolean) return String;
+   --  " (half TV)" after the Level of an Ability or Sub_Item whose
+   --  `threat-value-half` is true, with -O/--options; else "".
+
+   function Entity_Title (E : Entities.Entity) return String;
+   --  "Name (Concept)", then ", played by Player" with `player:`.
+
+   function Options_Text (O : Entities.Options_Block) return String;
+   --  The Creation Rules, comma-joined: "Base Zero (±5), ...", or "".
+
    function Format_Modifiers_Bracket
      (Perks, Flaws : Entities.Perk_Flaw_Vectors.Vector) return String;
    --  "[Perks: ...; Flaws: ...]", empty string if neither is present.

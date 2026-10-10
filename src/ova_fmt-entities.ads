@@ -52,6 +52,26 @@ package Ova_Fmt.Entities is
      (Index_Type => Positive, Element_Type => Perk_Flaw);
 
    -----------------------------------------------------------------
+   --  `overrides:` (PLAN.md §9 step 9): the numbers in a mapping that
+   --  the character generator (po_ova_cg) computes but the user set
+   --  by hand -- a sequence of those numbers' key names, e.g.
+   --  `overrides: [roll, dx]` on an attack. Each mapping accepts only
+   --  the keys it has a computed number for (Allowed in
+   --  Load_Overrides): an attack roll/dx/endurance; combat:
+   --  defense/barrier/health/endurance/threat-value, barrier being
+   --  the second half of a paired "4/5" Defense; an Ability, Sub_Item
+   --  or Spell endurance. Anything else is a load error. The
+   --  formatters print an overridden number with a `*` after it.
+   -----------------------------------------------------------------
+
+   type Override_Key is (Roll, Dx, Endurance, Defense, Barrier, Health, Threat_Value);
+   type Override_Set is array (Override_Key) of Boolean;
+   No_Overrides : constant Override_Set := (others => False);
+
+   function Key_Name (K : Override_Key) return String;
+   --  The key's YAML spelling ("threat-value").
+
+   -----------------------------------------------------------------
    --  Attacks (combat.attacks[]).
    -----------------------------------------------------------------
 
@@ -69,6 +89,15 @@ package Ova_Fmt.Entities is
       --  [DX] to 1/2"), so this has to allow non-integer text too.
       Dx            : Unbounded_String;
       Endurance     : Integer;
+      --  Inputs to the generator's calculation (PLAN.md §9 step 9),
+      --  not printed: the numbers above already include them.
+      --  Telekinesis: made with Telekinesis, which adds to its DX
+      --  (rulebook p. 62). Transformed: made in the transformed form
+      --  (p. 63), so it counts toward TV only when the combat block
+      --  is the transformed form's too.
+      Telekinesis   : Boolean := False;
+      Transformed   : Boolean := False;
+      Overrides     : Override_Set := No_Overrides;
    end record;
 
    package Attack_Vectors is new Ada.Containers.Vectors
@@ -96,6 +125,15 @@ package Ova_Fmt.Entities is
       Has_Threat_Value : Boolean := False;
       Threat_Value  : Integer;
       Attacks       : Attack_Vectors.Vector;
+      --  The character sheet's Combat Notes ("Damage, Complications,
+      --  Etc.", PLAN.md §5), text printed after the attacks.
+      Has_Notes     : Boolean := False;
+      Notes         : Unbounded_String;
+      --  The block is the transformed form's (Fukiko's sheet shows
+      --  her as Myu Myu): an input to the generator's calculation,
+      --  not printed, like Attack.Transformed.
+      Transformed   : Boolean := False;
+      Overrides     : Override_Set := No_Overrides;
    end record;
 
    -----------------------------------------------------------------
@@ -115,6 +153,12 @@ package Ova_Fmt.Entities is
       Endurance     : Integer := 0;
       Has_Note      : Boolean := False;
       Note          : Unbounded_String;
+      --  `threat-value-half`: whether half the Ability's Level counts
+      --  toward TV (rulebook p. 124). Absent, the generator decides
+      --  from its rules tables; printed only when true, under -O.
+      Has_Threat_Value_Half : Boolean := False;
+      Threat_Value_Half     : Boolean := False;
+      Overrides     : Override_Set := No_Overrides;
    end record;
 
    package Sub_Item_Vectors is new Ada.Containers.Vectors
@@ -136,6 +180,7 @@ package Ova_Fmt.Entities is
       --  A string: usually a plain number of Endurance, but Auren's
       --  Mana Shield is "10+" (an apparently open-ended cost).
       Endurance : Unbounded_String;
+      Overrides : Override_Set := No_Overrides;
    end record;
 
    package Spell_Vectors is new Ada.Containers.Vectors
@@ -205,6 +250,10 @@ package Ova_Fmt.Entities is
       Endurance      : Integer := 0;
       Has_Note       : Boolean := False;
       Note           : Unbounded_String;
+      --  As Sub_Item's.
+      Has_Threat_Value_Half : Boolean := False;
+      Threat_Value_Half     : Boolean := False;
+      Overrides      : Override_Set := No_Overrides;
       Sub_Abilities  : Sub_Item_Vectors.Vector;
       Sub_Weaknesses : Sub_Item_Vectors.Vector;
       Spells         : Spell_Vectors.Vector;
@@ -270,12 +319,18 @@ package Ova_Fmt.Entities is
    --  asked for (-O/--options, Config.Show_Options), per the user:
    --  useful to a player updating their character or a GM, but not
    --  something a player-facing write-up needs by default.
+   --
+   --  Two more (PLAN.md §9 step 9): Starting_Levels, Power Ceiling's
+   --  starting levels (p. 21), and Half_Cost_Knowledge, Knowledge and
+   --  Ineptitude at half cost.
    -----------------------------------------------------------------
 
    type Options_Block is record
       Has_Base_Zero              : Boolean := False; Base_Zero     : Integer;
       Has_Power_Ceiling          : Boolean := False; Power_Ceiling : Integer;
+      Has_Starting_Levels        : Boolean := False; Starting_Levels : Integer;
       Scaled_Cost                : Boolean := False;
+      Half_Cost_Knowledge        : Boolean := False;
       Combined_Effectiveness     : Boolean := False;
    end record;
 
@@ -285,10 +340,18 @@ package Ova_Fmt.Entities is
       --  same shape as a full character, missing most of these
       --  optional fields, but it has to have a Name regardless.
       Name            : Unbounded_String;
+      --  The rest of the character sheet's fields (PLAN.md §5, §9
+      --  step 9): the Player Name, printed beside the name; the
+      --  Appearance and Other Notes text; and the portrait image's
+      --  path, relative to the YAML file, printed only by Html_In_Rst.
+      Has_Player      : Boolean := False; Player      : Unbounded_String;
       Has_Tagline     : Boolean := False; Tagline     : Unbounded_String;
       Has_Summary     : Boolean := False; Summary     : Unbounded_String;
       Has_Background  : Boolean := False; Background  : Unbounded_String;
+      Has_Appearance  : Boolean := False; Appearance  : Unbounded_String;
       Has_Personality : Boolean := False; Personality : Unbounded_String;
+      Has_Other_Notes : Boolean := False; Other_Notes : Unbounded_String;
+      Has_Portrait    : Boolean := False; Portrait    : Unbounded_String;
       Abilities       : Ability_Vectors.Vector;
       Weaknesses      : Weakness_Vectors.Vector;
       Combat          : Combat_Stats;

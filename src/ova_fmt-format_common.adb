@@ -78,6 +78,85 @@ package body Ova_Fmt.Format_Common is
    --  in particular -- "enemies: Malicron Corp.") can legitimately
    --  already end with a period.
 
+   function All_One_Line (S : String) return String is
+      Result : String := S;
+   begin
+      for C of Result loop
+         if C = ASCII.LF then
+            C := ' ';
+         end if;
+      end loop;
+      return Result;
+   end All_One_Line;
+
+   -----------------------------------------------------------------
+   --  The keys added for the character generator (PLAN.md §9 step
+   --  9).
+   -----------------------------------------------------------------
+
+   --  Gemtext and h-m-m have no inline markup to escape from (h-m-m's
+   --  `**` is only a convention, never parsed); every other format's
+   --  prose is reST or Markdown, where a bare `*` after a number can
+   --  open emphasis. Both read `\*` as a literal `*`.
+   function Override_Mark (Overridden : Boolean; Raw : Boolean := False) return String is
+     (if not Overridden then ""
+      elsif Raw or else Config.Format = Config.Gemtext or else Config.Format = Config.Hmm
+      then "*"
+      else "\*");
+
+   function Defense_Text (C : Entities.Combat_Stats; Raw : Boolean := False) return String is
+      D     : constant String := To_String (C.Defense);
+      Slash : constant Natural := Ada.Strings.Fixed.Index (D, "/");
+   begin
+      if Slash = 0 then
+         return D & Override_Mark (C.Overrides (Entities.Defense), Raw);
+      end if;
+      return D (D'First .. Slash - 1) & Override_Mark (C.Overrides (Entities.Defense), Raw) &
+        D (Slash .. D'Last) & Override_Mark (C.Overrides (Entities.Barrier), Raw);
+   end Defense_Text;
+
+   function Half_TV_Text (Has, Half : Boolean) return String is
+     (if Config.Show_Options and then Has and then Half then " (half TV)" else "");
+
+   function Entity_Title (E : Entities.Entity) return String is
+     (Name_Detail
+        (E.Name,
+         E.Has_Fluff and then E.Fluff.Has_Concept,
+         (if E.Has_Fluff then E.Fluff.Concept else Null_Unbounded_String)) &
+      (if E.Has_Player then ", played by " & To_String (E.Player) else ""));
+
+   function Options_Text (O : Entities.Options_Block) return String is
+      Line  : Unbounded_String;
+
+      procedure Add (Item : String) is
+      begin
+         if Length (Line) > 0 then
+            Line := Line & ", ";
+         end if;
+         Line := Line & Item;
+      end Add;
+   begin
+      if O.Has_Base_Zero then
+         Add ("Base Zero (±" & Trim_Img (O.Base_Zero) & ")");
+      end if;
+      if O.Has_Power_Ceiling then
+         Add ("Power Ceiling (" & Trim_Img (O.Power_Ceiling) & ")");
+      end if;
+      if O.Has_Starting_Levels then
+         Add ("Starting Levels (" & Trim_Img (O.Starting_Levels) & ")");
+      end if;
+      if O.Scaled_Cost then
+         Add ("Scaled Cost");
+      end if;
+      if O.Half_Cost_Knowledge then
+         Add ("Half-Cost Knowledge");
+      end if;
+      if O.Combined_Effectiveness then
+         Add ("Combined Effectiveness");
+      end if;
+      return To_String (Line);
+   end Options_Text;
+
    -----------------------------------------------------------------
    --  Perks/Flaws.
    -----------------------------------------------------------------
@@ -178,7 +257,8 @@ package body Ova_Fmt.Format_Common is
    function Format_Ability_Line (A : Entities.Ability) return String is
       Result : Unbounded_String :=
         To_Unbounded_String
-          (Name_Detail (A.Name, A.Has_Detail, A.Detail) & " " & Signed_Img (A.Level));
+          (Name_Detail (A.Name, A.Has_Detail, A.Detail) & " " & Signed_Img (A.Level) &
+           Half_TV_Text (A.Has_Threat_Value_Half, A.Threat_Value_Half));
    begin
       Result := Result & Format_Modifiers_Bracket (A.Perks, A.Flaws);
       if A.Has_Note then
@@ -202,7 +282,9 @@ package body Ova_Fmt.Format_Common is
    --  Fragment ever needs one.
    function Format_Fragment_Ability_Line (A : Entities.Ability) return String is
       Result : Unbounded_String :=
-        To_Unbounded_String (To_String (A.Name) & " " & Signed_Img (A.Level));
+        To_Unbounded_String
+          (To_String (A.Name) & " " & Signed_Img (A.Level) &
+           Half_TV_Text (A.Has_Threat_Value_Half, A.Threat_Value_Half));
    begin
       if A.Has_Detail then
          Result := Result & " (" & A.Detail & ")";
@@ -221,7 +303,8 @@ package body Ova_Fmt.Format_Common is
    function Format_Sub_Item_Line (S : Entities.Sub_Item) return String is
       Result : Unbounded_String :=
         To_Unbounded_String
-          (Name_Detail (S.Name, S.Has_Detail, S.Detail) & " " & Signed_Img (S.Level));
+          (Name_Detail (S.Name, S.Has_Detail, S.Detail) & " " & Signed_Img (S.Level) &
+           Half_TV_Text (S.Has_Threat_Value_Half, S.Threat_Value_Half));
    begin
       Result := Result & Format_Modifiers_Bracket (S.Perks, S.Flaws);
       if S.Has_Note then
@@ -236,7 +319,9 @@ package body Ova_Fmt.Format_Common is
    --  own doc comment).
    function Format_Fragment_Sub_Item_Line (S : Entities.Sub_Item) return String is
       Result : Unbounded_String :=
-        To_Unbounded_String (To_String (S.Name) & " " & Signed_Img (S.Level));
+        To_Unbounded_String
+          (To_String (S.Name) & " " & Signed_Img (S.Level) &
+           Half_TV_Text (S.Has_Threat_Value_Half, S.Threat_Value_Half));
    begin
       if S.Has_Detail then
          Result := Result & " (" & S.Detail & ")";
@@ -250,7 +335,8 @@ package body Ova_Fmt.Format_Common is
 
    function Format_Spell_Line (S : Entities.Spell) return String is
      (To_String (S.Name) & " (" & To_String (S.Ability) & " " &
-      Signed_Img (S.Level) & "; " & To_String (S.Endurance) & " Endurance)");
+      Signed_Img (S.Level) & "; " & To_String (S.Endurance) &
+      Override_Mark (S.Overrides (Entities.Endurance)) & " Endurance)");
 
    function Join_Abilities (Vec : Entities.Ability_Vectors.Vector) return String is
       Result : Unbounded_String;
@@ -348,9 +434,12 @@ package body Ova_Fmt.Format_Common is
       Line   : Unbounded_String :=
         To_Unbounded_String
           (Bold (To_String (A.Name) & ":") & " Roll " &
-           Bold (Number_Img (A.Roll) & " dice") & " | " &
-           Bold ("DX " & To_String (A.Dx)) & " | " &
-           Bold ("Endurance Cost: " & Trim_Img (A.Endurance)));
+           Bold (Number_Img (A.Roll) & Override_Mark (A.Overrides (Entities.Roll)) & " dice") &
+           " | " &
+           Bold ("DX " & To_String (A.Dx) & Override_Mark (A.Overrides (Entities.Dx))) & " | " &
+           Bold
+             ("Endurance Cost: " & Trim_Img (A.Endurance) &
+              Override_Mark (A.Overrides (Entities.Endurance))));
    begin
       if Clause /= "" then
          Line := Line & " " & Clause;
@@ -363,11 +452,15 @@ package body Ova_Fmt.Format_Common is
    end Format_Attack_Line;
 
    function Format_Combat_Summary_Line (C : Entities.Combat_Stats) return String is
-     (Bold ("Health:") & " " & Trim_Img (C.Health) & " | " &
-      Bold ("Endurance:") & " " & Trim_Img (C.Endurance) & " | " &
-      Bold ("Defense:") & " " & To_String (C.Defense) & " | " &
+     (Bold ("Health:") & " " & Trim_Img (C.Health) &
+      Override_Mark (C.Overrides (Entities.Health)) & " | " &
+      Bold ("Endurance:") & " " & Trim_Img (C.Endurance) &
+      Override_Mark (C.Overrides (Entities.Endurance)) & " | " &
+      Bold ("Defense:") & " " & Defense_Text (C) & " | " &
       Bold ("Threat Value (TV):") & " " &
-      (if C.Has_Threat_Value then Trim_Img (C.Threat_Value) else "—"));
+      (if C.Has_Threat_Value
+       then Trim_Img (C.Threat_Value) & Override_Mark (C.Overrides (Entities.Threat_Value))
+       else "—"));
 
    procedure Print_Attack (A : Entities.Attack) is
       --  Terse indents this as a sub-bullet of the "- **Attacks:**"
@@ -393,6 +486,13 @@ package body Ova_Fmt.Format_Common is
          for A of C.Attacks loop
             Print_Attack (A);
          end loop;
+         IO.New_Line;
+      end if;
+
+      --  A paragraph, not a bullet: the text may run to several
+      --  lines, which a reST bullet would need indented.
+      if C.Has_Notes then
+         IO.Put_Line (Bold ("Combat Notes:") & " " & To_String (C.Notes));
          IO.New_Line;
       end if;
    end Print_Combat_And_Attacks;
@@ -553,11 +653,7 @@ package body Ova_Fmt.Format_Common is
    procedure Print_Header_And_Prose (E : Entities.Entity; Entity_No : Positive) is
    begin
       declare
-         Title : constant String :=
-           Name_Detail
-             (E.Name,
-              E.Has_Fluff and then E.Fluff.Has_Concept,
-              (if E.Has_Fluff then E.Fluff.Concept else Null_Unbounded_String));
+         Title : constant String := Entity_Title (E);
       begin
          if Config.Format = Config.Gemtext or else Config.Format = Config.Markdown then
             --  Gemtext's only heading syntax, and (per the user)
@@ -582,6 +678,15 @@ package body Ova_Fmt.Format_Common is
          IO.New_Line;
       end;
 
+      --  Only Html_In_Rst shows the portrait (PLAN.md §9 step 9): the
+      --  path is the YAML file's, relative to it, so the HTML has to
+      --  be made beside the YAML file for the image to be found.
+      if Config.Format = Config.Html_In_Rst and then E.Has_Portrait then
+         IO.Put_Line (".. image:: " & To_String (E.Portrait));
+         IO.Put_Line ("   :alt: " & To_String (E.Name));
+         IO.New_Line;
+      end if;
+
       if E.Has_Tagline then
          IO.Put_Line (Italic ("""" & To_String (E.Tagline) & """"));
          IO.New_Line;
@@ -596,6 +701,13 @@ package body Ova_Fmt.Format_Common is
          IO.Put_Line (Section_Header ("Background"));
          IO.New_Line;
          IO.Put_Line (To_String (E.Background));
+         IO.New_Line;
+      end if;
+
+      if E.Has_Appearance then
+         IO.Put_Line (Section_Header ("Appearance"));
+         IO.New_Line;
+         IO.Put_Line (To_String (E.Appearance));
          IO.New_Line;
       end if;
 
@@ -620,6 +732,13 @@ package body Ova_Fmt.Format_Common is
             IO.New_Line;
          end loop;
       end if;
+
+      if E.Has_Other_Notes then
+         IO.Put_Line (Section_Header ("Other Notes"));
+         IO.New_Line;
+         IO.Put_Line (To_String (E.Other_Notes));
+         IO.New_Line;
+      end if;
    end Print_Notes;
 
    procedure Print_Options_If_Shown (E : Entities.Entity) is
@@ -629,35 +748,10 @@ package body Ova_Fmt.Format_Common is
       --  own write-up -- rendered only when asked for, per the user.
       if Config.Show_Options and then E.Has_Options then
          declare
-            O     : Entities.Options_Block renames E.Options;
-            Line  : Unbounded_String;
-            First : Boolean := True;
-
-            procedure Add (Item : String) is
-            begin
-               if not First then
-                  Line := Line & ", ";
-               end if;
-               First := False;
-               Line := Line & Item;
-            end Add;
+            Line : constant String := Options_Text (E.Options);
          begin
-            if O.Has_Base_Zero then
-               Add ("Base Zero (±" & Trim_Img (O.Base_Zero) & ")");
-            end if;
-            if O.Has_Power_Ceiling then
-               Add ("Power Ceiling (" & Trim_Img (O.Power_Ceiling) & ")");
-            end if;
-            if O.Scaled_Cost then
-               Add ("Scaled Cost");
-            end if;
-            if O.Combined_Effectiveness then
-               Add ("Combined Effectiveness");
-            end if;
-            if not First then
-               IO.Put_Line
-                 (Bold ("Creation Rules:") & " " &
-                  End_With_Period (To_String (Line)));
+            if Line /= "" then
+               IO.Put_Line (Bold ("Creation Rules:") & " " & End_With_Period (Line));
                IO.New_Line;
             end if;
          end;

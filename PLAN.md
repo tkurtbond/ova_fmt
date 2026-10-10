@@ -699,6 +699,10 @@ fields any output format should be able to round-trip:
   text), Character Portrait (image — out of scope for a text
   formatter).
 
+Since §9 step 9, every one of these has a key: `player`,
+`appearance`, `other-notes`, combat `notes`, and `portrait` (a path,
+shown only by `-H`).
+
 This matches `Fukiko.yaml`'s shape closely and is a good sanity check
 for whatever YAML schema gets settled on (§6): every one of these
 fields should map onto something in the schema, and nothing essential
@@ -1753,6 +1757,100 @@ for test data and output-format sequencing:
    and `build/Karis.md.ms.pdf`'s extracted text (`pdftotext`) matches
    `build/Karis.rst.ms.pdf`'s content line for line.
 
+9. **Keys for the character generator** (2026-10-09). po_ova_cg
+   (`~/Repos/RPG/Tools/po_ova_cg`), an OVA character generator built
+   on po_ova_fmt, saves what the character sheet has (§5) and what
+   its calculations need, which ova_fmt had no keys for. The user
+   decided they are added here first, then to po_ova_fmt, rather than
+   left for ova_fmt to ignore. All are optional:
+
+   | Key | Where | What |
+   |---|---|---|
+   | `player` | entity | the Player Name |
+   | `appearance` | entity | text, like `background` |
+   | `other-notes` | entity | the sheet's Other Notes, text (`notes:` is the headed callouts already) |
+   | `portrait` | entity | the portrait image's path, relative to the YAML file |
+   | `notes` | `combat` | the sheet's Combat Notes, text |
+   | `transformed` | `combat` | `true`: the block is the transformed form's (Fukiko's sheet) |
+   | `telekinesis` | attack | `true`: made with Telekinesis, which adds to its DX (p. 62) |
+   | `transformed` | attack | `true`: made in the transformed form (p. 63) |
+   | `threat-value-half` | Ability, granted Ability | whether half its Level counts toward TV (p. 124) |
+   | `starting-levels` | `options` | Power Ceiling's starting levels (p. 21) |
+   | `half-cost-knowledge` | `options` | `true`: Knowledge and Ineptitude at half cost |
+   | `overrides` | attack, `combat`, Ability, granted Ability, spell | the computed numbers the user set by hand |
+
+   `overrides` is a sequence of key names, each one a number the
+   generator computes in that mapping: an attack's `roll`, `dx`,
+   `endurance`; `combat`'s `defense`, `barrier` (the second half of a
+   paired `4/5` Defense), `health`, `endurance`, `threat-value`; an
+   Ability's, granted Ability's or spell's `endurance`. Any other
+   name, an item that isn't a scalar, or an `overrides` that isn't a
+   sequence is a load error, recorded like a missing required key
+   (`Load_Overrides`): a misspelled name would otherwise silently drop
+   a mark. A listed key that is absent from the mapping is allowed.
+
+   How each prints (the proposal the user accepted, made concrete
+   here):
+   - `player`: in the title, after the name and concept: `Hana Mori
+     (Telekinetic Schoolgirl), played by Sam` (`Entity_Title`, shared
+     with h-m-m). A Fragment has no title, so no player.
+   - `appearance`: a section between Background and Personality, the
+     sheet's order; `other-notes`: an "Other Notes" section after the
+     Notes callouts (`Print_Notes`, so `-G` has it too). A Fragment
+     prints neither Appearance nor Personality, as before.
+   - combat `notes`: a "**Combat Notes:**" paragraph after the
+     attacks, not a bullet (several lines would need indenting in a
+     reST bullet); in the `-H` and `-G` tables, a `<p>` after the
+     attacks table and a last full-width row of the combat box, on
+     one line (`All_One_Line`, moved from Format_Hmm to Format_Common),
+     since every line of a raw block must keep its indent. The `-G`
+     row count for `.ne` adds a row per 80 characters.
+   - `portrait`: an `.. image::` directive, with the name as its
+     `:alt:`, after the title, in `-H` only. The path is the YAML
+     file's, so the HTML must be made beside the YAML file to find it.
+   - `threat-value-half`: "` (half TV)`" after the Level, only with
+     `-O` and only when true, as the options are shown; in the `-G`
+     tables after the name, since the Level column is too narrow.
+     `starting-levels` and `half-cost-knowledge` join the Creation
+     Rules: `Power Ceiling (30), Starting Levels (20), Half-Cost
+     Knowledge` (`Options_Text`, shared with h-m-m).
+   - an overridden number gets a `*` after it (`Override_Mark`): `3*
+     dice`, `DX 3*`, `3*/4*` with both halves of the Defense listed.
+     In reST and Markdown text it is written `\*`, so it can't open
+     emphasis; in Gemtext and h-m-m, and in the raw HTML and groff
+     tables, a plain `*`. An Ability's or granted Ability's own
+     `endurance` is printed nowhere, so its override shows only in
+     the generator.
+   - `telekinesis` and `transformed` (attack and combat) are not
+     printed: they are inputs to the generator's calculation, and the
+     numbers printed already include them.
+
+   The samples carry the keys that apply to them, each commented:
+   Ai's attacks `telekinesis`, Fukiko's combat `transformed` (her
+   sheet shows her transformed), Miho's Mode SP `transformed`, and the
+   book's two rulings in `overrides`, Braun's First Day of Sale
+   Shove!'s ROLL and Natsuki's Stiletto Kick's DX, which now print with
+   `*`. With these, po_ova_cg computes every other number of every
+   sample as the book prints it.
+
+   `test-data/Sheet.yaml` uses every key: a synthetic character, with
+   `overrides` on each kind of mapping, among them a fragment
+   Companion's combat block (printed through the plain reST path even
+   under `-H`/`-G`, so it gets `\*`), and Combat Notes holding `<`,
+   `&` and a line starting with `.`. Every number it doesn't list in
+   `overrides` is the rules', as po_ova_cg computes them: it loads
+   there with no notices.
+
+   Verified: before the samples gained their keys, every existing
+   fixture's output, in all 368 of po_ova_fmt's golden cases (every
+   format and flag), was byte-identical before and after; after, only
+   Braun's and Natsuki's changed, by the `*`; `Sheet.yaml`'s reST outputs (`""`,
+   `-H`, `-G`) pass `rst2html --halt=info`; pandoc's reST, Markdown
+   and CommonMark readers all read each `\*` as a literal `*`, inside
+   bold too (`**DX 3\***`), with no new emphasis; `make
+   build/Sheet.groff.pdf` renders the stars, the Defense pair, the
+   half-TV names and the Combat Notes row.
+
 **`GNUmakefile` convention to keep as each new backend lands, per the
 user:** every existing output-list variable (`TEST_TERSEOUTPUT`,
 `TEST_PDFOUTPUT`, `TEST_GEMTEXTOUTPUT`, and now `TEST_HTMLOUTPUT`/
@@ -2422,3 +2520,12 @@ automatically.
   the same reason — no per-entity underline character to swap the way
   reST's `Underliner`/`Subunderliner` do, only a heading depth, and
   flat was preferred over nesting subsequent entities under `##`.
+- **Keys for the character generator, in ova_fmt too** (§9 step 9,
+  decided by the user, 2026-10-09), Ada first, then po_ova_fmt; and
+  how they print, as proposed and accepted: `player` beside the name,
+  `appearance`/`other-notes` as text sections, combat `notes` after
+  the combat stats, `portrait` as an image in `-H` only, the new
+  options as the existing ones, and an overridden number with `*`
+  after it (`\*` in reST and Markdown). Not printing `telekinesis`
+  and `transformed` was this port's choice, the proposal not having
+  covered them: easy to revisit.

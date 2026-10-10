@@ -13,16 +13,7 @@ package body Ova_Fmt.Format_Hmm is
    function Indent (Depth : Natural) return String is
      (String'(1 .. Depth => ASCII.HT));
 
-   function All_One_Line (S : String) return String is
-      Result : String := S;
-   begin
-      for C of Result loop
-         if C = ASCII.LF then
-            C := ' ';
-         end if;
-      end loop;
-      return Result;
-   end All_One_Line;
+   function All_One_Line (S : String) return String renames Common.All_One_Line;
    --  An h-m-m node is exactly one physical line, so any internal
    --  newline in a prose field (from a "background: |" YAML literal
    --  block scalar, e.g. every test-data/*.yaml character) has to be
@@ -115,6 +106,11 @@ package body Ova_Fmt.Format_Hmm is
          for A of C.Attacks loop
             IO.Put_Line (Indent (Header_Depth + 2) & Common.Format_Attack_Line (A));
          end loop;
+      end if;
+      if C.Has_Notes then
+         IO.Put_Line
+           (Indent (Header_Depth + 1) & Common.Bold ("Combat Notes:") & " " &
+            All_One_Line (To_String (C.Notes)));
       end if;
    end Print_Combat;
 
@@ -238,6 +234,11 @@ package body Ova_Fmt.Format_Hmm is
          end loop;
       end if;
 
+      if E.Has_Other_Notes then
+         IO.Put_Line (Indent (Header_Depth) & Common.Section_Header ("Other Notes"));
+         IO.Put_Line (Indent (Header_Depth + 1) & All_One_Line (To_String (E.Other_Notes)));
+      end if;
+
       if E.Has_Fluff then
          declare
             Line  : Unbounded_String;
@@ -275,39 +276,12 @@ package body Ova_Fmt.Format_Hmm is
          end;
       end if;
 
-      if Config.Show_Options and then E.Has_Options then
-         declare
-            O     : Entities.Options_Block renames E.Options;
-            Line  : Unbounded_String;
-            First : Boolean := True;
-
-            procedure Add (Item : String) is
-            begin
-               if not First then
-                  Line := Line & ", ";
-               end if;
-               First := False;
-               Line := Line & Item;
-            end Add;
-         begin
-            if O.Has_Base_Zero then
-               Add ("Base Zero (±" & Common.Trim_Img (O.Base_Zero) & ")");
-            end if;
-            if O.Has_Power_Ceiling then
-               Add ("Power Ceiling (" & Common.Trim_Img (O.Power_Ceiling) & ")");
-            end if;
-            if O.Scaled_Cost then
-               Add ("Scaled Cost");
-            end if;
-            if O.Combined_Effectiveness then
-               Add ("Combined Effectiveness");
-            end if;
-            if not First then
-               IO.Put_Line
-                 (Indent (Header_Depth) & Common.Bold ("Creation Rules:") & " " &
-                  Common.End_With_Period (To_String (Line)));
-            end if;
-         end;
+      if Config.Show_Options and then E.Has_Options
+        and then Common.Options_Text (E.Options) /= ""
+      then
+         IO.Put_Line
+           (Indent (Header_Depth) & Common.Bold ("Creation Rules:") & " " &
+            Common.End_With_Period (Common.Options_Text (E.Options)));
       end if;
    end Print_Tail;
 
@@ -353,11 +327,7 @@ package body Ova_Fmt.Format_Hmm is
             Print_Linked_Section (A, D2);
          end loop;
       else
-         IO.Put_Line
-           (Indent (D1) &
-            Common.Name_Detail
-              (E.Name, E.Has_Fluff and then E.Fluff.Has_Concept,
-               (if E.Has_Fluff then E.Fluff.Concept else Null_Unbounded_String)));
+         IO.Put_Line (Indent (D1) & Common.Entity_Title (E));
 
          if E.Has_Tagline then
             IO.Put_Line
@@ -372,6 +342,11 @@ package body Ova_Fmt.Format_Hmm is
          if E.Has_Background then
             IO.Put_Line (Indent (D2) & Common.Section_Header ("Background"));
             IO.Put_Line (Indent (D3) & All_One_Line (To_String (E.Background)));
+         end if;
+
+         if E.Has_Appearance then
+            IO.Put_Line (Indent (D2) & Common.Section_Header ("Appearance"));
+            IO.Put_Line (Indent (D3) & All_One_Line (To_String (E.Appearance)));
          end if;
 
          if E.Has_Personality then

@@ -54,6 +54,10 @@ package body Ova_Fmt.Format_Rst is
    --  misread as a tag. `"` isn't escaped: nothing here writes it
    --  inside an HTML attribute value, only ever inside element text.
 
+   --  Override_Mark for a raw table's cell: "*" or "".
+   function Mark (Overridden : Boolean) return String is
+     (Common.Override_Mark (Overridden, Raw => True));
+
    function Strip_Parens (S : String) return String is
      (if S'Length >= 2 and then S (S'First) = '(' and then S (S'Last) = ')'
       then S (S'First + 1 .. S'Last - 1)
@@ -77,7 +81,8 @@ package body Ova_Fmt.Format_Rst is
       for I of Items loop
          IO.Put_Line
            (Raw_Prefix & Indent & "<tr><td>" & Html_Escape (To_String (I.Name)) &
-            "</td><td>" & Common.Signed_Img (I.Level) & "</td><td>" &
+            "</td><td>" & Common.Signed_Img (I.Level) &
+            Common.Half_TV_Text (I.Has_Threat_Value_Half, I.Threat_Value_Half) & "</td><td>" &
             (if I.Has_Detail then Html_Escape (To_String (I.Detail)) else "") &
             "</td><td>" &
             Html_Escape (Strip_Parens (Common.Format_Modifiers_Bracket (I.Perks, I.Flaws))) &
@@ -103,7 +108,7 @@ package body Ova_Fmt.Format_Rst is
            (Raw_Prefix & Indent & "<tr><td>" & Html_Escape (To_String (S.Name)) &
             "</td><td>" & Html_Escape (To_String (S.Ability)) & "</td><td>" &
             Common.Signed_Img (S.Level) & "</td><td>" & Html_Escape (To_String (S.Endurance)) &
-            "</td></tr>");
+            Mark (S.Overrides (Entities.Endurance)) & "</td></tr>");
       end loop;
       IO.Put_Line (Raw_Prefix & Indent & "</table>");
    end Print_Spells_Table;
@@ -124,9 +129,10 @@ package body Ova_Fmt.Format_Rst is
       for A of Attacks loop
          IO.Put_Line
            (Raw_Prefix & Indent & "<tr><td>" & Html_Escape (To_String (A.Name)) &
-            "</td><td>" & Common.Number_Img (A.Roll) & "</td><td>" &
-            Html_Escape (To_String (A.Dx)) &
-            "</td><td>" & Common.Trim_Img (A.Endurance) & "</td><td>" &
+            "</td><td>" & Common.Number_Img (A.Roll) & Mark (A.Overrides (Entities.Roll)) &
+            "</td><td>" & Html_Escape (To_String (A.Dx)) & Mark (A.Overrides (Entities.Dx)) &
+            "</td><td>" & Common.Trim_Img (A.Endurance) &
+            Mark (A.Overrides (Entities.Endurance)) & "</td><td>" &
             Html_Escape (Strip_Parens (Common.Format_Attack_Clause (A))) & "</td><td>" &
             (if A.Has_Description then Html_Escape (To_String (A.Description)) else "") &
             "</td></tr>");
@@ -147,12 +153,22 @@ package body Ova_Fmt.Format_Rst is
         (Raw_Prefix & Indent &
          "<tr><th>Health</th><th>Endurance</th><th>Defense</th><th>Threat Value</th></tr>");
       IO.Put_Line
-        (Raw_Prefix & Indent & "<tr><td>" & Common.Trim_Img (C.Health) & "</td><td>" &
-         Common.Trim_Img (C.Endurance) & "</td><td>" & Html_Escape (To_String (C.Defense)) &
-         "</td><td>" & (if C.Has_Threat_Value then Common.Trim_Img (C.Threat_Value) else "—") &
+        (Raw_Prefix & Indent & "<tr><td>" & Common.Trim_Img (C.Health) &
+         Mark (C.Overrides (Entities.Health)) & "</td><td>" &
+         Common.Trim_Img (C.Endurance) & Mark (C.Overrides (Entities.Endurance)) &
+         "</td><td>" & Html_Escape (Common.Defense_Text (C, Raw => True)) & "</td><td>" &
+         (if C.Has_Threat_Value
+          then Common.Trim_Img (C.Threat_Value) & Mark (C.Overrides (Entities.Threat_Value))
+          else "—") &
          "</td></tr>");
       IO.Put_Line (Raw_Prefix & Indent & "</table>");
       Print_Attacks_Table (C.Attacks, Caption & " — Attacks", Indent);
+      --  One line: a line of a raw block must keep its indent.
+      if C.Has_Notes then
+         IO.Put_Line
+           (Raw_Prefix & Indent & "<p><strong>Combat Notes:</strong> " &
+            Html_Escape (Common.All_One_Line (To_String (C.Notes))) & "</p>");
+      end if;
    end Print_Combat_Table;
 
    --  Fragment-style Companion/Vehicle (`fragment: true`): this
@@ -229,7 +245,8 @@ package body Ova_Fmt.Format_Rst is
    begin
       IO.Put
         (Raw_Prefix & Indent & "<tr><td>" & Html_Escape (To_String (A.Name)) &
-         "</td><td>" & Common.Signed_Img (A.Level) & "</td><td>" &
+         "</td><td>" & Common.Signed_Img (A.Level) &
+         Common.Half_TV_Text (A.Has_Threat_Value_Half, A.Threat_Value_Half) & "</td><td>" &
          (if A.Has_Detail then Html_Escape (To_String (A.Detail)) else "") &
          "</td><td>" &
          Html_Escape (Strip_Parens (Common.Format_Modifiers_Bracket (A.Perks, A.Flaws))) &
@@ -374,9 +391,13 @@ package body Ova_Fmt.Format_Rst is
       return To_String (Result);
    end Groff_Escape;
 
+   --  " (half TV)" goes after the name, not the Level: the Level
+   --  column is too narrow for it.
    function Ability_Cell_Text (A : Entities.Ability) return String is
       Result : Unbounded_String :=
-        To_Unbounded_String (Common.Name_Detail (A.Name, A.Has_Detail, A.Detail));
+        To_Unbounded_String
+          (Common.Name_Detail (A.Name, A.Has_Detail, A.Detail) &
+           Common.Half_TV_Text (A.Has_Threat_Value_Half, A.Threat_Value_Half));
    begin
       Result := Result & Common.Format_Modifiers_Bracket (A.Perks, A.Flaws);
       if A.Has_Note then
@@ -402,7 +423,9 @@ package body Ova_Fmt.Format_Rst is
 
    function Sub_Item_Cell_Text (S : Entities.Sub_Item) return String is
       Result : Unbounded_String :=
-        To_Unbounded_String (Common.Name_Detail (S.Name, S.Has_Detail, S.Detail));
+        To_Unbounded_String
+          (Common.Name_Detail (S.Name, S.Has_Detail, S.Detail) &
+           Common.Half_TV_Text (S.Has_Threat_Value_Half, S.Threat_Value_Half));
    begin
       Result := Result & Common.Format_Modifiers_Bracket (S.Perks, S.Flaws);
       if S.Has_Note then
@@ -414,7 +437,7 @@ package body Ova_Fmt.Format_Rst is
    function Spell_Detail_Text (S : Entities.Spell) return String is
      (Groff_Escape
         (To_String (S.Ability) & " " & Common.Signed_Img (S.Level) & "; " &
-         To_String (S.Endurance) & " Endurance"));
+         To_String (S.Endurance) & Mark (S.Overrides (Entities.Endurance)) & " Endurance"));
 
    --  Row-count estimators, walked with the same structure as the
    --  Print_* procedures below so a `.ne` emitted before a table
@@ -463,6 +486,11 @@ package body Ova_Fmt.Format_Rst is
             N := N + 1;
          end if;
       end loop;
+      --  Combat Notes: a row, and one more per 80 characters, as
+      --  generous as Table_Ne's own estimate.
+      if C.Has_Notes then
+         N := N + 1 + Length (C.Notes) / 80;
+      end if;
       return N + 2;  --  Defense/Health/Endurance/TV header + values
    end Combat_Table_Rows;
 
@@ -701,9 +729,13 @@ package body Ova_Fmt.Format_Rst is
       for A of C.Attacks loop
          IO.Put_Line (Raw_Prefix & ".TR");
          Put_Cell ("", "\fB" & Groff_Escape (To_String (A.Name)) & "\fP");
-         IO.Put_Line (Raw_Prefix & ".TD hal=c " & Common.Number_Img (A.Roll));
-         Put_Cell ("hal=c", Groff_Escape (To_String (A.Dx)));
-         IO.Put_Line (Raw_Prefix & ".TD hal=c " & Common.Trim_Img (A.Endurance));
+         IO.Put_Line
+           (Raw_Prefix & ".TD hal=c " & Common.Number_Img (A.Roll) &
+            Mark (A.Overrides (Entities.Roll)));
+         Put_Cell ("hal=c", Groff_Escape (To_String (A.Dx) & Mark (A.Overrides (Entities.Dx))));
+         IO.Put_Line
+           (Raw_Prefix & ".TD hal=c " & Common.Trim_Img (A.Endurance) &
+            Mark (A.Overrides (Entities.Endurance)));
          declare
             Clause : constant String := Strip_Parens (Common.Format_Attack_Clause (A));
          begin
@@ -723,12 +755,25 @@ package body Ova_Fmt.Format_Rst is
       IO.Put_Line (Raw_Prefix & ".TH Endurance");
       IO.Put_Line (Raw_Prefix & ".TH TV");
       IO.Put_Line (Raw_Prefix & ".TR");
-      Put_Cell ("hal=c", "\fB" & Groff_Escape (To_String (C.Defense)) & "\fP");
-      IO.Put_Line (Raw_Prefix & ".TD hal=c \fB" & Common.Trim_Img (C.Health) & "\fP");
-      IO.Put_Line (Raw_Prefix & ".TD hal=c \fB" & Common.Trim_Img (C.Endurance) & "\fP");
+      Put_Cell ("hal=c", "\fB" & Groff_Escape (Common.Defense_Text (C, Raw => True)) & "\fP");
+      IO.Put_Line
+        (Raw_Prefix & ".TD hal=c \fB" & Common.Trim_Img (C.Health) &
+         Mark (C.Overrides (Entities.Health)) & "\fP");
+      IO.Put_Line
+        (Raw_Prefix & ".TD hal=c \fB" & Common.Trim_Img (C.Endurance) &
+         Mark (C.Overrides (Entities.Endurance)) & "\fP");
       IO.Put_Line
         (Raw_Prefix & ".TD hal=c \fB" &
-         (if C.Has_Threat_Value then Common.Trim_Img (C.Threat_Value) else "—") & "\fP");
+         (if C.Has_Threat_Value
+          then Common.Trim_Img (C.Threat_Value) & Mark (C.Overrides (Entities.Threat_Value))
+          else "—") & "\fP");
+      --  One line, as Put_Cell writes it.
+      if C.Has_Notes then
+         IO.Put_Line (Raw_Prefix & ".TR");
+         Put_Cell
+           ("colspan=4",
+            "\fBCombat Notes:\fP " & Groff_Escape (Common.All_One_Line (To_String (C.Notes))));
+      end if;
       IO.Put_Line (Raw_Prefix & ".ETB");
    end Print_Combat_Table_Groff;
 

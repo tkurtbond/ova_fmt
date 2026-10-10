@@ -161,6 +161,65 @@ package body Ova_Fmt.Entities is
      ("<" => Sub_Item_CI_Less);
 
    -----------------------------------------------------------------
+   --  overrides: (the .ads's Override_Key).
+   -----------------------------------------------------------------
+
+   function Key_Name (K : Override_Key) return String is
+     (case K is
+         when Roll => "roll", when Dx => "dx", when Endurance => "endurance",
+         when Defense => "defense", when Barrier => "barrier",
+         when Health => "health", when Threat_Value => "threat-value");
+
+   --  N's `overrides:` list, if any. A list that isn't a sequence, or
+   --  an item that isn't one of the Allowed key names, is a recorded
+   --  error, like a missing required key: a misspelled name would
+   --  otherwise silently drop the `*` from a number.
+   function Load_Overrides (N : Nod.Node; Allowed : Override_Set) return Override_Set is
+      Result : Override_Set := No_Overrides;
+      List   : constant Nod.Node := N.Value ("overrides");
+
+      function Allowed_Names return String is
+         Names : Unbounded_String;
+      begin
+         for K in Override_Key loop
+            if Allowed (K) then
+               if Length (Names) > 0 then
+                  Names := Names & ", ";
+               end if;
+               Names := Names & Key_Name (K);
+            end if;
+         end loop;
+         return To_String (Names);
+      end Allowed_Names;
+
+      procedure Add (Item : Nod.Node) is
+      begin
+         if Item.Is_Scalar then
+            for K in Override_Key loop
+               if Allowed (K) and then Item.Scalar_Value = Key_Name (K) then
+                  Result (K) := True;
+                  return;
+               end if;
+            end loop;
+            Record_Error
+              (N, "overrides",
+               """" & Item.Scalar_Value & """ is not one of " & Allowed_Names);
+         else
+            Record_Error (N, "overrides", "an item is not a key name");
+         end if;
+      end Add;
+   begin
+      if List.Is_Valid then
+         if List.Is_Sequence then
+            List.Iterate (Add'Access);
+         else
+            Record_Error (N, "overrides", "not a sequence of key names");
+         end if;
+      end if;
+      return Result;
+   end Load_Overrides;
+
+   -----------------------------------------------------------------
    --  Perks/Flaws.
    -----------------------------------------------------------------
 
@@ -229,6 +288,14 @@ package body Ova_Fmt.Entities is
       Result.Roll := Require_Integer (N, "roll");
       Result.Dx := Require_String (N, "dx");
       Result.Endurance := Require_Integer (N, "endurance");
+      if N.Has_Key ("telekinesis") then
+         Result.Telekinesis := N.Boolean_Value ("telekinesis");
+      end if;
+      if N.Has_Key ("transformed") then
+         Result.Transformed := N.Boolean_Value ("transformed");
+      end if;
+      Result.Overrides :=
+        Load_Overrides (N, (Roll | Dx | Endurance => True, others => False));
       return Result;
    end Load_Attack;
 
@@ -254,6 +321,15 @@ package body Ova_Fmt.Entities is
       if Attacks_Node.Is_Valid then
          Attacks_Node.Iterate (Add'Access);
       end if;
+      if N.Has_Key ("notes") then
+         Result.Has_Notes := True;
+         Result.Notes := To_Unbounded_String (Trim_Whitespace (N.String_Value ("notes")));
+      end if;
+      if N.Has_Key ("transformed") then
+         Result.Transformed := N.Boolean_Value ("transformed");
+      end if;
+      Result.Overrides :=
+        Load_Overrides (N, (Roll | Dx => False, others => True));
       return Result;
    end Load_Combat;
 
@@ -287,6 +363,11 @@ package body Ova_Fmt.Entities is
          Result.Has_Note := True;
          Result.Note := To_Unbounded_String (N.String_Value ("note"));
       end if;
+      if N.Has_Key ("threat-value-half") then
+         Result.Has_Threat_Value_Half := True;
+         Result.Threat_Value_Half := N.Boolean_Value ("threat-value-half");
+      end if;
+      Result.Overrides := Load_Overrides (N, (Endurance => True, others => False));
       return Result;
    end Load_Sub_Item;
 
@@ -313,6 +394,7 @@ package body Ova_Fmt.Entities is
       Result.Ability := Require_String (N, "ability");
       Result.Level := Require_Integer (N, "level");
       Result.Endurance := Require_String (N, "endurance");
+      Result.Overrides := Load_Overrides (N, (Endurance => True, others => False));
       return Result;
    end Load_Spell;
 
@@ -377,6 +459,11 @@ package body Ova_Fmt.Entities is
          Result.Has_Note := True;
          Result.Note := To_Unbounded_String (N.String_Value ("note"));
       end if;
+      if N.Has_Key ("threat-value-half") then
+         Result.Has_Threat_Value_Half := True;
+         Result.Threat_Value_Half := N.Boolean_Value ("threat-value-half");
+      end if;
+      Result.Overrides := Load_Overrides (N, (Endurance => True, others => False));
       if Sub_Abilities_Node.Is_Valid then
          Result.Sub_Abilities := Load_Sub_Item_List (Sub_Abilities_Node);
       end if;
@@ -468,8 +555,15 @@ package body Ova_Fmt.Entities is
          Result.Has_Power_Ceiling := True;
          Result.Power_Ceiling := N.Integer_Value ("power-ceiling");
       end if;
+      if N.Has_Key ("starting-levels") then
+         Result.Has_Starting_Levels := True;
+         Result.Starting_Levels := N.Integer_Value ("starting-levels");
+      end if;
       if N.Has_Key ("scaled-cost") then
          Result.Scaled_Cost := N.Boolean_Value ("scaled-cost");
+      end if;
+      if N.Has_Key ("half-cost-knowledge") then
+         Result.Half_Cost_Knowledge := N.Boolean_Value ("half-cost-knowledge");
       end if;
       if N.Has_Key ("combined-effectiveness") then
          Result.Combined_Effectiveness := N.Boolean_Value ("combined-effectiveness");
@@ -511,6 +605,11 @@ package body Ova_Fmt.Entities is
          Result.Is_Fragment := N.Boolean_Value ("fragment");
       end if;
 
+      Result.Has_Player := N.Has_Key ("player");
+      if Result.Has_Player then
+         Result.Player := To_Unbounded_String (N.String_Value ("player"));
+      end if;
+
       Result.Has_Tagline := N.Has_Key ("tagline");
       if Result.Has_Tagline then
          Result.Tagline :=
@@ -529,10 +628,27 @@ package body Ova_Fmt.Entities is
            To_Unbounded_String (Trim_Whitespace (N.String_Value ("background")));
       end if;
 
+      Result.Has_Appearance := N.Has_Key ("appearance");
+      if Result.Has_Appearance then
+         Result.Appearance :=
+           To_Unbounded_String (Trim_Whitespace (N.String_Value ("appearance")));
+      end if;
+
       Result.Has_Personality := N.Has_Key ("personality");
       if Result.Has_Personality then
          Result.Personality :=
            To_Unbounded_String (Trim_Whitespace (N.String_Value ("personality")));
+      end if;
+
+      Result.Has_Other_Notes := N.Has_Key ("other-notes");
+      if Result.Has_Other_Notes then
+         Result.Other_Notes :=
+           To_Unbounded_String (Trim_Whitespace (N.String_Value ("other-notes")));
+      end if;
+
+      Result.Has_Portrait := N.Has_Key ("portrait");
+      if Result.Has_Portrait then
+         Result.Portrait := To_Unbounded_String (N.String_Value ("portrait"));
       end if;
 
       if Abilities_Node.Is_Valid then
