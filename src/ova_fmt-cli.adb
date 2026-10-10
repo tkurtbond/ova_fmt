@@ -39,11 +39,13 @@ package body Ova_Fmt.Cli is
       return True;
    end Do_Hmm;
 
+   --  The message follows Arg_Parser's "Invalid value for option ",
+   --  as its own (-L's) do.
    function Do_Subunderliner (Arg : String) return Boolean is
    begin
       if Arg'Length /= 1 then
          raise Arg_Parser.Invalid_Option_Argument with
-           "-U/--subunderliner takes exactly one character, got """ &
+           "-U/--subunderliner: takes exactly one character, got """ &
            Arg & '"';
       end if;
       Config.Subunderliner := Arg (Arg'First);
@@ -54,7 +56,7 @@ package body Ova_Fmt.Cli is
    begin
       if Arg'Length /= 1 then
          raise Arg_Parser.Invalid_Option_Argument with
-           "-u/--underliner takes exactly one character, got """ &
+           "-u/--underliner: takes exactly one character, got """ &
            Arg & '"';
       end if;
       Config.Underliner := Arg (Arg'First);

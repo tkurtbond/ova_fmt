@@ -2592,3 +2592,27 @@ automatically.
   bracket in the same cell. Verified: only the five fixtures with an
   `endurance` change outside Html_In_Rst; in Html_In_Rst, beyond
   those, only the header and the notes.
+- **No more unhandled exceptions; matching po_ova_fmt's error reports**
+  (from po_ova_fmt's PLAN.md "Differences from the Ada version", asked
+  for by the user, 2026-10-10). YAML of the wrong shape (a list key
+  that isn't a sequence, a list item or entity that isn't a mapping, a
+  `combat:`/`fluff:`/`options:`/`companion:`/`vehicle:` that isn't a
+  mapping) failed alibfyaml's preconditions (`ASSERTION_ERROR`); it is
+  now `Ova_Fmt.Entities.Shape_Error`, `ova_fmt: error processing
+  FILE: PATH: not a sequence` (or `not a mapping`), and the run goes
+  on. So does it after an input file that can't be opened (`FILE:
+  REASON`, GNAT's words), which ended the run with `NAME_ERROR`. An
+  `-o` that can't be created is `ova_fmt: can't create PATH: REASON`,
+  a write error (`-o /dev/full`, or standard output) `ova_fmt: error
+  writing output: REASON`, status 1. Standard input is `(stdin)` in
+  libfyaml's messages too (`Open_String`'s `Name`; it was
+  `(string-in-memory)`), as in polibfyaml and olibfyaml, changed with
+  it. Command-line errors were reported twice, by Arg_Parser and again
+  by `ova_fmt_main`; now only by Arg_Parser, `-u`/`-U`'s message
+  reworded to follow its prefix (`Invalid value for option
+  -u/--underliner: takes exactly one character, got "xx"`). And
+  Abilities/Weaknesses/sub-items/Perks/Flaws are sorted with a stable
+  insertion sort (`Stable_Sort`), as the port does: `Generic_Sorting`
+  needn't be stable. Verified: every fixture's output in every format
+  is byte-identical, as are the port's error and edge fixtures but for
+  the four `bad-shape-*`; the port's 400 golden cases (10 new) pass.

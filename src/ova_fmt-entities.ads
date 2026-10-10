@@ -387,7 +387,17 @@ package Ova_Fmt.Entities is
    end record;
 
    function Load_Entity (N : Libfyaml.Nodes.Node) return Entity
-     with Pre => N.Is_Valid and then N.Is_Mapping;
+     with Pre => N.Is_Valid;
+
+   Shape_Error : exception;
+   --  Raised by Load_Entity for YAML of the wrong shape, with the
+   --  message "PATH: not a sequence" or "PATH: not a mapping": an
+   --  entity, or a list item other than a Perk/Flaw, that isn't a
+   --  mapping; a list key (abilities:, perks:, attacks:, ...) that
+   --  isn't a sequence; or a combat:, fluff:, options:, companion: or
+   --  vehicle: that isn't a mapping. Unlike a required-field problem
+   --  it ends loading, as the caller can't go on into the node; these
+   --  failed alibfyaml's preconditions (ASSERTION_ERROR) before.
 
    package Entity_Vectors is new Ada.Containers.Vectors
      (Index_Type => Positive, Element_Type => Entity);

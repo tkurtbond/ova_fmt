@@ -102,6 +102,36 @@ package body Ova_Fmt.Entities is
          return 0;
    end Require_Integer;
 
+   --  YAML of the wrong shape (the .ads's Shape_Error). An absent key
+   --  (Null_Node) is fine everywhere these are used.
+   procedure Check_Sequence (N : Nod.Node) is
+   begin
+      if N.Is_Valid and then not N.Is_Sequence then
+         raise Shape_Error with N.Path & ": not a sequence";
+      end if;
+   end Check_Sequence;
+
+   procedure Check_Mapping (N : Nod.Node) is
+   begin
+      if N.Is_Valid and then not N.Is_Mapping then
+         raise Shape_Error with N.Path & ": not a mapping";
+      end if;
+   end Check_Mapping;
+
+   --  Seq's items, each checked to be a mapping before it's visited.
+   procedure Iterate_Mappings
+     (Seq : Nod.Node; Visit : not null access procedure (Item : Nod.Node))
+   is
+      procedure Checked (Item : Nod.Node) is
+      begin
+         Check_Mapping (Item);
+         Visit (Item);
+      end Checked;
+   begin
+      Check_Sequence (Seq);
+      Seq.Iterate (Checked'Access);
+   end Iterate_Mappings;
+
    --  Abilities, Weaknesses, Perks, and Flaws are each independently
    --  alphabetized in the rulebook's own presentation (full character
    --  write-ups and NPC Fragments alike, PLAN.md's optional-vs-required
@@ -121,8 +151,34 @@ package body Ova_Fmt.Entities is
      (Ada.Characters.Handling.To_Lower (To_String (L)) =
       Ada.Characters.Handling.To_Lower (To_String (R)));
 
-   --  Ada.Containers.Vectors.Generic_Sorting.Sort is not guaranteed
-   --  stable, so a Name-only comparator leaves same-named items (e.g.
+   --  A stable insertion sort: Ada.Containers.Vectors.Generic_Sorting.
+   --  Sort needn't be stable, so items equal in both Name and Detail
+   --  could come out in either order (po_ova_fmt's PLAN.md, which
+   --  sorts stably). The lists are a few dozen items at most.
+   generic
+      type Element_Type is private;
+      with package Vecs is new Ada.Containers.Vectors
+        (Index_Type => Positive, Element_Type => Element_Type, others => <>);
+      with function "<" (L, R : Element_Type) return Boolean;
+   procedure Stable_Sort (V : in out Vecs.Vector);
+
+   procedure Stable_Sort (V : in out Vecs.Vector) is
+   begin
+      for I in V.First_Index + 1 .. V.Last_Index loop
+         declare
+            X : constant Element_Type := V (I);
+            J : Natural := I - 1;
+         begin
+            while J >= V.First_Index and then X < V (J) loop
+               V.Replace_Element (J + 1, V (J));
+               J := J - 1;
+            end loop;
+            V.Replace_Element (J + 1, X);
+         end;
+      end loop;
+   end Stable_Sort;
+
+   --  Even stable, a Name-only comparator leaves same-named items (e.g.
    --  Braun's three "Knowledge" Abilities, distinguished only by
    --  Detail: Computer Whiz/Cosplay/Games, Anime, & Manga; Auren's two
    --  "Quirk" Weaknesses) in whatever order the sort algorithm happens
@@ -136,20 +192,17 @@ package body Ova_Fmt.Entities is
    function Ability_CI_Less (L, R : Ability) return Boolean is
      (if CI_Equal (L.Name, R.Name) then CI_Less (L.Detail, R.Detail)
       else CI_Less (L.Name, R.Name));
-   package Ability_Sorting is new Ability_Vectors.Generic_Sorting
-     ("<" => Ability_CI_Less);
+   procedure Sort is new Stable_Sort (Ability, Ability_Vectors, Ability_CI_Less);
 
    function Weakness_CI_Less (L, R : Weakness) return Boolean is
      (if CI_Equal (L.Name, R.Name) then CI_Less (L.Detail, R.Detail)
       else CI_Less (L.Name, R.Name));
-   package Weakness_Sorting is new Weakness_Vectors.Generic_Sorting
-     ("<" => Weakness_CI_Less);
+   procedure Sort is new Stable_Sort (Weakness, Weakness_Vectors, Weakness_CI_Less);
 
    function Perk_Flaw_CI_Less (L, R : Perk_Flaw) return Boolean is
      (if CI_Equal (L.Name, R.Name) then CI_Less (L.Detail, R.Detail)
       else CI_Less (L.Name, R.Name));
-   package Perk_Flaw_Sorting is new Perk_Flaw_Vectors.Generic_Sorting
-     ("<" => Perk_Flaw_CI_Less);
+   procedure Sort is new Stable_Sort (Perk_Flaw, Perk_Flaw_Vectors, Perk_Flaw_CI_Less);
 
    --  Covers both of Sub_Item's two roles (Companion's own
    --  Abilities/Weaknesses, and a Transformation-granting Ability's
@@ -157,8 +210,7 @@ package body Ova_Fmt.Entities is
    function Sub_Item_CI_Less (L, R : Sub_Item) return Boolean is
      (if CI_Equal (L.Name, R.Name) then CI_Less (L.Detail, R.Detail)
       else CI_Less (L.Name, R.Name));
-   package Sub_Item_Sorting is new Sub_Item_Vectors.Generic_Sorting
-     ("<" => Sub_Item_CI_Less);
+   procedure Sort is new Stable_Sort (Sub_Item, Sub_Item_Vectors, Sub_Item_CI_Less);
 
    -----------------------------------------------------------------
    --  overrides: (the .ads's Override_Key).
@@ -285,8 +337,11 @@ package body Ova_Fmt.Entities is
          Result.Append (Load_Perk_Flaw (Item));
       end Add;
    begin
+      --  A Perk/Flaw item may be a scalar, so only the list is checked
+      --  here (Load_Perk_Flaw has its own message for anything else).
+      Check_Sequence (N);
       N.Iterate (Add'Access);
-      Perk_Flaw_Sorting.Sort (Result);
+      Sort (Result);
       return Result;
    end Load_Perk_Flaw_List;
 
@@ -349,7 +404,7 @@ package body Ova_Fmt.Entities is
          Result.Threat_Value := N.Integer_Value ("threat-value");
       end if;
       if Attacks_Node.Is_Valid then
-         Attacks_Node.Iterate (Add'Access);
+         Iterate_Mappings (Attacks_Node, Add'Access);
       end if;
       if N.Has_Key ("notes") then
          Result.Has_Notes := True;
@@ -408,8 +463,8 @@ package body Ova_Fmt.Entities is
          Result.Append (Load_Sub_Item (Item));
       end Add;
    begin
-      N.Iterate (Add'Access);
-      Sub_Item_Sorting.Sort (Result);
+      Iterate_Mappings (N, Add'Access);
+      Sort (Result);
       return Result;
    end Load_Sub_Item_List;
 
@@ -445,6 +500,7 @@ package body Ova_Fmt.Entities is
       if Weaknesses_Node.Is_Valid then
          Result.Weaknesses := Load_Sub_Item_List (Weaknesses_Node);
       end if;
+      Check_Mapping (Combat_Node);
       if Combat_Node.Is_Valid then
          Result.Combat := Load_Combat (Combat_Node);
       end if;
@@ -501,8 +557,10 @@ package body Ova_Fmt.Entities is
          Result.Sub_Weaknesses := Load_Sub_Item_List (Sub_Weaknesses_Node);
       end if;
       if Spells_Node.Is_Valid then
-         Spells_Node.Iterate (Add_Spell'Access);
+         Iterate_Mappings (Spells_Node, Add_Spell'Access);
       end if;
+      Check_Mapping (Companion_Node);
+      Check_Mapping (Vehicle_Node);
       if Companion_Node.Is_Valid then
          Result.Sub_Entity := Load_Sub_Entity (Companion_Node, "Companion");
       elsif Vehicle_Node.Is_Valid then
@@ -605,7 +663,7 @@ package body Ova_Fmt.Entities is
    --  Load_Entity.
    -----------------------------------------------------------------
 
-   function Load_Entity (N : Nod.Node) return Entity is
+   function Load_Entity_Mapping (N : Nod.Node) return Entity is
       Result         : Entity;
       Abilities_Node  : constant Nod.Node := N.Value ("abilities");
       Weaknesses_Node : constant Nod.Node := N.Value ("weaknesses");
@@ -692,34 +750,45 @@ package body Ova_Fmt.Entities is
       end if;
 
       if Abilities_Node.Is_Valid then
-         Abilities_Node.Iterate (Add_Ability'Access);
-         Ability_Sorting.Sort (Result.Abilities);
+         Iterate_Mappings (Abilities_Node, Add_Ability'Access);
+         Sort (Result.Abilities);
       end if;
 
       if Weaknesses_Node.Is_Valid then
-         Weaknesses_Node.Iterate (Add_Weakness'Access);
-         Weakness_Sorting.Sort (Result.Weaknesses);
+         Iterate_Mappings (Weaknesses_Node, Add_Weakness'Access);
+         Sort (Result.Weaknesses);
       end if;
 
+      Check_Mapping (Combat_Node);
       if Combat_Node.Is_Valid then
          Result.Combat := Load_Combat (Combat_Node);
       end if;
 
       if Notes_Node.Is_Valid then
-         Notes_Node.Iterate (Add_Note'Access);
+         Iterate_Mappings (Notes_Node, Add_Note'Access);
       end if;
 
+      Check_Mapping (Fluff_Node);
       if Fluff_Node.Is_Valid then
          Result.Has_Fluff := True;
          Result.Fluff := Load_Fluff (Fluff_Node);
       end if;
 
+      Check_Mapping (Options_Node);
       if Options_Node.Is_Valid then
          Result.Has_Options := True;
          Result.Options := Load_Options (Options_Node);
       end if;
 
       return Result;
+   end Load_Entity_Mapping;
+
+   --  Checked here, not in Load_Entity_Mapping: its declarations look
+   --  up N's keys, which needs N to be a mapping.
+   function Load_Entity (N : Nod.Node) return Entity is
+   begin
+      Check_Mapping (N);
+      return Load_Entity_Mapping (N);
    end Load_Entity;
 
 end Ova_Fmt.Entities;

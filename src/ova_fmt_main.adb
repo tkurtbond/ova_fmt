@@ -9,6 +9,7 @@
 
 with Ada.Command_Line;
 with Ada.Exceptions;
+with Ada.IO_Exceptions;
 with Ada.Text_IO;
 with Ada.Strings.Fixed;
 with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
@@ -123,7 +124,7 @@ procedure Ova_Fmt_Main is
       declare
          Stream : Streams.Document_Stream :=
            (if Use_Stdin
-            then Streams.Open_String (Read_All_Standard_Input)
+            then Streams.Open_String (Read_All_Standard_Input, Name => Source)
             else Streams.Open_File (Filename));
       begin
          while Streams.Has_Next (Stream) loop
@@ -150,8 +151,11 @@ procedure Ova_Fmt_Main is
          end loop;
       end if;
    exception
+      --  Name_Error/Use_Error: an input file that can't be opened.
+      --  None of these ends the run: the next file is still processed.
       when E : Libfyaml.Parse_Error | Libfyaml.Missing_Key | Libfyaml.Data_Error |
-               Program_Error =>
+               Program_Error | Ova_Fmt.Entities.Shape_Error |
+               Ada.IO_Exceptions.Name_Error | Ada.IO_Exceptions.Use_Error =>
          Ada.Text_IO.Put_Line
            (Ada.Text_IO.Standard_Error,
             "ova_fmt: error processing " & Source & ": " &
@@ -177,8 +181,18 @@ begin
       declare
          Output_File : Ada.Text_IO.File_Type;
       begin
-         Ada.Text_IO.Create
-           (Output_File, Ada.Text_IO.Out_File, Ova_Fmt.Config.Output_File.all);
+         begin
+            Ada.Text_IO.Create
+              (Output_File, Ada.Text_IO.Out_File, Ova_Fmt.Config.Output_File.all);
+         exception
+            --  The message is GNAT's "PATH: REASON".
+            when E : Ada.IO_Exceptions.Name_Error | Ada.IO_Exceptions.Use_Error =>
+               Ada.Text_IO.Put_Line
+                 (Ada.Text_IO.Standard_Error,
+                  "ova_fmt: can't create " & Ada.Exceptions.Exception_Message (E));
+               Ada.Command_Line.Set_Exit_Status (Ada.Command_Line.Failure);
+               return;
+         end;
          Ada.Text_IO.Set_Output (Output_File);
          Process_All;
          Ada.Text_IO.Set_Output (Ada.Text_IO.Standard_Output);
@@ -196,11 +210,20 @@ exception
    when Ova_Fmt.Cli.Help_Requested =>
       Ada.Command_Line.Set_Exit_Status (1);
 
-   when E : Arg_Parser.Unknown_Option | Arg_Parser.Unknown_Argument |
-            Arg_Parser.Argument_Required | Arg_Parser.Invalid_Option_Argument =>
-      Ada.Text_IO.Put_Line
-        (Ada.Text_IO.Standard_Error, "ova_fmt: " & Ada.Exceptions.Exception_Message (E));
+   --  Arg_Parser has already reported these, so they aren't printed
+   --  again here.
+   when Arg_Parser.Unknown_Option | Arg_Parser.Unknown_Argument |
+        Arg_Parser.Argument_Required | Arg_Parser.Invalid_Option_Argument =>
       Ada.Command_Line.Set_Exit_Status (2);
+
+   --  Writing the output failed (-o /dev/full, say): the message is
+   --  GNAT's reason.
+   when E : Ada.IO_Exceptions.Device_Error | Ada.IO_Exceptions.Use_Error =>
+      Ada.Text_IO.Set_Output (Ada.Text_IO.Standard_Output);
+      Ada.Text_IO.Put_Line
+        (Ada.Text_IO.Standard_Error,
+         "ova_fmt: error writing output: " & Ada.Exceptions.Exception_Message (E));
+      Ada.Command_Line.Set_Exit_Status (Ada.Command_Line.Failure);
 
    when Constraint_Error =>
       Ada.Text_IO.Put_Line
