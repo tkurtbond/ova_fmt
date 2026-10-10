@@ -308,7 +308,10 @@ package body Ova_Fmt.Format_Rst is
       IO.New_Line;
       Print_Abilities_Table (E.Abilities);
       Print_Weaknesses_Table (E.Weaknesses);
-      Print_Combat_Table (E.Combat, "Combat", "");
+      Print_Combat_Table
+        (E.Combat,
+         (if E.Has_NPC_Type then "Combat (" & Common.NPC_Type_Text (E) & ")" else "Combat"),
+         "");
       IO.New_Line;
    end Print_Html_Tables;
 
@@ -904,8 +907,12 @@ package body Ova_Fmt.Format_Rst is
       end if;
       Ensure_Raw_Open;
       Print_Side_By_Side_Groff (E.Abilities, E.Weaknesses);
+      --  "(HEROIC)", as the Sample NPCs' boxes have it, in place of
+      --  the name: a Companion/Vehicle's own box still has its name.
       Print_Combat_Table_Groff
-        (E.Combat, Ada.Characters.Handling.To_Upper (To_String (E.Name)));
+        (E.Combat,
+         Ada.Characters.Handling.To_Upper
+           (if E.Has_NPC_Type then Common.NPC_Type_Text (E) else To_String (E.Name)));
       if E.Has_Fluff then
          Print_Other_Statistics_Groff (E.Fluff);
       end if;

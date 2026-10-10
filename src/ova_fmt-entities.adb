@@ -219,6 +219,36 @@ package body Ova_Fmt.Entities is
       return Result;
    end Load_Overrides;
 
+   function NPC_Kind_Name (K : NPC_Kind) return String is
+     (case K is
+         when Heroic => "Heroic", when Secondary => "Secondary", when Extra => "Extra");
+
+   --  N's `npc-type:`, which N is known to have. Anything but one of
+   --  the three names is a recorded error, like an `overrides:` name:
+   --  silently dropping it would lose the type from the output.
+   procedure Load_NPC_Type (N : Nod.Node; Has : out Boolean; Kind : out NPC_Kind) is
+      use Ada.Characters.Handling;
+      Value : constant String := To_Lower (Trim_Whitespace (N.String_Value ("npc-type")));
+   begin
+      for K in NPC_Kind loop
+         if Value = To_Lower (NPC_Kind_Name (K)) then
+            Has := True;
+            Kind := K;
+            return;
+         end if;
+      end loop;
+      Has := False;
+      Kind := Heroic;
+      Record_Error
+        (N, "npc-type",
+         """" & N.String_Value ("npc-type") & """ is not one of Heroic, Secondary, Extra");
+   exception
+      when E : Libfyaml.Data_Error =>
+         Has := False;
+         Kind := Heroic;
+         Record_Error (N, "npc-type", Ada.Exceptions.Exception_Message (E));
+   end Load_NPC_Type;
+
    -----------------------------------------------------------------
    --  Perks/Flaws.
    -----------------------------------------------------------------
@@ -638,6 +668,16 @@ package body Ova_Fmt.Entities is
       if Result.Has_Personality then
          Result.Personality :=
            To_Unbounded_String (Trim_Whitespace (N.String_Value ("personality")));
+      end if;
+
+      Result.Has_Character_Hooks := N.Has_Key ("character-hooks");
+      if Result.Has_Character_Hooks then
+         Result.Character_Hooks :=
+           To_Unbounded_String (Trim_Whitespace (N.String_Value ("character-hooks")));
+      end if;
+
+      if N.Has_Key ("npc-type") then
+         Load_NPC_Type (N, Result.Has_NPC_Type, Result.NPC_Type);
       end if;
 
       Result.Has_Other_Notes := N.Has_Key ("other-notes");

@@ -334,6 +334,19 @@ package Ova_Fmt.Entities is
       Combined_Effectiveness     : Boolean := False;
    end record;
 
+   -----------------------------------------------------------------
+   --  `npc-type:` (rulebook p. 133, "Using NPC Type"): an NPC's
+   --  importance to the story, which sets its Health and Endurance
+   --  totals. The Sample NPCs print it after "Attacks & Combat
+   --  Stats", e.g. "(HEROIC)"; a minion's "Attributes (Secondary):".
+   --  Matched case-insensitively; anything else is a load error.
+   -----------------------------------------------------------------
+
+   type NPC_Kind is (Heroic, Secondary, Extra);
+
+   function NPC_Kind_Name (K : NPC_Kind) return String;
+   --  The rulebook's capitalization ("Heroic").
+
    type Entity is record
       --  Required, unlike every other Entity-level field below --
       --  per the user, an NPC Fragment (Is_Fragment) is otherwise the
@@ -350,6 +363,10 @@ package Ova_Fmt.Entities is
       Has_Background  : Boolean := False; Background  : Unbounded_String;
       Has_Appearance  : Boolean := False; Appearance  : Unbounded_String;
       Has_Personality : Boolean := False; Personality : Unbounded_String;
+      --  The Sample NPCs' "Character Hooks" paragraph (p. 134-141):
+      --  ways to bring the character into a story.
+      Has_Character_Hooks : Boolean := False; Character_Hooks : Unbounded_String;
+      Has_NPC_Type    : Boolean := False; NPC_Type    : NPC_Kind := Heroic;
       Has_Other_Notes : Boolean := False; Other_Notes : Unbounded_String;
       Has_Portrait    : Boolean := False; Portrait    : Unbounded_String;
       Abilities       : Ability_Vectors.Vector;

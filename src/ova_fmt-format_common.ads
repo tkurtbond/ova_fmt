@@ -109,11 +109,21 @@ package Ova_Fmt.Format_Common is
    --  leading bullet/indent of its own (Print_Attack below adds
    --  Terse/Gemtext's; Ova_Fmt.Format_Hmm adds its own tab indent).
 
-   function Format_Combat_Summary_Line (C : Entities.Combat_Stats) return String;
+   function Format_Combat_Summary_Line
+     (C : Entities.Combat_Stats; NPC_Type : String := "") return String;
    --  "**Health:** H | **Endurance:** E | **Defense:** D | **Threat
    --  Value (TV):** T" -- the content of Combat_Stats' own summary
    --  line, with no leading bullet/indent of its own, same reuse
-   --  reason as Format_Attack_Line.
+   --  reason as Format_Attack_Line. A non-empty NPC_Type leads it
+   --  ("**NPC Type:** Heroic | **Health:** ..."), beside the totals
+   --  the type sets, per the user.
+
+   function NPC_Type_Text (E : Entities.Entity) return String;
+   --  E's NPC type ("Heroic"), or "" if it has none.
+
+   function Fragment_Attributes_Label (E : Entities.Entity) return String;
+   --  "**Attributes:**", or, with an NPC type, the rulebook's own
+   --  "**Attributes (Secondary):**" (Acacia's demons, p. 134).
 
    --  Comma-joined item lists (no label, no surrounding punctuation) --
    --  public so a caller (Ova_Fmt.Format_Hmm, this package's own
@@ -150,7 +160,8 @@ package Ova_Fmt.Format_Common is
    --  through every line, so it has its own mirrored version.
 
    procedure Print_Header_And_Prose (E : Entities.Entity; Entity_No : Positive);
-   --  Title/tagline/summary/Background/Personality -- byte-identical
+   --  Title/tagline/summary/Background/Appearance/Personality/
+   --  Character Hooks -- byte-identical
    --  across Terse, Gemtext, Markdown, and Html_In_Rst except for the
    --  title line's own heading syntax (underline vs. flat `# `).
    --  Public: Format_Rst's Html_In_Rst path calls this directly (its

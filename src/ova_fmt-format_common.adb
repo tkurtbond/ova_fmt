@@ -451,8 +451,10 @@ package body Ova_Fmt.Format_Common is
       return To_String (Line);
    end Format_Attack_Line;
 
-   function Format_Combat_Summary_Line (C : Entities.Combat_Stats) return String is
-     (Bold ("Health:") & " " & Trim_Img (C.Health) &
+   function Format_Combat_Summary_Line
+     (C : Entities.Combat_Stats; NPC_Type : String := "") return String is
+     ((if NPC_Type = "" then "" else Bold ("NPC Type:") & " " & NPC_Type & " | ") &
+      Bold ("Health:") & " " & Trim_Img (C.Health) &
       Override_Mark (C.Overrides (Entities.Health)) & " | " &
       Bold ("Endurance:") & " " & Trim_Img (C.Endurance) &
       Override_Mark (C.Overrides (Entities.Endurance)) & " | " &
@@ -472,12 +474,16 @@ package body Ova_Fmt.Format_Common is
       IO.Put_Line (Attack_Prefix & Format_Attack_Line (A));
    end Print_Attack;
 
-   procedure Print_Combat_And_Attacks (C : Entities.Combat_Stats) is
+   function NPC_Type_Text (E : Entities.Entity) return String is
+     (if E.Has_NPC_Type then Entities.NPC_Kind_Name (E.NPC_Type) else "");
+
+   procedure Print_Combat_And_Attacks
+     (C : Entities.Combat_Stats; NPC_Type : String := "") is
    begin
       if not C.Has_Combat then
          return;
       end if;
-      IO.Put_Line (Bullet & Format_Combat_Summary_Line (C));
+      IO.Put_Line (Bullet & Format_Combat_Summary_Line (C, NPC_Type));
       IO.New_Line;
 
       if not C.Attacks.Is_Empty then
@@ -630,13 +636,18 @@ package body Ova_Fmt.Format_Common is
    --  between the two lists -- the rulebook's own compact NPC
    --  Fragment shape, e.g. "Attributes: Art of Invisibility +2,
    --  Perceptive +2, Smart +3; Absent-Minded -1, Quirk -1 (...)".
+   function Fragment_Attributes_Label (E : Entities.Entity) return String is
+     (Bold (if E.Has_NPC_Type
+            then "Attributes (" & Entities.NPC_Kind_Name (E.NPC_Type) & "):"
+            else "Attributes:"));
+
    procedure Print_Fragment_Attributes (E : Entities.Entity) is
       Line : Unbounded_String;
    begin
       if E.Abilities.Is_Empty and then E.Weaknesses.Is_Empty then
          return;
       end if;
-      Line := To_Unbounded_String (Bold ("Attributes:") & " ") &
+      Line := To_Unbounded_String (Fragment_Attributes_Label (E) & " ") &
         Join_Fragment_Abilities (E.Abilities);
       if not E.Abilities.Is_Empty and then not E.Weaknesses.Is_Empty then
          Line := Line & "; ";
@@ -645,6 +656,19 @@ package body Ova_Fmt.Format_Common is
       IO.Put_Line (To_String (Line) & ".");
       IO.New_Line;
    end Print_Fragment_Attributes;
+
+   --  After the other prose, as the Sample NPCs' pages have it (and
+   --  after a Fragment's Attributes line, it having no other prose
+   --  section), per the user.
+   procedure Print_Character_Hooks (E : Entities.Entity) is
+   begin
+      if E.Has_Character_Hooks then
+         IO.Put_Line (Section_Header ("Character Hooks"));
+         IO.New_Line;
+         IO.Put_Line (To_String (E.Character_Hooks));
+         IO.New_Line;
+      end if;
+   end Print_Character_Hooks;
 
    --  Header/tagline/summary/background/personality -- byte-identical
    --  across Terse, Gemtext, and Html_In_Rst (only Html_In_Rst's
@@ -717,6 +741,8 @@ package body Ova_Fmt.Format_Common is
          IO.Put_Line (To_String (E.Personality));
          IO.New_Line;
       end if;
+
+      Print_Character_Hooks (E);
    end Print_Header_And_Prose;
 
    --  Notes/Fluff/Creation-Rules -- byte-identical across every
@@ -816,6 +842,7 @@ package body Ova_Fmt.Format_Common is
          --  block, no tables.
          Print_Fragment_Header (E);
          Print_Fragment_Attributes (E);
+         Print_Character_Hooks (E);
          Print_Combat_And_Attacks (E.Combat);
          for A of E.Abilities loop
             Print_Linked_Section (A);
@@ -835,7 +862,7 @@ package body Ova_Fmt.Format_Common is
             IO.New_Line;
          end if;
 
-         Print_Combat_And_Attacks (E.Combat);
+         Print_Combat_And_Attacks (E.Combat, NPC_Type_Text (E));
 
          for A of E.Abilities loop
             Print_Linked_Section (A);

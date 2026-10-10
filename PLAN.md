@@ -2555,3 +2555,25 @@ automatically.
   Attack) is loaded but no backend prints it; and the Dragon's one
   Attack Ability carries two attacks, which perks:/flaws: can't
   express, so its parenthetical is kept whole as the `detail`.
+- **How `npc-type` and `character-hooks` print** (designed with the
+  user from hand-edited mock-ups run through the real pipelines,
+  2026-10-10). `npc-type` takes Heroic, Secondary, or Extra (the
+  rulebook's three, p. 133), matched case-insensitively; anything
+  else is a load error, like an unknown `overrides:` name. It prints
+  where the book puts it, by the stats: leading the stats line in
+  Terse/Gemtext/Markdown/h-m-m (`**NPC Type:** Secondary |
+  **Health:** ...`); in Html_In_Rst's caption, `Combat (Secondary)`
+  (and so `Combat (Secondary) — Attacks`); in Groff_In_Rst's box,
+  the book's own `Attacks & Combat Stats (SECONDARY)`, in place of
+  the name (a Companion/Vehicle box keeps its own name); and on a
+  Fragment, the book's own `**Attributes (Secondary):**` (Acacia's
+  demons). `character-hooks` is a "Character Hooks" section after
+  Background/Appearance/Personality, as on the NPCs' pages (on a
+  Fragment, after its Attributes line). Verified: outputs change only
+  for the 8 Sample NPCs; every other fixture is byte-identical in
+  every format.
+- **Groff_In_Rst: prose no longer trails the tables** (found while
+  mocking up the above, fixed first and separately, commit
+  `7f50d3b`): Pandoc ends a paragraph without a break, so the
+  paragraph's last output line printed after hd's tables. A `.br`
+  at the top of each raw ms block flushes it.

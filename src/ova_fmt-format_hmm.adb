@@ -94,13 +94,15 @@ package body Ova_Fmt.Format_Hmm is
    --  Vehicle's own combat: block (Print_Linked_Section below).
    -----------------------------------------------------------------
 
-   procedure Print_Combat (C : Entities.Combat_Stats; Header_Depth : Natural) is
+   procedure Print_Combat
+     (C : Entities.Combat_Stats; Header_Depth : Natural; NPC_Type : String := "") is
    begin
       if not C.Has_Combat then
          return;
       end if;
       IO.Put_Line (Indent (Header_Depth) & Common.Section_Header ("Combat"));
-      IO.Put_Line (Indent (Header_Depth + 1) & Common.Format_Combat_Summary_Line (C));
+      IO.Put_Line
+        (Indent (Header_Depth + 1) & Common.Format_Combat_Summary_Line (C, NPC_Type));
       if not C.Attacks.Is_Empty then
          IO.Put_Line (Indent (Header_Depth + 1) & Common.Section_Header ("Attacks"));
          for A of C.Attacks loop
@@ -285,6 +287,17 @@ package body Ova_Fmt.Format_Hmm is
       end if;
    end Print_Tail;
 
+   --  A "Character Hooks" node after the other prose (or a Fragment's
+   --  Attributes node), as Ova_Fmt.Format_Common.Print_Character_Hooks.
+   procedure Print_Character_Hooks (E : Entities.Entity; Header_Depth : Natural) is
+   begin
+      if E.Has_Character_Hooks then
+         IO.Put_Line (Indent (Header_Depth) & Common.Section_Header ("Character Hooks"));
+         IO.Put_Line
+           (Indent (Header_Depth + 1) & All_One_Line (To_String (E.Character_Hooks)));
+      end if;
+   end Print_Character_Hooks;
+
    -----------------------------------------------------------------
    --  Process_Entity.
    -----------------------------------------------------------------
@@ -311,7 +324,7 @@ package body Ova_Fmt.Format_Hmm is
          if not E.Abilities.Is_Empty or else not E.Weaknesses.Is_Empty then
             declare
                Line : Unbounded_String :=
-                 To_Unbounded_String (Common.Bold ("Attributes:") & " ") &
+                 To_Unbounded_String (Common.Fragment_Attributes_Label (E) & " ") &
                  Common.Join_Fragment_Abilities (E.Abilities);
             begin
                if not E.Abilities.Is_Empty and then not E.Weaknesses.Is_Empty then
@@ -322,6 +335,7 @@ package body Ova_Fmt.Format_Hmm is
             end;
          end if;
 
+         Print_Character_Hooks (E, D2);
          Print_Combat (E.Combat, D2);
          for A of E.Abilities loop
             Print_Linked_Section (A, D2);
@@ -354,8 +368,9 @@ package body Ova_Fmt.Format_Hmm is
             IO.Put_Line (Indent (D3) & All_One_Line (To_String (E.Personality)));
          end if;
 
+         Print_Character_Hooks (E, D2);
          Print_Abilities_Weaknesses (E.Abilities, E.Weaknesses, D2);
-         Print_Combat (E.Combat, D2);
+         Print_Combat (E.Combat, D2, Common.NPC_Type_Text (E));
          for A of E.Abilities loop
             Print_Linked_Section (A, D2);
          end loop;
