@@ -8,12 +8,18 @@ PROGRAM=ova_fmt
 #  ova_fmt correctly exits non-zero on it, which would otherwise abort
 #  `make rst`/`make pdf` before every other, well-formed fixture gets
 #  (re)built.
-TEST_DATA=$(filter-out test-data/Broken.yaml,$(wildcard test-data/*.yaml test-data/sample-pcs/*.yaml))
+TEST_DIRS=test-data test-data/sample-pcs test-data/sample-npcs \
+  $(sort $(dir $(wildcard test-data/sample-npc-fragments/*/*.yaml)))
+TEST_DATA=$(filter-out test-data/Broken.yaml,$(wildcard $(addsuffix /*.yaml,$(TEST_DIRS:/=))))
 
 #  The rulebook's 12 Sample Characters live in test-data/sample-pcs/,
-#  synthetic fixtures directly in test-data/; vpath lets the pattern
-#  rules below find either, with all output still flat in build/.
-vpath %.yaml test-data test-data/sample-pcs
+#  its Sample NPCs in test-data/sample-npcs/, its NPC Fragments in
+#  test-data/sample-npc-fragments/<subsection>/, and synthetic
+#  fixtures directly in test-data/; vpath lets the pattern rules below
+#  find any of them, with all output still flat in build/. One
+#  subsection directory, High-Tech-Marvels-&-Outer-Space, has an `&`
+#  in its name, so the recipes quote "$<".
+vpath %.yaml $(TEST_DIRS)
 
 # Terse (reST) output -- the default backend (PLAN.md §9 step 2).
 # Plain `ova_fmt`, no format-selecting flag needed.
@@ -112,37 +118,37 @@ groff: $(PROGRAM) $(TEST_GROFFOUTPUT) $(TEST_GROFFRENDEROUTPUT)
 hmm: $(PROGRAM) $(TEST_HMMOUTPUT) $(TEST_HMM_COMPACT_OUTPUT) $(TEST_HMM_PLAIN_OUTPUT)
 
 build/%.gen.rst : %.yaml $(PROGRAM)
-	./$(PROGRAM) $< >$@
+	./$(PROGRAM) "$<" >$@
 
 build/%.gmi : %.yaml $(PROGRAM)
-	./$(PROGRAM) -g $< >$@
+	./$(PROGRAM) -g "$<" >$@
 
 build/%.emp.gmi : %.yaml $(PROGRAM)
-	./$(PROGRAM) -g -e $< >$@
+	./$(PROGRAM) -g -e "$<" >$@
 
 build/%.md : %.yaml $(PROGRAM)
-	./$(PROGRAM) -M $< >$@
+	./$(PROGRAM) -M "$<" >$@
 
 build/%.html.gen.rst : %.yaml $(PROGRAM)
-	./$(PROGRAM) -H $< >$@
+	./$(PROGRAM) -H "$<" >$@
 
 build/%.html : build/%.html.gen.rst
 	pandoc -r rst -w html --standalone -o $@ $<
 
 build/%.groff.gen.rst : %.yaml $(PROGRAM)
-	./$(PROGRAM) -G $< >$@
+	./$(PROGRAM) -G "$<" >$@
 
 build/%.groff.pdf : build/%.groff.gen.rst
 	pandoc -r rst -w ms --template=tkb -o $@ $<
 
 build/%.hmm : %.yaml $(PROGRAM)
-	./$(PROGRAM) -m $< >$@
+	./$(PROGRAM) -m "$<" >$@
 
 build/%.compact.hmm : %.yaml $(PROGRAM)
-	./$(PROGRAM) -m -c $< >$@
+	./$(PROGRAM) -m -c "$<" >$@
 
 build/%.plain.hmm : %.yaml $(PROGRAM)
-	./$(PROGRAM) -m -p $< >$@
+	./$(PROGRAM) -m -p "$<" >$@
 
 #MS_COLUMNS=-V twocolumns
 build/%.rst.ms.pdf : build/%.gen.rst
@@ -159,4 +165,4 @@ testclean:
 
 .PRECIOUS: build/%.gen.rst build/%.rst.ms.pdf build/%.gmi build/%.emp.gmi build/%.md build/%.md.ms.pdf build/%.html.gen.rst build/%.html build/%.hmm build/%.compact.hmm build/%.plain.hmm build/%.groff.gen.rst build/%.groff.pdf
 
-print-%  : ; @echo $* = $($*)
+print-%  : ; @echo '$* = $($*)'

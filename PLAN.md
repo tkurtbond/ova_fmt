@@ -2537,3 +2537,21 @@ automatically.
   flat and its file names are unchanged. Paths elsewhere in this file
   were updated to match: `test-data/sample-pcs/*.yaml` for the twelve,
   `test-data/**/*.yaml` for every fixture.
+- **The Sample NPCs chapter is transcribed** (asked for by the user,
+  2026-10-10): its 8 Sample NPCs in `test-data/sample-npcs/`, its 22
+  NPC Fragments one per file in `test-data/sample-npc-fragments/
+  <subsection>/` (the subsection name with spaces replaced by dashes,
+  so `High-Tech-Marvels-&-Outer-Space` has an `&`, which the
+  `GNUmakefile`'s recipes now quote). Decided by the user: every
+  description and background is a short original paraphrase, the
+  fragments' included (`Fragment.yaml`'s near-verbatim two predate
+  this); Acacia's demons and Zurkrieg's Men in Black are `fragment:
+  true` entities after their master in the same file; and two new
+  keys, `npc-type` (Heroic/Secondary, from "Attacks & Combat Stats
+  (HEROIC)") and `character-hooks` (a paraphrase of each NPC's
+  Character Hooks paragraph); how they print is the next entry. Also
+  found:
+  an Ability's `endurance` (Barrier's "5 End", the Venomous Killer's
+  Attack) is loaded but no backend prints it; and the Dragon's one
+  Attack Ability carries two attacks, which perks:/flaws: can't
+  express, so its parenthetical is kept whole as the `detail`.
