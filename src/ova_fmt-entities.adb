@@ -106,7 +106,7 @@ package body Ova_Fmt.Entities is
    --  alphabetized in the rulebook's own presentation (full character
    --  write-ups and NPC Fragments alike, PLAN.md's optional-vs-required
    --  audit) -- same shape as besm2_fmt.Entities' Attribute/Defect/
-   --  Skill sorting, and for the same reason: every test-data/*.yaml
+   --  Skill sorting, and for the same reason: every test-data/**/*.yaml
    --  fixture happens to already be transcribed in alphabetical
    --  order, so this was invisible until checked against a
    --  deliberately out-of-order case (test-data/Unsorted.yaml).

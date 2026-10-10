@@ -1,8 +1,8 @@
 --  Ova_Fmt.Entities - typed domain records for an OVA character, built
 --  by walking a Libfyaml.Nodes.Node once via Load_Entity, following
---  the schema settled on in test-data/*.yaml (see Karis.yaml's header
---  comment for the schema's own rationale, and PLAN.md §4/§6/§9 for
---  the design history).
+--  the schema settled on in test-data/sample-pcs/*.yaml (see
+--  Karis.yaml's header comment for the schema's own rationale, and
+--  PLAN.md §4/§6/§9 for the design history).
 --
 --  Modeled on besm2_fmt.Entities' "parse once, every format backend
 --  consumes the same typed data" shape -- but the OVA domain has one
@@ -285,8 +285,8 @@ package Ova_Fmt.Entities is
    --  fluff: block. A fixed field set (the rulebook's own suggested
    --  fluff fields, PLAN.md §2/§4), not a generic key/value list --
    --  every field is optional (Has_*), and no sample character in
-   --  test-data/*.yaml uses `eyes` or `love-interests` consistently
-   --  enough to assume they're always present.
+   --  test-data/sample-pcs/*.yaml uses `eyes` or `love-interests`
+   --  consistently enough to assume they're always present.
    -----------------------------------------------------------------
 
    type Fluff_Block is record

@@ -378,7 +378,7 @@ this same character, so both are captured together here.
   as the author's choice depending on how mechanically detailed a
   given companion needs to be.
 
-  **Refined** (while fixing up `test-data/Fukiko.yaml` to match the
+  **Refined** (while fixing up `test-data/sample-pcs/Fukiko.yaml` to match the
   settled schema, §9): this isn't really two unrelated shapes — it's
   **one shape with optional depth**. Every Companion now gets a
   `companion:` sub-block with `abilities:`/`weaknesses:` (Azyrus's
@@ -963,10 +963,10 @@ for test data and output-format sequencing:
    and whichever sample characters (if any) use Companion or Vehicle,
    still unconfirmed as worked examples (§ open questions).
 
-   **Progress: `test-data/Karis.yaml` done** (first of the twelve,
+   **Progress: `test-data/sample-pcs/Karis.yaml` done** (first of the twelve,
    transcribed from `ova-rulebook.txt` lines 874–1012 — Karis herself,
    plus Arasuni as a full nested Companion sub-entity per §2.3).
-   Lives in `ova_fmt/test-data/` (a new directory in *this* repo, not
+   Lives in `ova_fmt/test-data/sample-pcs/` (a new directory in *this* repo, not
    the old Scheme project's `~/current/RPG/Tools/OVA/test-data/`).
    Established, and needing to be followed consistently in the
    remaining eleven transcriptions:
@@ -1005,7 +1005,7 @@ for test data and output-format sequencing:
      out of it; this is now settled policy for all remaining
      transcriptions, not a to-revisit item.
 
-   **Progress: `test-data/Ai.yaml` done** (second of the twelve,
+   **Progress: `test-data/sample-pcs/Ai.yaml` done** (second of the twelve,
    `ova-rulebook.txt` ~lines 1596–1691, p. 40–41). Chosen specifically
    to exercise two things `Karis.yaml` didn't: a Perk directly on a
    plain top-level Ability (Barrier's `No Gesture`) — the concrete
@@ -1026,7 +1026,7 @@ for test data and output-format sequencing:
    times"): Ai's Mind Break attack's `Cancel` Flaw (detail `Unliving`,
    cost `-5`) is a single take at a chosen magnitude, not a repeat.
 
-   **Progress: `test-data/Raine.yaml` done** (third of the twelve,
+   **Progress: `test-data/sample-pcs/Raine.yaml` done** (third of the twelve,
    `ova-rulebook.txt` lines 652–765, p. 23–25). Chosen to confirm two
    things: a second `detail`+`cost` Flaw example (Electrical Storm's
    `Requirement` — also a variable-range Flaw per `ova-ref.pdf`, "`-5
@@ -1040,7 +1040,7 @@ for test data and output-format sequencing:
    `Fukiko.yaml`'s existing convention.
 
    **Progress: step 1 done — all twelve `ova-rulebook.txt` sample
-   characters now have `test-data/*.yaml`.** The remaining eight,
+   characters now have `test-data/sample-pcs/*.yaml`.** The remaining eight,
    transcribed in one pass after Raine: `Shou.yaml` (p. 26–27, lines
    769–869 — plain, no new schema wrinkles); `Miho.yaml` (p. 30–31,
    lines 1013–1132, cross-checked against the player-book excerpt —
@@ -1081,7 +1081,7 @@ for test data and output-format sequencing:
    than the caster mimicking an Ability). All eight validated with a
    Python YAML parse and `yamllint`, same as the first three.
 
-   **Progress: `test-data/Fukiko.yaml` fixed up to match the settled
+   **Progress: `test-data/sample-pcs/Fukiko.yaml` fixed up to match the settled
    schema** (its own transcription, superseding the old Scheme
    project's original — left untouched there — with a full header
    comment listing every change). Closes the last open cleanup item
@@ -1092,7 +1092,7 @@ for test data and output-format sequencing:
    the decided Barrier `note:` (§2.2) to the original character whose
    paired Defense motivated that design in the first place, closing
    the loop `Ai.yaml`'s header comment had flagged as outstanding.
-   **All twelve `test-data/*.yaml` files now follow one consistent
+   **All twelve `test-data/sample-pcs/*.yaml` files now follow one consistent
    schema.**
 2. **Terse backend first.** Mirrors `besm2_fmt`'s own build order
    (its `PLAN.md` §8: terse validates CLI + data access + domain
@@ -1131,7 +1131,7 @@ for test data and output-format sequencing:
    the companion has its own `combat:` block); Notes as bold-header-
    em-dash-text pairs; Fluff as one labeled line. Built clean (no
    warnings) against `alibfyaml`/`arg_parser` via `GPR_PROJECT_PATH`,
-   same as `besm2_fmt`. Ran against all twelve `test-data/*.yaml`
+   same as `besm2_fmt`. Ran against all twelve `test-data/sample-pcs/*.yaml`
    files with no crashes; spot-checked Karis, Fukiko, Auren, Ai,
    Braun, and Cora by eye against their source data and the general
    rulebook conventions (§2.1/§2.2/§2.3) — output reads correctly for
@@ -1169,14 +1169,14 @@ for test data and output-format sequencing:
    `-B`/`--no-bold-head` already uses. Verified:
    plain `./ova_fmt` now renders `−` by default (Weakness Levels,
    Braun's negative `roll`), `-n` reverts to ASCII `-`; all twelve
-   `test-data/*.yaml` files process cleanly both with and without
+   `test-data/sample-pcs/*.yaml` files process cleanly both with and without
    `-n`; `build/*.gen.rst`/`build/*.ms.pdf` regenerated.
 
    **`GNUmakefile` added**, mirroring `besm2_fmt`'s (`build/.gitignore`
    trick to keep `build/` in git without committing generated
    output): `make`/`make all` builds the `ova_fmt` binary via
    `gprbuild`, `make rst` additionally runs it over every
-   `test-data/*.yaml` into `build/*.gen.rst`, `make install` installs
+   `test-data/**/*.yaml` into `build/*.gen.rst`, `make install` installs
    via `gprinstall` (same `$HOME/local` prefix as `besm2_fmt.gpr`),
    `make testclean` removes the generated `.gen.rst` files. Simpler
    than `besm2_fmt`'s (`TEST_OUTPUT`/`TEST_TBLOUTPUT`/unicode-minus/
@@ -1252,7 +1252,7 @@ for test data and output-format sequencing:
    `TEST_PDFOUTPUT` (§9's own convention note, updated to mention it).
 
    Verified: a pre-change/post-change binary diff of plain (Terse-mode)
-   output across every `test-data/*.yaml` fixture is byte-identical —
+   output across every `test-data/**/*.yaml` fixture is byte-identical —
    the parameterization is fully transparent when `Config.Format` stays
    `Terse`. `-g` on every fixture produces valid, spec-conforming
    gemtext (headings, `* ` bullets, no stray reST syntax); `-g -e`
@@ -1299,7 +1299,7 @@ for test data and output-format sequencing:
    regression coverage for `Html_Escape` actually firing.
 
    Verified: a pre-change/post-change binary diff of Terse and Gemtext
-   output across every `test-data/*.yaml` fixture is byte-identical
+   output across every `test-data/**/*.yaml` fixture is byte-identical
    (the new format value touches nothing else); `-H` on every fixture
    (`Vehicle.yaml`'s nested Vehicle content, `Fragment.yaml`'s
    unaffected flat rendering, `Escaping.yaml`'s special characters,
@@ -1414,7 +1414,7 @@ for test data and output-format sequencing:
    (via `-m -p`), same convention.
 
    Verified: a pre-change/post-change binary diff of Terse/Gemtext/
-   Html_In_Rst output across every `test-data/*.yaml` fixture is
+   Html_In_Rst output across every `test-data/**/*.yaml` fixture is
    byte-identical throughout this whole item (the `Format_Common`
    extraction/reuse refactor, and then the `No_Emphasis` change, touch
    only Hmm-reachable code paths); `-m`/`-m -c` on every fixture
@@ -1668,7 +1668,7 @@ for test data and output-format sequencing:
    Combat Stats (ARASUNI)," not introduced by separate prose).
 
    Verified: a pre-change/post-change binary diff of Terse/Gemtext/
-   Html_In_Rst output across every `test-data/*.yaml` fixture is
+   Html_In_Rst output across every `test-data/**/*.yaml` fixture is
    byte-identical (both after the `Print_Tail` refactor and after the
    full backend landed) — the new format value and the `Print_Common`
    split together touch nothing else. `-G` on every fixture (Karis/
@@ -1726,7 +1726,7 @@ for test data and output-format sequencing:
 
    Verified: a pre-change/post-change binary diff of Terse/Gemtext/
    Html_In_Rst/Groff_In_Rst/Hmm output (plain, and every existing flag
-   combination — `-e`, `-c`, `-p`) across every `test-data/*.yaml`
+   combination — `-e`, `-c`, `-p`) across every `test-data/**/*.yaml`
    fixture (`Broken.yaml` excluded, same as every other such diff) is
    byte-identical — the new `Output_Format` value and the
    `Print_Header_And_Prose` branch touch nothing else. `-M` on every
@@ -1866,7 +1866,7 @@ confirmed the same thing again). Each remaining backend's own
 output-list variable (an eventual `TEST_HMMOUTPUT`, `TEST_LOUTOUTPUT`,
 ...) needs to follow the same derived-from-`TEST_DATA` shape, not
 enumerate fixtures by hand, so every existing and future
-`test-data/*.yaml` file keeps getting picked up for every format
+`test-data/**/*.yaml` file keeps getting picked up for every format
 automatically.
 
 ## Open questions
@@ -1942,7 +1942,7 @@ automatically.
   unconditionally.
 
   Verified: a pre-refactor/post-refactor binary diff across every
-  `test-data/*.yaml` fixture, in every output mode (`-g`, `-g -e`,
+  `test-data/**/*.yaml` fixture, in every output mode (`-g`, `-g -e`,
   `-H`, `-n`, `-O`, plain), is byte-identical — the split is fully
   behavior-preserving. `make rst gemtext html pdf` all rebuild clean
   with no warnings.
@@ -1954,7 +1954,7 @@ automatically.
   `Load_*` functions use *required* accessors (`String_Value`/
   `Integer_Value` with no `Default`, raising `Libfyaml.Missing_Key`
   if absent) for fields that merely happen to be present in all
-  twelve transcribed `test-data/*.yaml` characters — that's not the
+  twelve transcribed `test-data/sample-pcs/*.yaml` characters — that's not the
   same as confirming the game rules actually require them.
 
   ~~Every Ability/Weakness/Sub_Item/Spell's `level`~~ Resolved (per
@@ -2004,7 +2004,7 @@ automatically.
   `Has_Combat`'s own optionality pattern), `Load_Combat` now guards
   `threat-value` with `Has_Key` instead of a bare `Integer_Value`, and
   `Format_Terse.Print_Combat_And_Attacks` prints "—" when it's absent.
-  Verified: all 12 `test-data/*.yaml` fixtures already carry
+  Verified: all 12 `test-data/sample-pcs/*.yaml` fixtures already carry
   `threat-value`, so a pre-change/post-change binary diff is
   byte-identical across all of them; a synthetic no-`threat-value`
   fixture renders `**Threat Value (TV):** —` as intended, with
@@ -2024,7 +2024,7 @@ automatically.
   <Abilities>; <Weaknesses>` line, Abilities and Weaknesses each
   independently alphabetized) and asking whether normal output does
   this too. It didn't — `Ova_Fmt.Entities` had no sorting anywhere.
-  Checking every other `test-data/*.yaml` file confirmed the same
+  Checking every other `test-data/**/*.yaml` file confirmed the same
   convention holds beyond just Fragments: Entity-level Abilities/
   Weaknesses, Companion's own Abilities/Weaknesses, a Transformation-
   granting Ability's linked sub-Abilities/sub-Weaknesses, and every
@@ -2155,7 +2155,7 @@ automatically.
   Verified: all `Require_String`/`Require_Integer` conversions are
   behavior-preserving when nothing's actually missing -- a
   pre-change/post-change binary diff across every real `test-data/
-  *.yaml` fixture is byte-identical.
+  **/*.yaml` fixture is byte-identical.
 - ~~**Terse output format: Markdown or reST?**~~ Resolved (§2.3):
   reST. The user's Karis mockup was written in Markdown for an
   unrelated purpose (a customized game-session write-up, not the
@@ -2183,7 +2183,7 @@ automatically.
   throughout (the old `Auren.yaml`-style was only ever a property of
   the *original*, since-superseded `Auren.yaml` transcription in the
   old Scheme project's test-data — this repo's from-scratch
-  `test-data/Auren.yaml` was written in the `name:`/`level:` form from
+  `test-data/sample-pcs/Auren.yaml` was written in the `name:`/`level:` form from
   the start, §9 step 1). Nothing to change in the schema or
   `Ova_Fmt.Entities`; this just closes out the "recommended but not
   committed" status.
@@ -2229,7 +2229,7 @@ automatically.
   `power-ceiling` set, confirming a partial `options:` block renders
   just that one rule rather than placeholders for the other three.
   Verified: a pre-change/post-change binary diff across every other
-  `test-data/*.yaml` fixture is byte-identical (none of those use
+  `test-data/**/*.yaml` fixture is byte-identical (none of those use
   `options:`); `Options.yaml` itself renders both entities' rules
   correctly with `-O` and shows nothing options-related without it.
 - ~~**TODO: NPC Fragment support**~~ Resolved and implemented. The
@@ -2282,10 +2282,10 @@ automatically.
   Added `test-data/Fragment.yaml`: both rulebook NPC Fragment examples
   above, transcribed (game-mechanical data faithfully, the short
   descriptions kept close to source as brief captions, same
-  copyright-conscious policy as every other `test-data/*.yaml` file).
+  copyright-conscious policy as every other `test-data/**/*.yaml` file).
   Verified: `ova_fmt test-data/Fragment.yaml` output matches the
   rulebook page's own text exactly for both NPCs; a pre-change/
-  post-change binary diff across every other `test-data/*.yaml`
+  post-change binary diff across every other `test-data/**/*.yaml`
   fixture is byte-identical (`Entity.Name` going from optional to
   required doesn't change anything since all of them already have
   one); a synthetic no-`name` fixture now reports `/0/name: missing
@@ -2326,7 +2326,7 @@ automatically.
   `Load_Spell`'s `"mimics"` YAML key → `"ability"`,
   `Format_Terse.Format_Spell_Line`'s rendered `"(mimics X +N; ...)"` →
   `"(X +N; ...)"` (dropping the connecting word entirely, per the
-  user). Updated `test-data/Auren.yaml` and `test-data/Unsorted.yaml`
+  user). Updated `test-data/sample-pcs/Auren.yaml` and `test-data/Unsorted.yaml`
   (the only two fixtures using `spells:`), including Auren.yaml's
   header comment. Verified: builds clean (`Ability` as a `Spell`
   record component doesn't collide with the `Ability` *type* also
@@ -2366,7 +2366,7 @@ automatically.
   combat block). Verified: renders `**Vehicle: Thunderhawk**` correctly
   through the same linked-content machinery Companion already uses; a
   pre-change/post-change binary diff across every other
-  `test-data/*.yaml` fixture (Karis's Arasuni, Yuu's Fenrir included)
+  `test-data/**/*.yaml` fixture (Karis's Arasuni, Yuu's Fenrir included)
   is byte-identical, confirming the rename touched nothing observable.
 - ~~**Which output formats are actually wanted**~~: §7/§8 cover terse,
   HTML-in-reST, groff-in-reST (`hd` tables), and Lout. **Confirmed, per
@@ -2447,7 +2447,7 @@ automatically.
   `pandoc -r rst -w ms --template=tkb` pipeline, not just bare groff.
 
   Verified: pre/post binary diff of every format across every
-  `test-data/*.yaml` fixture *except* Fukiko (the one file that gained
+  `test-data/**/*.yaml` fixture *except* Fukiko (the one file that gained
   `fragment: true`) is byte-identical; Fukiko's own output was
   hand-checked in each format (including a rendered groff PDF and a
   Python `html.parser` pass on the HTML-in-reST output) to confirm
@@ -2529,3 +2529,11 @@ automatically.
   after it (`\*` in reST and Markdown). Not printing `telekinesis`
   and `transformed` was this port's choice, the proposal not having
   covered them: easy to revisit.
+- **The rulebook's 12 Sample Characters live in `test-data/sample-pcs/`**
+  (asked for by the user, 2026-10-10), the synthetic fixtures and
+  `Fragment.yaml` (an NPC Fragment, not a Sample Character) directly
+  in `test-data/`. The `GNUmakefile` collects both directories into
+  `TEST_DATA` and finds inputs through `vpath`, so `build/` stays
+  flat and its file names are unchanged. Paths elsewhere in this file
+  were updated to match: `test-data/sample-pcs/*.yaml` for the twelve,
+  `test-data/**/*.yaml` for every fixture.

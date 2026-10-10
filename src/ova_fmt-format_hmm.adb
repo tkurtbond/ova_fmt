@@ -16,9 +16,9 @@ package body Ova_Fmt.Format_Hmm is
    function All_One_Line (S : String) return String renames Common.All_One_Line;
    --  An h-m-m node is exactly one physical line, so any internal
    --  newline in a prose field (from a "background: |" YAML literal
-   --  block scalar, e.g. every test-data/*.yaml character) has to be
-   --  flattened to a space rather than printed literally -- same
-   --  besm2_fmt.Format_Hmm.All_One_Line reasoning/shape.
+   --  block scalar, e.g. every test-data/sample-pcs/*.yaml character)
+   --  has to be flattened to a space rather than printed literally --
+   --  same besm2_fmt.Format_Hmm.All_One_Line reasoning/shape.
 
    -----------------------------------------------------------------
    --  Abilities/Weaknesses: a header node with one child node per

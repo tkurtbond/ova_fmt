@@ -8,7 +8,12 @@ PROGRAM=ova_fmt
 #  ova_fmt correctly exits non-zero on it, which would otherwise abort
 #  `make rst`/`make pdf` before every other, well-formed fixture gets
 #  (re)built.
-TEST_DATA=$(filter-out test-data/Broken.yaml,$(wildcard test-data/*.yaml))
+TEST_DATA=$(filter-out test-data/Broken.yaml,$(wildcard test-data/*.yaml test-data/sample-pcs/*.yaml))
+
+#  The rulebook's 12 Sample Characters live in test-data/sample-pcs/,
+#  synthetic fixtures directly in test-data/; vpath lets the pattern
+#  rules below find either, with all output still flat in build/.
+vpath %.yaml test-data test-data/sample-pcs
 
 # Terse (reST) output -- the default backend (PLAN.md §9 step 2).
 # Plain `ova_fmt`, no format-selecting flag needed.
@@ -106,37 +111,37 @@ groff: $(PROGRAM) $(TEST_GROFFOUTPUT) $(TEST_GROFFRENDEROUTPUT)
 
 hmm: $(PROGRAM) $(TEST_HMMOUTPUT) $(TEST_HMM_COMPACT_OUTPUT) $(TEST_HMM_PLAIN_OUTPUT)
 
-build/%.gen.rst : test-data/%.yaml $(PROGRAM)
+build/%.gen.rst : %.yaml $(PROGRAM)
 	./$(PROGRAM) $< >$@
 
-build/%.gmi : test-data/%.yaml $(PROGRAM)
+build/%.gmi : %.yaml $(PROGRAM)
 	./$(PROGRAM) -g $< >$@
 
-build/%.emp.gmi : test-data/%.yaml $(PROGRAM)
+build/%.emp.gmi : %.yaml $(PROGRAM)
 	./$(PROGRAM) -g -e $< >$@
 
-build/%.md : test-data/%.yaml $(PROGRAM)
+build/%.md : %.yaml $(PROGRAM)
 	./$(PROGRAM) -M $< >$@
 
-build/%.html.gen.rst : test-data/%.yaml $(PROGRAM)
+build/%.html.gen.rst : %.yaml $(PROGRAM)
 	./$(PROGRAM) -H $< >$@
 
 build/%.html : build/%.html.gen.rst
 	pandoc -r rst -w html --standalone -o $@ $<
 
-build/%.groff.gen.rst : test-data/%.yaml $(PROGRAM)
+build/%.groff.gen.rst : %.yaml $(PROGRAM)
 	./$(PROGRAM) -G $< >$@
 
 build/%.groff.pdf : build/%.groff.gen.rst
 	pandoc -r rst -w ms --template=tkb -o $@ $<
 
-build/%.hmm : test-data/%.yaml $(PROGRAM)
+build/%.hmm : %.yaml $(PROGRAM)
 	./$(PROGRAM) -m $< >$@
 
-build/%.compact.hmm : test-data/%.yaml $(PROGRAM)
+build/%.compact.hmm : %.yaml $(PROGRAM)
 	./$(PROGRAM) -m -c $< >$@
 
-build/%.plain.hmm : test-data/%.yaml $(PROGRAM)
+build/%.plain.hmm : %.yaml $(PROGRAM)
 	./$(PROGRAM) -m -p $< >$@
 
 #MS_COLUMNS=-V twocolumns
