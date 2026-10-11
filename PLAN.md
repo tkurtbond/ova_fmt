@@ -1757,11 +1757,11 @@ for test data and output-format sequencing:
    and `build/Karis.md.ms.pdf`'s extracted text (`pdftotext`) matches
    `build/Karis.rst.ms.pdf`'s content line for line.
 
-9. **Keys for the character generator** (2026-10-09). po_ova_cg
-   (`~/Repos/RPG/Tools/po_ova_cg`), an OVA character generator built
-   on po_ova_fmt, saves what the character sheet has (§5) and what
+9. **Keys for the character generator** (2026-10-09). ova_cg_po
+   (`~/Repos/RPG/Tools/ova_cg_po`), an OVA character generator built
+   on ova_fmt_po, saves what the character sheet has (§5) and what
    its calculations need, which ova_fmt had no keys for. The user
-   decided they are added here first, then to po_ova_fmt, rather than
+   decided they are added here first, then to ova_fmt_po, rather than
    left for ova_fmt to ignore. All are optional:
 
    | Key | Where | What |
@@ -1832,7 +1832,7 @@ for test data and output-format sequencing:
    sheet shows her transformed), Miho's Mode SP `transformed`, and the
    book's two rulings in `overrides`, Braun's First Day of Sale
    Shove!'s ROLL and Natsuki's Stiletto Kick's DX, which now print with
-   `*`. With these, po_ova_cg computes every other number of every
+   `*`. With these, ova_cg_po computes every other number of every
    sample as the book prints it.
 
    `test-data/Sheet.yaml` uses every key: a synthetic character, with
@@ -1840,11 +1840,11 @@ for test data and output-format sequencing:
    Companion's combat block (printed through the plain reST path even
    under `-H`/`-G`, so it gets `\*`), and Combat Notes holding `<`,
    `&` and a line starting with `.`. Every number it doesn't list in
-   `overrides` is the rules', as po_ova_cg computes them: it loads
+   `overrides` is the rules', as ova_cg_po computes them: it loads
    there with no notices.
 
    Verified: before the samples gained their keys, every existing
-   fixture's output, in all 368 of po_ova_fmt's golden cases (every
+   fixture's output, in all 368 of ova_fmt_po's golden cases (every
    format and flag), was byte-identical before and after; after, only
    Braun's and Natsuki's changed, by the `*`; `Sheet.yaml`'s reST outputs (`""`,
    `-H`, `-G`) pass `rst2html --halt=info`; pandoc's reST, Markdown
@@ -2523,7 +2523,7 @@ automatically.
   reST's `Underliner`/`Subunderliner` do, only a heading depth, and
   flat was preferred over nesting subsequent entities under `##`.
 - **Keys for the character generator, in ova_fmt too** (§9 step 9,
-  decided by the user, 2026-10-09), Ada first, then po_ova_fmt; and
+  decided by the user, 2026-10-09), Ada first, then ova_fmt_po; and
   how they print, as proposed and accepted: `player` beside the name,
   `appearance`/`other-notes` as text sections, combat `notes` after
   the combat stats, `portrait` as an image in `-H` only, the new
@@ -2594,8 +2594,8 @@ automatically.
   bracket in the same cell. Verified: only the five fixtures with an
   `endurance` change outside Html_In_Rst; in Html_In_Rst, beyond
   those, only the header and the notes.
-- **No more unhandled exceptions; matching po_ova_fmt's error reports**
-  (from po_ova_fmt's PLAN.md "Differences from the Ada version", asked
+- **No more unhandled exceptions; matching ova_fmt_po's error reports**
+  (from ova_fmt_po's PLAN.md "Differences from the Ada version", asked
   for by the user, 2026-10-10). YAML of the wrong shape (a list key
   that isn't a sequence, a list item or entity that isn't a mapping, a
   `combat:`/`fluff:`/`options:`/`companion:`/`vehicle:` that isn't a
@@ -2619,7 +2619,7 @@ automatically.
   is byte-identical, as are the port's error and edge fixtures but for
   the four `bad-shape-*`; the port's 400 golden cases (10 new) pass.
 - **Up to three Defense values** (asked for by the user, 2026-10-10,
-  so that po_ova_cg can save Incorporeal Form's alternate Defense
+  so that ova_cg_po can save Incorporeal Form's alternate Defense
   Roll, p. 55, alongside Barrier's, p. 51; Nazo's and Acacia's books
   have it). `defense` stays a free string, now of up to three values,
   `D[/A[/A]]`, positional and generic: ova_fmt doesn't know which

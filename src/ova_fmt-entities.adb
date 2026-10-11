@@ -153,7 +153,7 @@ package body Ova_Fmt.Entities is
 
    --  A stable insertion sort: Ada.Containers.Vectors.Generic_Sorting.
    --  Sort needn't be stable, so items equal in both Name and Detail
-   --  could come out in either order (po_ova_fmt's PLAN.md, which
+   --  could come out in either order (ova_fmt_po's PLAN.md, which
    --  sorts stably). The lists are a few dozen items at most.
    generic
       type Element_Type is private;

@@ -53,7 +53,7 @@ package Ova_Fmt.Entities is
 
    -----------------------------------------------------------------
    --  `overrides:` (PLAN.md §9 step 9): the numbers in a mapping that
-   --  the character generator (po_ova_cg) computes but the user set
+   --  the character generator (ova_cg_po) computes but the user set
    --  by hand -- a sequence of those numbers' key names, e.g.
    --  `overrides: [roll, dx]` on an attack. Each mapping accepts only
    --  the keys it has a computed number for (Allowed in
