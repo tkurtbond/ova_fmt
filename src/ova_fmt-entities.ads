@@ -58,13 +58,15 @@ package Ova_Fmt.Entities is
    --  `overrides: [roll, dx]` on an attack. Each mapping accepts only
    --  the keys it has a computed number for (Allowed in
    --  Load_Overrides): an attack roll/dx/endurance; combat:
-   --  defense/barrier/health/endurance/threat-value, barrier being
-   --  the second half of a paired "4/5" Defense; an Ability, Sub_Item
-   --  or Spell endurance. Anything else is a load error. The
-   --  formatters print an overridden number with a `*` after it.
+   --  defense/defense-2/defense-3/health/endurance/threat-value,
+   --  defense-2 and defense-3 being the second and third values of a
+   --  "2/6/5" Defense (`barrier`, defense-2's name before there could
+   --  be a third, is still read as defense-2); an Ability, Sub_Item or
+   --  Spell endurance. Anything else is a load error. The formatters
+   --  print an overridden number with a `*` after it.
    -----------------------------------------------------------------
 
-   type Override_Key is (Roll, Dx, Endurance, Defense, Barrier, Health, Threat_Value);
+   type Override_Key is (Roll, Dx, Endurance, Defense, Defense_2, Defense_3, Health, Threat_Value);
    type Override_Set is array (Override_Key) of Boolean;
    No_Overrides : constant Override_Set := (others => False);
 
@@ -113,9 +115,11 @@ package Ova_Fmt.Entities is
 
    type Combat_Stats is record
       Has_Combat    : Boolean := False;
-      --  A string, not Integer: usually plain, but a Barrier-granting
-      --  Ability gives a character a second, paired Defense value
-      --  rendered verbatim (PLAN.md §2.2 -- "4/5"), not split/derived.
+      --  A string, not Integer: usually plain, but Barrier or
+      --  Incorporeal Form gives a character an alternate Defense Roll,
+      --  written after a slash: up to three values, the ordinary
+      --  Defense and two alternates ("2/6/5"; PLAN.md §2.2 -- "4/5"),
+      --  rendered verbatim, not derived. More is a load error.
       Defense       : Unbounded_String;
       Health        : Integer;
       Endurance     : Integer;

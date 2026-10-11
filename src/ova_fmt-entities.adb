@@ -219,7 +219,7 @@ package body Ova_Fmt.Entities is
    function Key_Name (K : Override_Key) return String is
      (case K is
          when Roll => "roll", when Dx => "dx", when Endurance => "endurance",
-         when Defense => "defense", when Barrier => "barrier",
+         when Defense => "defense", when Defense_2 => "defense-2", when Defense_3 => "defense-3",
          when Health => "health", when Threat_Value => "threat-value");
 
    --  N's `overrides:` list, if any. A list that isn't a sequence, or
@@ -253,6 +253,11 @@ package body Ova_Fmt.Entities is
                   return;
                end if;
             end loop;
+            --  defense-2's name before there could be a third value.
+            if Allowed (Defense_2) and then Item.Scalar_Value = "barrier" then
+               Result (Defense_2) := True;
+               return;
+            end if;
             Record_Error
               (N, "overrides",
                """" & Item.Scalar_Value & """ is not one of " & Allowed_Names);
@@ -397,6 +402,10 @@ package body Ova_Fmt.Entities is
       --  approximate a Location from -- these three errors, if any,
       --  get Path only (e.g. "/2/combat/health"), still exact.
       Result.Defense := Require_String (N, "defense");
+      if Ada.Strings.Fixed.Count (To_String (Result.Defense), "/") > 2 then
+         Record_Error
+           (N, "defense", """" & To_String (Result.Defense) & """ has more than three values");
+      end if;
       Result.Health := Require_Integer (N, "health");
       Result.Endurance := Require_Integer (N, "endurance");
       if N.Has_Key ("threat-value") then

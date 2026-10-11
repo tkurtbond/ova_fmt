@@ -1781,8 +1781,10 @@ for test data and output-format sequencing:
 
    `overrides` is a sequence of key names, each one a number the
    generator computes in that mapping: an attack's `roll`, `dx`,
-   `endurance`; `combat`'s `defense`, `barrier` (the second half of a
-   paired `4/5` Defense), `health`, `endurance`, `threat-value`; an
+   `endurance`; `combat`'s `defense`, `defense-2` and `defense-3`
+   (the second and third values of a `2/4/6` Defense; `defense-2` was
+   `barrier` until a Defense could hold three, and `barrier` is still
+   read as it), `health`, `endurance`, `threat-value`; an
    Ability's, granted Ability's or spell's `endurance`. Any other
    name, an item that isn't a scalar, or an `overrides` that isn't a
    sequence is a load error, recorded like a missing required key
@@ -2616,3 +2618,23 @@ automatically.
   needn't be stable. Verified: every fixture's output in every format
   is byte-identical, as are the port's error and edge fixtures but for
   the four `bad-shape-*`; the port's 400 golden cases (10 new) pass.
+- **Up to three Defense values** (asked for by the user, 2026-10-10,
+  so that po_ova_cg can save Incorporeal Form's alternate Defense
+  Roll, p. 55, alongside Barrier's, p. 51; Nazo's and Acacia's books
+  have it). `defense` stays a free string, now of up to three values,
+  `D[/A[/A]]`, positional and generic: ova_fmt doesn't know which
+  Ability gives which (the generator writes Barrier's first, then
+  Incorporeal Form's, only those the character has). Four or more is
+  a load error, `"2/3/4/5" has more than three values`. The override
+  keys are `defense`, `defense-2`, `defense-3` (`Override_Key`'s
+  `Barrier` became `Defense_2`, and `Defense_3` was added); `barrier`
+  is still accepted as `defense-2`, for files written before.
+  `Defense_Text` marks each value by its slot. Sheet.yaml says
+  `defense-2` now; two new synthetic fixtures, `Defenses.yaml`
+  (Barrier and Incorporeal Form, `2/4/6`, the third overridden) and
+  `Wisp.yaml` (Incorporeal Form alone, `2/6`, overridden with the old
+  `barrier` name), cover the rest. In the generator, a file giving
+  one value where the rules give more means the best, with no notice
+  (the Sample NPCs print only that), saved back as one value.
+  Verified: every existing fixture's output in every format is
+  byte-identical (539 runs).

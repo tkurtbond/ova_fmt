@@ -105,14 +105,22 @@ package body Ova_Fmt.Format_Common is
       else "\*");
 
    function Defense_Text (C : Entities.Combat_Stats; Raw : Boolean := False) return String is
-      D     : constant String := To_String (C.Defense);
-      Slash : constant Natural := Ada.Strings.Fixed.Index (D, "/");
+      use type Entities.Override_Key;
+      D      : constant String := To_String (C.Defense);
+      Result : Unbounded_String;
+      Key    : Entities.Override_Key := Entities.Defense;
+      From   : Positive := D'First;
+      Slash  : Natural;
    begin
-      if Slash = 0 then
-         return D & Override_Mark (C.Overrides (Entities.Defense), Raw);
-      end if;
-      return D (D'First .. Slash - 1) & Override_Mark (C.Overrides (Entities.Defense), Raw) &
-        D (Slash .. D'Last) & Override_Mark (C.Overrides (Entities.Barrier), Raw);
+      loop
+         Slash := Ada.Strings.Fixed.Index (D (From .. D'Last), "/");
+         if Slash = 0 or else Key = Entities.Defense_3 then
+            return To_String (Result & D (From .. D'Last) & Override_Mark (C.Overrides (Key), Raw));
+         end if;
+         Result := Result & D (From .. Slash - 1) & Override_Mark (C.Overrides (Key), Raw) & "/";
+         From := Slash + 1;
+         Key := Entities.Override_Key'Succ (Key);
+      end loop;
    end Defense_Text;
 
    function Half_TV_Text (Has, Half : Boolean) return String is

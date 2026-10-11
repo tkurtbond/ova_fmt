@@ -67,8 +67,8 @@ package Ova_Fmt.Format_Common is
    --  the number goes in a raw HTML or groff table, so it's "*".
 
    function Defense_Text (C : Entities.Combat_Stats; Raw : Boolean := False) return String;
-   --  C.Defense with an Override_Mark after each overridden half: a
-   --  paired "4/5" Defense's halves are `defense` and `barrier`.
+   --  C.Defense with an Override_Mark after each overridden value: a
+   --  "2/6/5" Defense's are `defense`, `defense-2` and `defense-3`.
 
    function Half_TV_Text (Has, Half : Boolean) return String;
    --  " (half TV)" after the Level of an Ability or Sub_Item whose
