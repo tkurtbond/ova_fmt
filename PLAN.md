@@ -1857,7 +1857,7 @@ for test data and output-format sequencing:
    Lost-Worlds' `001-breakout.md`: each entity as one Markdown
    paragraph, a stat block for an adventure's cast list:
 
-       **Name** (Secondary). Summary. Background. *Ability (detail) +2,
+       **Name** (Secondary). Summary. Background. *Ability +2 (detail),
        ...; Weakness −1, ...* Attack (Perks; Flaws): Roll 4, DX 3, End
        0. Defense 3. Health 20, Endurance 20. TV 6.
 
@@ -1878,6 +1878,14 @@ for test data and output-format sequencing:
    `===` ...) stays with the word before it. Its own package, like
    Format_Hmm; `Format_Common.Format_Perk_Flaw` is now public for it.
    `make inline` builds `build/NAME.inline.md`.
+
+   Later the same day the user asked for "Attack +2 (details)", the
+   cast's order, rather than "Attack (details) +2", and for every
+   Ability and Weakness, not only Attack. So the inline format uses the
+   NPC Fragment order, "Name Level (detail)" (`Join_Fragment_Abilities`,
+   `Join_Fragment_Weaknesses`, `Join_Fragment_Sub_Items`), for the
+   entity's own, a Companion's or Vehicle's, and a Transformation's
+   grants. A linked Ability's bold title keeps "Name (detail)".
 
    Verified: ova_fmt_po's 103 inline golden files, made with its own
    program, came out byte-identical when regenerated from this one

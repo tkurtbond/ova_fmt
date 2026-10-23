@@ -3,9 +3,14 @@
 --  per the user (2026-10-23), modeled on the Cast of Lost-Worlds'
 --  001-breakout.md:
 --
---     **Name** (Secondary). Summary. Background. *Ability (detail) +2,
+--     **Name** (Secondary). Summary. Background. *Ability +2 (detail),
 --     ...; Weakness -1, ...* Attack (Perks; Flaws): Roll 4, DX 3, End
 --     0. Defense 3. Health 20, Endurance 20. TV 6.
+--
+--  Abilities and Weaknesses, a Companion's or Vehicle's and those a
+--  Transformation grants too, are "Name Level (detail)", the rulebook's
+--  NPC Fragment order (Format_Common.Join_Fragment_Abilities), as the
+--  cast has "Attack +2 (Blaster rifle)" (the user, 2026-10-23).
 --
 --  First written for ova_fmt_po (its OvaInline), whose output this
 --  matches byte for byte. A stat block leaves out what a cast list

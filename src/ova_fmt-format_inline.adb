@@ -138,7 +138,9 @@ package body Ova_Fmt.Format_Inline is
    --  Parts.
    -----------------------------------------------------------------
 
-   --  "*abilities; weaknesses.*", "" if there are neither.
+   --  "*abilities; weaknesses.*", "" if there are neither. Each is
+   --  "Name Level (detail)", the NPC Fragment order, as in a cast list:
+   --  "Attack +2 (Blaster rifle)".
    function Traits (Abilities, Weaknesses : String) return String is
    begin
       if Abilities = "" and then Weaknesses = "" then
@@ -242,8 +244,8 @@ package body Ova_Fmt.Format_Inline is
       end if;
       if not A.Sub_Abilities.Is_Empty or else not A.Sub_Weaknesses.Is_Empty then
          declare
-            Abilities  : constant String := FC.Join_Sub_Items (A.Sub_Abilities);
-            Weaknesses : constant String := FC.Join_Sub_Items (A.Sub_Weaknesses);
+            Abilities  : constant String := FC.Join_Fragment_Sub_Items (A.Sub_Abilities);
+            Weaknesses : constant String := FC.Join_Fragment_Sub_Items (A.Sub_Weaknesses);
          begin
             Add (P, Sentence
                    ("Grants: " & Abilities &
@@ -257,7 +259,8 @@ package body Ova_Fmt.Format_Inline is
       if SE /= null then
          declare
             T : constant String :=
-              Traits (FC.Join_Sub_Items (SE.Abilities), FC.Join_Sub_Items (SE.Weaknesses));
+              Traits (FC.Join_Fragment_Sub_Items (SE.Abilities),
+                      FC.Join_Fragment_Sub_Items (SE.Weaknesses));
          begin
             if T /= "" then
                Add (P, T);
@@ -301,7 +304,8 @@ package body Ova_Fmt.Format_Inline is
       end if;
       declare
          T : constant String :=
-           Traits (FC.Join_Abilities (E.Abilities), FC.Join_Weaknesses (E.Weaknesses));
+           Traits (FC.Join_Fragment_Abilities (E.Abilities),
+                   FC.Join_Fragment_Weaknesses (E.Weaknesses));
       begin
          if T /= "" then
             Add (P, T);
