@@ -10,7 +10,9 @@ Ada port of an existing, working Scheme program), this is a
 from-scratch design-and-port effort: the earlier `ova-rst.scm` project
 never got past an unfinished skeleton, so ova_fmt's YAML schema and
 output formats were designed here from the OVA rulebook's own sample
-characters. The terse/prose reStructuredText backend is done; HTML,
+characters. `-i`/`--inline` writes each entity instead as one
+Markdown paragraph, an inline stat block for an adventure's cast
+list. The terse/prose reStructuredText backend is done; HTML,
 groff/`hd`, and direct-to-Lout backends (needed for OVA's nested-table
 character sheets) are planned next. See `PLAN.md` for the full design
 history and open questions.

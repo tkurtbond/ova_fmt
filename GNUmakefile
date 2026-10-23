@@ -90,7 +90,11 @@ TEST_HMM_COMPACT_OUTPUT=$(foreach f,$(notdir $(TEST_DATA)),build/$(addsuffix .co
 # above.
 TEST_HMM_PLAIN_OUTPUT=$(foreach f,$(notdir $(TEST_DATA)),build/$(addsuffix .plain.hmm,$(basename $(f))))
 
-.PHONY: all rst pdf gemtext markdown html groff hmm install clean testclean
+# Inline output (-i/--inline, PLAN.md §9 step 10) -- each entity as one
+# Markdown paragraph, a stat block for an adventure's cast list.
+TEST_INLINEOUTPUT=$(foreach f,$(notdir $(TEST_DATA)),build/$(addsuffix .inline.md,$(basename $(f))))
+
+.PHONY: all rst pdf gemtext markdown html groff hmm inline install clean testclean
 
 all: $(PROGRAM)
 
@@ -116,6 +120,8 @@ html: $(PROGRAM) $(TEST_HTMLOUTPUT) $(TEST_HTMLRENDEROUTPUT)
 groff: $(PROGRAM) $(TEST_GROFFOUTPUT) $(TEST_GROFFRENDEROUTPUT)
 
 hmm: $(PROGRAM) $(TEST_HMMOUTPUT) $(TEST_HMM_COMPACT_OUTPUT) $(TEST_HMM_PLAIN_OUTPUT)
+
+inline: $(PROGRAM) $(TEST_INLINEOUTPUT)
 
 build/%.gen.rst : %.yaml $(PROGRAM)
 	./$(PROGRAM) "$<" >$@
@@ -150,6 +156,9 @@ build/%.compact.hmm : %.yaml $(PROGRAM)
 build/%.plain.hmm : %.yaml $(PROGRAM)
 	./$(PROGRAM) -m -p "$<" >$@
 
+build/%.inline.md : %.yaml $(PROGRAM)
+	./$(PROGRAM) -i "$<" >$@
+
 #MS_COLUMNS=-V twocolumns
 build/%.rst.ms.pdf : build/%.gen.rst
 	pandoc -r rst -w ms --template=tkb $(MS_COLUMNS) -o $@ $<
@@ -163,6 +172,6 @@ clean:
 testclean:
 	-rm -v build/*.gen.rst build/*.rst.ms.pdf build/*.gmi build/*.md build/*.md.ms.pdf build/*.html build/*.hmm build/*.groff.gen.rst build/*.groff.pdf
 
-.PRECIOUS: build/%.gen.rst build/%.rst.ms.pdf build/%.gmi build/%.emp.gmi build/%.md build/%.md.ms.pdf build/%.html.gen.rst build/%.html build/%.hmm build/%.compact.hmm build/%.plain.hmm build/%.groff.gen.rst build/%.groff.pdf
+.PRECIOUS: build/%.gen.rst build/%.rst.ms.pdf build/%.gmi build/%.emp.gmi build/%.md build/%.md.ms.pdf build/%.html.gen.rst build/%.html build/%.hmm build/%.compact.hmm build/%.plain.hmm build/%.groff.gen.rst build/%.groff.pdf build/%.inline.md
 
 print-%  : ; @echo '$* = $($*)'

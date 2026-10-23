@@ -68,10 +68,14 @@ package Ova_Fmt.Config is
    --  Combat Stats (ARASUNI)"), not just a workaround for `hd`'s own
    --  undocumented per-table pagination ceiling (found this session)
    --  that this move happens to also fix.
-   type Output_Format is (Terse, Gemtext, Markdown, Html_In_Rst, Groff_In_Rst, Hmm);
+   --  Inline: each entity as one Markdown paragraph, a stat block for
+   --  an adventure's cast list, per the user (2026-10-23) --
+   --  Ova_Fmt.Format_Inline, its own package like Format_Hmm.
+   type Output_Format is (Terse, Gemtext, Markdown, Html_In_Rst, Groff_In_Rst, Hmm, Inline);
 
    Format : aliased Output_Format := Terse;
-   --  -g/--gemtext, -M/--markdown, -H/--html, -G/--groff, or -m/--hmm
+   --  -g/--gemtext, -M/--markdown, -H/--html, -G/--groff, -m/--hmm, or
+   --  -i/--inline
 
    --  Indentation baseline for -m/--hmm output, in tab stops -- lets
    --  the output be embedded under an existing outline node elsewhere

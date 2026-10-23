@@ -94,6 +94,10 @@ package Ova_Fmt.Format_Common is
    --  Override_Mark's. Public: Format_Rst's Html_In_Rst and
    --  Groff_In_Rst table cells need this too.
 
+   function Format_Perk_Flaw (PF : Entities.Perk_Flaw) return String;
+   --  "Name: detail x2 (-1)", with only the parts PF has. Public:
+   --  Ova_Fmt.Format_Inline lists an attack's Perks and Flaws itself.
+
    function Format_Attack_Clause (A : Entities.Attack) return String;
    --  "(Affinity: ...; Perks: ...; Flaws: ...)", "" if none apply.
    --  Public: Format_Rst's Html_In_Rst Attacks table needs this too.

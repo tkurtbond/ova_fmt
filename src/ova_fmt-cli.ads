@@ -31,6 +31,7 @@ private
    function Do_Html return Boolean;
    function Do_Groff return Boolean;
    function Do_Hmm return Boolean;
+   function Do_Inline return Boolean;
    function Do_Subunderliner (Arg : String) return Boolean;
    function Do_Underliner (Arg : String) return Boolean;
    function Do_Argument (Start_With : Positive; Arg : String) return Boolean;
@@ -67,6 +68,13 @@ private
          Short_Name  => 'G',
          Long_Name   => "groff",
          Handler     => Do_Groff'Access),
+      Arg_Parser.Make_Option
+        (Description => "Output each entity as one Markdown paragraph, an " &
+                         "inline stat block like an adventure's cast " &
+                         "list, instead of reST.",
+         Short_Name  => 'i',
+         Long_Name   => "inline",
+         Handler     => Do_Inline'Access),
       Arg_Parser.Make_Set_Boolean_True_Option
         (Description => "With -g/--gemtext, emit *italic*/**bold** markers " &
                          "anyway -- gemtext's spec has no inline emphasis " &

@@ -1852,6 +1852,38 @@ for test data and output-format sequencing:
    bold too (`**DX 3\***`), with no new emphasis; `make
    build/Sheet.groff.pdf` renders the stars, the Defense pair, the
    half-TV names and the Combat Notes row.
+10. **Inline backend** (`Ova_Fmt.Format_Inline`, `-i`/`--inline`;
+   2026-10-23). Asked for by the user, after liking the Cast of
+   Lost-Worlds' `001-breakout.md`: each entity as one Markdown
+   paragraph, a stat block for an adventure's cast list:
+
+       **Name** (Secondary). Summary. Background. *Ability (detail) +2,
+       ...; Weakness −1, ...* Attack (Perks; Flaws): Roll 4, DX 3, End
+       0. Defense 3. Health 20, Endurance 20. TV 6.
+
+   Written first in ova_fmt_po (its `OvaInline`) and ova_cg_po (the
+   Markdown tab's Inline button), then ported here so ova_fmt_po's
+   golden cases for it can come from this program like every other
+   format's. It leaves out what a cast list doesn't need: the tagline,
+   character hooks, notes, fluff, options, the player and the
+   portrait. The prose (summary, background, appearance, personality)
+   runs together, each part made a sentence (ending in `.`, `!` or
+   `?`, perhaps before a closing quote or parenthesis), as do the
+   combat notes. A Fragment with a background leads with it, then
+   "Secondary NPC.". Each linked Ability (Transformation, Magic,
+   Companion, Vehicle) follows as its own paragraph, led by its title
+   in bold. Each paragraph is filled to 70 columns, counting
+   characters, not bytes, and a word that would open a Markdown block
+   at the start of a line (`#`, `>`, a lone `+`, `10.`, `1)`, `---`,
+   `===` ...) stays with the word before it. Its own package, like
+   Format_Hmm; `Format_Common.Format_Perk_Flaw` is now public for it.
+   `make inline` builds `build/NAME.inline.md`.
+
+   Verified: ova_fmt_po's 103 inline golden files, made with its own
+   program, came out byte-identical when regenerated from this one
+   (and 99 of them changed with the fill width planted at 80); the
+   two agree on a summary built to test the block-opening rule and on
+   Lost-Worlds' `001-cast.yaml`.
 
 **`GNUmakefile` convention to keep as each new backend lands, per the
 user:** every existing output-list variable (`TEST_TERSEOUTPUT`,

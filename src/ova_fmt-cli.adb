@@ -39,6 +39,12 @@ package body Ova_Fmt.Cli is
       return True;
    end Do_Hmm;
 
+   function Do_Inline return Boolean is
+   begin
+      Config.Format := Config.Inline;
+      return True;
+   end Do_Inline;
+
    --  The message follows Arg_Parser's "Invalid value for option ",
    --  as its own (-L's) do.
    function Do_Subunderliner (Arg : String) return Boolean is
