@@ -346,7 +346,7 @@ package Ova_Fmt.Entities is
    --  Matched case-insensitively; anything else is a load error.
    -----------------------------------------------------------------
 
-   type NPC_Kind is (Heroic, Secondary, Extra);
+   type NPC_Kind is (Heroic, Secondary, Extra, Boss);
 
    function NPC_Kind_Name (K : NPC_Kind) return String;
    --  The rulebook's capitalization ("Heroic").

@@ -278,10 +278,11 @@ package body Ova_Fmt.Entities is
 
    function NPC_Kind_Name (K : NPC_Kind) return String is
      (case K is
-         when Heroic => "Heroic", when Secondary => "Secondary", when Extra => "Extra");
+         when Heroic => "Heroic", when Secondary => "Secondary", when Extra => "Extra",
+         when Boss => "Boss");
 
    --  N's `npc-type:`, which N is known to have. Anything but one of
-   --  the three names is a recorded error, like an `overrides:` name:
+   --  the four names is a recorded error, like an `overrides:` name:
    --  silently dropping it would lose the type from the output.
    procedure Load_NPC_Type (N : Nod.Node; Has : out Boolean; Kind : out NPC_Kind) is
       use Ada.Characters.Handling;
@@ -298,7 +299,7 @@ package body Ova_Fmt.Entities is
       Kind := Heroic;
       Record_Error
         (N, "npc-type",
-         """" & N.String_Value ("npc-type") & """ is not one of Heroic, Secondary, Extra");
+         """" & N.String_Value ("npc-type") & """ is not one of Heroic, Secondary, Extra, Boss");
    exception
       when E : Libfyaml.Data_Error =>
          Has := False;

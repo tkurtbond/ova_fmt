@@ -210,9 +210,13 @@ package body Ova_Fmt.Format_Inline is
          when 9 => "nine", when 10 => "ten", when 11 => "eleven", when 12 => "twelve",
          when others => FC.Trim_Img (N));
 
-   --  E's NPC type's plural, as a count of them has it: "Secondaries".
+   --  E's NPC type's plural, as a count of them has it: "Secondaries",
+   --  "Bosses".
    function NPC_Type_Plural (E : Entities.Entity) return String is
-     (if Entities."=" (E.NPC_Type, Entities.Secondary) then "Secondaries" else FC.NPC_Type_Text (E) & "s");
+     (case E.NPC_Type is
+         when Entities.Secondary => "Secondaries",
+         when Entities.Boss      => "Bosses",
+         when others             => FC.NPC_Type_Text (E) & "s");
 
    --  C's attacks, then "Defense D. Health H, Endurance E. TV T.", then
    --  its notes, appended to P; nothing if there is no combat. Each of
