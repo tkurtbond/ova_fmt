@@ -306,6 +306,20 @@ package body Ova_Fmt.Entities is
          Record_Error (N, "npc-type", Ada.Exceptions.Exception_Message (E));
    end Load_NPC_Type;
 
+   --  N's count:. Less than 1 is a recorded error, like a bad npc-type:
+   --  dropping it would say something else about the cast. Something
+   --  that isn't an integer fails as any optional integer's does.
+   function Load_Count (N : Nod.Node) return Positive is
+      Value : constant Integer := N.Integer_Value ("count");
+   begin
+      if Value >= 1 then
+         return Value;
+      end if;
+      Record_Error
+        (N, "count", """" & Trim_Whitespace (Integer'Image (Value)) & """ is not 1 or more");
+      return 1;
+   end Load_Count;
+
    -----------------------------------------------------------------
    --  Perks/Flaws.
    -----------------------------------------------------------------
@@ -745,6 +759,10 @@ package body Ova_Fmt.Entities is
 
       if N.Has_Key ("npc-type") then
          Load_NPC_Type (N, Result.Has_NPC_Type, Result.NPC_Type);
+      end if;
+
+      if N.Has_Key ("count") then
+         Result.Count := Load_Count (N);
       end if;
 
       Result.Has_Other_Notes := N.Has_Key ("other-notes");

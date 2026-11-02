@@ -12,6 +12,10 @@
 --  NPC Fragment order (Format_Common.Join_Fragment_Abilities), as the
 --  cast has "Attack +2 (Blaster rifle)" (the user, 2026-10-23).
 --
+--  A count: over 1 makes the lead "**Name** (three Secondaries)." and
+--  the end "TV 6 each.": one stat block standing for a group. It is the
+--  only format that shows it, as a sheet describes one.
+--
 --  First written for ova_fmt_po (its OvaInline), whose output this
 --  matches byte for byte. A stat block leaves out what a cast list
 --  doesn't need: the tagline, character hooks, notes, fluff, options,

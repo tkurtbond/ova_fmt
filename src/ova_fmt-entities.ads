@@ -371,6 +371,10 @@ package Ova_Fmt.Entities is
       --  ways to bring the character into a story.
       Has_Character_Hooks : Boolean := False; Character_Hooks : Unbounded_String;
       Has_NPC_Type    : Boolean := False; NPC_Type    : NPC_Kind := Heroic;
+      --  How many of this entity there are, for a cast's "three guards",
+      --  one stat block standing for all of them. Only the inline format
+      --  shows it; a sheet describes one. No count: is a count of 1.
+      Count           : Positive := 1;
       Has_Other_Notes : Boolean := False; Other_Notes : Unbounded_String;
       Has_Portrait    : Boolean := False; Portrait    : Unbounded_String;
       Abilities       : Ability_Vectors.Vector;

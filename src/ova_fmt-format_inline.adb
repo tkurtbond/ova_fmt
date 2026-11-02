@@ -202,9 +202,23 @@ package body Ova_Fmt.Format_Inline is
       return To_String (Result);
    end Attack;
 
+   --  N as a word, up to twelve, as prose has it; past that its digits.
+   function Count_Text (N : Positive) return String is
+     (case N is
+         when 1 => "one", when 2 => "two", when 3 => "three", when 4 => "four",
+         when 5 => "five", when 6 => "six", when 7 => "seven", when 8 => "eight",
+         when 9 => "nine", when 10 => "ten", when 11 => "eleven", when 12 => "twelve",
+         when others => FC.Trim_Img (N));
+
+   --  E's NPC type's plural, as a count of them has it: "Secondaries".
+   function NPC_Type_Plural (E : Entities.Entity) return String is
+     (if Entities."=" (E.NPC_Type, Entities.Secondary) then "Secondaries" else FC.NPC_Type_Text (E) & "s");
+
    --  C's attacks, then "Defense D. Health H, Endurance E. TV T.", then
-   --  its notes, appended to P; nothing if there is no combat.
-   procedure Add_Combat (P : in out Unbounded_String; C : Entities.Combat_Stats) is
+   --  its notes, appended to P; nothing if there is no combat. Each of
+   --  a group makes it "TV T each."
+   procedure Add_Combat
+     (P : in out Unbounded_String; C : Entities.Combat_Stats; Group : Boolean := False) is
    begin
       if not C.Has_Combat then
          return;
@@ -219,7 +233,8 @@ package body Ova_Fmt.Format_Inline is
              FC.Override_Mark (C.Overrides (Entities.Endurance)) & "." &
              (if C.Has_Threat_Value
               then " TV " & FC.Trim_Img (C.Threat_Value) &
-                FC.Override_Mark (C.Overrides (Entities.Threat_Value)) & "."
+                FC.Override_Mark (C.Overrides (Entities.Threat_Value)) &
+                (if Group then " each." else ".")
               else ""));
       if C.Has_Notes then
          Add_Prose (P, C.Notes);
@@ -272,18 +287,30 @@ package body Ova_Fmt.Format_Inline is
    end Linked;
 
    --  The entity's paragraph, led by "**Name** (Secondary)." or, with
-   --  no NPC type, "**Name.**", then its linked content's.
+   --  no NPC type, "**Name.**", then its linked content's. With a count
+   --  over 1 the lead is "**Name** (three Secondaries)." or, with no
+   --  NPC type, "**Name** (three).", and a Fragment's "Secondary NPCs
+   --  (three)."
    procedure Process_Entity (E : Entities.Entity; Entity_No : Positive) is
       pragma Unreferenced (Entity_No);
-      P : Unbounded_String;
+      Group : constant Boolean := E.Count > 1;
+      P     : Unbounded_String;
    begin
       if E.Is_Fragment and then E.Has_Background then
          Add_Prose (P, E.Background);
-         if E.Has_NPC_Type then
+         if E.Has_NPC_Type and then Group then
+            Add (P, FC.NPC_Type_Text (E) & " NPCs (" & Count_Text (E.Count) & ").");
+         elsif E.Has_NPC_Type then
             Add (P, FC.NPC_Type_Text (E) & " NPC.");
+         elsif Group then
+            Add (P, "(" & Count_Text (E.Count) & ").");
          end if;
       else
-         if E.Has_NPC_Type then
+         if Group then
+            P := To_Unbounded_String
+              (FC.Bold (To_String (E.Name)) & " (" & Count_Text (E.Count) &
+               (if E.Has_NPC_Type then " " & NPC_Type_Plural (E) else "") & ").");
+         elsif E.Has_NPC_Type then
             P := To_Unbounded_String
               (FC.Bold (To_String (E.Name)) & " (" & FC.NPC_Type_Text (E) & ").");
          else
@@ -311,7 +338,7 @@ package body Ova_Fmt.Format_Inline is
             Add (P, T);
          end if;
       end;
-      Add_Combat (P, E.Combat);
+      Add_Combat (P, E.Combat, Group);
       Paragraph (P);
       for A of E.Abilities loop
          Linked (A);

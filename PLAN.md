@@ -2678,3 +2678,17 @@ automatically.
   (the Sample NPCs print only that), saved back as one value.
   Verified: every existing fixture's output in every format is
   byte-identical (539 runs).
+- **`count`, one stat block for a group** (asked for by the user,
+  2026-11-02, for the holdout guards of Lost-Worlds' `001-cast.yaml`,
+  which a `sed` in that repo's makefile had been rewording). An
+  optional entity key, read by `Load_Count`: an integer, default 1;
+  under 1 is a recorded error, `"0" is not 1 or more`, and something
+  that isn't an integer fails as any optional integer does. `Count` has
+  no `Has_` flag: `count: 1` means the same as no `count`. Only the
+  inline format shows it, since every other format is a sheet and a
+  sheet describes one. Over 1 the lead is `**Guards** (three Extras).`,
+  or `**Crowd** (three).` with no NPC type; a Fragment that leads with
+  its background adds `Extra NPCs (three).` or `(three).`; and TV is
+  `TV 1 each.` (`TV 1\* each.` overridden). A linked Companion's TV has
+  no "each". Counts are words up to twelve, then digits; the plural is
+  an `s`, except `Secondaries`. Synthetic fixture: `Group.yaml`.
