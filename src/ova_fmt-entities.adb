@@ -62,12 +62,25 @@ package body Ova_Fmt.Entities is
       return False;
    end Approximate_Location;
 
-   procedure Record_Error (N : Nod.Node; Key : String; Message : String) is
-      Err : Load_Error;
-      Loc : Nod.Node_Location;
+   procedure Record_Error (N : Nod.Node; Key : String; Raw : String) is
+      Err     : Load_Error;
+      Loc     : Nod.Node_Location;
+      Path    : constant String := N.Path & "/" & Key;
+      --  alibfyaml's Data_Error message starts with the value's line
+      --  and column and then its path, which is this one; drop both,
+      --  since the location and path are printed apart.
+      Message : constant String := Libfyaml.Without_Location (Raw);
+      Prefix  : constant String := Path & ": ";
    begin
-      Err.Message := To_Unbounded_String (Message);
-      Err.Path := To_Unbounded_String (N.Path & "/" & Key);
+      if Message'Length >= Prefix'Length
+        and then Message (Message'First .. Message'First + Prefix'Length - 1) = Prefix
+      then
+         Err.Message := To_Unbounded_String
+           (Message (Message'First + Prefix'Length .. Message'Last));
+      else
+         Err.Message := To_Unbounded_String (Message);
+      end if;
+      Err.Path := To_Unbounded_String (Path);
       if Approximate_Location (N, Loc) then
          Err.Has_Location := True;
          Err.Line := Loc.Line;
