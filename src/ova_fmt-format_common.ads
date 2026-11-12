@@ -60,6 +60,17 @@ package Ova_Fmt.Format_Common is
    --  S with each line feed made a space: for a node of h-m-m's
    --  outline, or a raw table's cell, which hold one line of text.
 
+   function Trim_Blanks (S : String) return String;
+   --  S without leading or trailing blanks, tabs, line feeds or
+   --  carriage returns.
+
+   function Reflow (S : String) return String;
+   function Reflow (S : Unbounded_String) return String;
+   --  YAML prose as the sheet formats (-X, -S) hold it: each line
+   --  trimmed, a paragraph's lines joined with spaces, paragraphs
+   --  (separated by blank lines) with a single LF. They wrap the
+   --  lines themselves.
+
    function Override_Mark (Overridden : Boolean; Raw : Boolean := False) return String;
    --  What follows a number its mapping's `overrides:` lists (PLAN.md
    --  §9 step 9): "" if not Overridden; "*"; or "\*" where the text

@@ -89,6 +89,56 @@ package body Ova_Fmt.Format_Common is
       return Result;
    end All_One_Line;
 
+   function Is_Blank (C : Character) return Boolean is
+     (C = ' ' or else C = ASCII.HT or else C = ASCII.LF or else
+      C = ASCII.CR);
+
+   function Trim_Blanks (S : String) return String is
+      First : Positive := S'First;
+      Last  : Natural := S'Last;
+   begin
+      while First <= Last and then Is_Blank (S (First)) loop
+         First := First + 1;
+      end loop;
+      while Last >= First and then Is_Blank (S (Last)) loop
+         Last := Last - 1;
+      end loop;
+      return S (First .. Last);
+   end Trim_Blanks;
+
+   function Reflow (S : String) return String is
+      Result  : Unbounded_String;
+      In_Para : Boolean := False;  --  a paragraph has text in Result
+      Break   : Boolean := False;  --  a blank line since its last line
+      From    : Positive := S'First;
+      To      : Natural;
+   begin
+      while From <= S'Last + 1 loop
+         To := From;
+         while To <= S'Last and then S (To) /= ASCII.LF loop
+            To := To + 1;
+         end loop;
+         declare
+            Line : constant String := Trim_Blanks (S (From .. To - 1));
+         begin
+            if Line = "" then
+               Break := In_Para;
+            else
+               if In_Para then
+                  Append (Result, (if Break then ASCII.LF else ' '));
+               end if;
+               Append (Result, Line);
+               In_Para := True;
+               Break := False;
+            end if;
+         end;
+         From := To + 1;
+      end loop;
+      return To_String (Result);
+   end Reflow;
+
+   function Reflow (S : Unbounded_String) return String is (Reflow (To_String (S)));
+
    -----------------------------------------------------------------
    --  The keys added for the character generator (PLAN.md §9 step
    --  9).

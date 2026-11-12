@@ -71,7 +71,8 @@ package Ova_Fmt.Config is
    --  Inline: each entity as one Markdown paragraph, a stat block for
    --  an adventure's cast list, per the user (2026-10-23) --
    --  Ova_Fmt.Format_Inline, its own package like Format_Hmm.
-   type Output_Format is (Terse, Gemtext, Markdown, Html_In_Rst, Groff_In_Rst, Hmm, Inline, Form);
+   type Output_Format is (Terse, Gemtext, Markdown, Html_In_Rst, Groff_In_Rst, Hmm, Inline, Form,
+                          Sheet);
 
    Format : aliased Output_Format := Terse;
    --  -g/--gemtext, -M/--markdown, -H/--html, -G/--groff, -m/--hmm, or
@@ -117,6 +118,15 @@ package Ova_Fmt.Config is
    Gemtext_Emphasis : aliased Boolean := False;  -- -e/--gemtext-emphasis
 
    Output_File : aliased Arg_Parser.String_Reference;  -- -o/--output; null = unset (stdout)
+
+   --  With -S/--sheet, the portrait for every main entity, in place of
+   --  its own `portrait:` (the poc port's PLAN.md, "The portrait").
+   Portrait : aliased Arg_Parser.String_Reference;  -- -P/--portrait; null = unset
+
+   --  The directory of the file being read, with its final "/", or ""
+   --  for one in the current directory or standard input: a relative
+   --  `portrait:` path is relative to the YAML file.
+   Source_Dir : Arg_Parser.String_Reference;
 
    Underliner    : aliased Character := '=';        -- -u/--underliner
    Subunderliner : aliased Character := ASCII.NUL;  -- -U/--subunderliner; NUL = unset

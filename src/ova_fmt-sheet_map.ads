@@ -3,11 +3,11 @@
 --  and 4 attack boxes on page 1 (the poc port's PLAN.md, "The
 --  official character sheet as PDF").
 --
---  Shared by the sheet formats: Ova_Fmt.Format_Form (-X) now, and
---  the typeset sheet (-S) later. This package decides what goes on
---  which copy of page 1 and in what order; it measures nothing. A
---  format that wraps a row onto more than one line (-S) will need
---  Fill to count rows by height instead of one per line.
+--  Shared by the sheet formats, Ova_Fmt.Format_Form (-X) and
+--  Ova_Fmt.Format_Sheet (-S). This package decides what goes on which
+--  copy of page 1 and in what order; it measures nothing. -X clips a
+--  row at its line, so a row is a line; -S wraps a row onto the ruled
+--  lines below it, so it gives Fill a function counting a row's lines.
 --
 --  The rows follow the rulebook's Sample Characters ("Sub-Abilities,
 --  as the rulebook prints them" in that PLAN.md):
@@ -45,6 +45,11 @@ package Ova_Fmt.Sheet_Map is
       Kind     : Row_Kind := Item;
       Level    : Unbounded_String;  --  "+2"; "" for a Spell, or a repeated parent
       Text     : Unbounded_String;  --  "Barrier [Perks: ...; 5 Endurance]"
+      --  Text in its two parts, for -S's faked small caps: Plain
+      --  without the bracket ("Barrier"), Mods what is inside it
+      --  ("Perks: ...; 5 Endurance"), "" if there is none.
+      Plain    : Unbounded_String;
+      Mods     : Unbounded_String;
       --  The item's `note:`, as "Barrier: note text", for the format
       --  to place off the row: the rulebook doesn't print it there.
       Has_Note : Boolean := False;
@@ -87,10 +92,16 @@ package Ova_Fmt.Sheet_Map is
    package Page_1_Vectors is new Ada.Containers.Vectors
      (Index_Type => Positive, Element_Type => Page_1);
 
-   function Fill (E : Entities.Entity) return Page_1_Vectors.Vector;
+   --  How many ruled lines a row takes.
+   type Row_Lines is access function (R : Row) return Positive;
+
+   function Fill (E : Entities.Entity; Lines : Row_Lines := null)
+     return Page_1_Vectors.Vector;
    --  E's copies of page 1: its own first (at least one, titled with
    --  its name; any more "Name (continued)"), then each Companion's
    --  or Vehicle's, in the order of the Abilities granting them. The
-   --  numbers are as in Raw tables: ASCII `*` for an override.
+   --  numbers are as in Raw tables: ASCII `*` for an override. A
+   --  column holds Ability_Slots lines, each row taking Lines (Row)
+   --  of them, or one if Lines is null.
 
 end Ova_Fmt.Sheet_Map;

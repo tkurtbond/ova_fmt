@@ -29,21 +29,31 @@ package body Ova_Fmt.Sheet_Map is
       then To_Unbounded_String (FC.Name_Detail (Name, Has_Detail, Detail) & ": ") & Note
       else Null_Unbounded_String);
 
+   --  A row of Kind with Level, its text Plain and Bracket (" [...]"
+   --  from Format_Modifiers_Bracket, or "").
+   function Make_Row (Kind : Row_Kind; Level, Plain, Bracket : String;
+                      Has_Note : Boolean := False;
+                      Note : Unbounded_String := Null_Unbounded_String) return Row is
+     ((Kind     => Kind,
+       Level    => To_Unbounded_String (Level),
+       Text     => To_Unbounded_String (Plain & Bracket),
+       Plain    => To_Unbounded_String (Plain),
+       Mods     => To_Unbounded_String
+                     (if Bracket = "" then ""
+                      else Bracket (Bracket'First + 2 .. Bracket'Last - 1)),
+       Has_Note => Has_Note,
+       Note     => Note));
+
    --  "Name (detail)", then (half TV) with -O, then the bracket.
-   function Sub_Item_Text (S : Entities.Sub_Item) return Unbounded_String is
-     (To_Unbounded_String
-        (FC.Name_Detail (S.Name, S.Has_Detail, S.Detail) &
-         FC.Half_TV_Text (S.Has_Threat_Value_Half, S.Threat_Value_Half) &
+   function Sub_Item_Row (S : Entities.Sub_Item; Kind : Row_Kind) return Row is
+     (Make_Row
+        (Kind, FC.Signed_Img (S.Level),
+         FC.Name_Detail (S.Name, S.Has_Detail, S.Detail) &
+           FC.Half_TV_Text (S.Has_Threat_Value_Half, S.Threat_Value_Half),
          FC.Format_Modifiers_Bracket
            (S.Perks, S.Flaws, S.Has_Endurance, S.Endurance,
-            S.Overrides (Entities.Endurance), Raw => True)));
-
-   function Sub_Item_Row (S : Entities.Sub_Item; Kind : Row_Kind) return Row is
-     ((Kind     => Kind,
-       Level    => To_Unbounded_String (FC.Signed_Img (S.Level)),
-       Text     => Sub_Item_Text (S),
-       Has_Note => S.Has_Note,
-       Note     => Note_Of (S.Name, S.Has_Detail, S.Detail, S.Has_Note, S.Note)));
+            S.Overrides (Entities.Endurance), Raw => True),
+         S.Has_Note, Note_Of (S.Name, S.Has_Detail, S.Detail, S.Has_Note, S.Note)));
 
    function Single (R : Row) return Block is
      ((Rows => Row_Vectors.To_Vector (R, 1), Continued => R));
@@ -55,15 +65,13 @@ package body Ova_Fmt.Sheet_Map is
       B    : Block;
    begin
       B.Rows.Append
-        ((Kind     => Item,
-          Level    => To_Unbounded_String (FC.Signed_Img (A.Level)),
-          Text     => To_Unbounded_String
-                        (Name & FC.Half_TV_Text (A.Has_Threat_Value_Half, A.Threat_Value_Half) &
-                         FC.Format_Modifiers_Bracket
-                           (A.Perks, A.Flaws, A.Has_Endurance, A.Endurance,
-                            A.Overrides (Entities.Endurance), Raw => True)),
-          Has_Note => A.Has_Note,
-          Note     => Note_Of (A.Name, A.Has_Detail, A.Detail, A.Has_Note, A.Note)));
+        (Make_Row
+           (Item, FC.Signed_Img (A.Level),
+            Name & FC.Half_TV_Text (A.Has_Threat_Value_Half, A.Threat_Value_Half),
+            FC.Format_Modifiers_Bracket
+              (A.Perks, A.Flaws, A.Has_Endurance, A.Endurance,
+               A.Overrides (Entities.Endurance), Raw => True),
+            A.Has_Note, Note_Of (A.Name, A.Has_Detail, A.Detail, A.Has_Note, A.Note)));
       for S of A.Sub_Abilities loop
          B.Rows.Append (Sub_Item_Row (S, Sub));
       end loop;
@@ -71,51 +79,75 @@ package body Ova_Fmt.Sheet_Map is
          B.Rows.Append (Sub_Item_Row (S, Sub));
       end loop;
       for S of A.Spells loop
-         B.Rows.Append
-           ((Kind   => Spell,
-             Text   => To_Unbounded_String (FC.Format_Short_Spell_Line (S, Raw => True)),
-             others => <>));
+         B.Rows.Append (Make_Row (Spell, "", FC.Format_Short_Spell_Line (S, Raw => True), ""));
       end loop;
-      B.Continued := (Kind   => Item,
-                      Text   => To_Unbounded_String (Name & " (continued)"),
-                      others => <>);
+      B.Continued := Make_Row (Item, "", Name & " (continued)", "");
       return B;
    end Ability_Block;
 
-   --  Blocks into columns of Slots rows, one column per copy of page
+   --  Blocks into columns of Slots lines, one column per copy of page
    --  1, keeping each block together when it can.
-   function Place (Blocks : Block_Vectors.Vector; Slots : Positive)
-     return Column_Vectors.Vector
+   function Place (Blocks : Block_Vectors.Vector; Slots : Positive;
+                   Lines : Row_Lines) return Column_Vectors.Vector
    is
       Columns : Column_Vectors.Vector;
       Current : Row_Vectors.Vector;
+      Used    : Natural := 0;  --  Current's lines
 
-      function Left return Natural is (Slots - Natural (Current.Length));
+      function Height (R : Row) return Positive is
+        (if Lines = null then 1 else Lines (R));
+
+      function Height (Rows : Row_Vectors.Vector) return Natural is
+         H : Natural := 0;
+      begin
+         for R of Rows loop
+            H := H + Height (R);
+         end loop;
+         return H;
+      end Height;
+
+      --  What is left of the column, never negative: a row taller
+      --  than the column overfills one.
+      function Left return Natural is (if Used >= Slots then 0 else Slots - Used);
+
+      procedure Add (R : Row) is
+      begin
+         Current.Append (R);
+         Used := Used + Height (R);
+      end Add;
 
       procedure Next is
       begin
          Columns.Append (Current);
          Current.Clear;
+         Used := 0;
       end Next;
    begin
       for B of Blocks loop
-         if Natural (B.Rows.Length) <= Left then
-            Current.Append (B.Rows);
-         elsif Natural (B.Rows.Length) <= Slots then
+         if Height (B.Rows) <= Left then
+            for R of B.Rows loop
+               Add (R);
+            end loop;
+         elsif Height (B.Rows) <= Slots then
             Next;
-            Current.Append (B.Rows);
+            for R of B.Rows loop
+               Add (R);
+            end loop;
          else
             --  Taller than the column: split, starting here unless
             --  there isn't room for the parent and one row under it.
-            if Left < 2 and then not Current.Is_Empty then
+            if Left < Height (B.Rows (1)) +
+                       (if Natural (B.Rows.Length) > 1 then Height (B.Rows (2)) else 0)
+              and then not Current.Is_Empty
+            then
                Next;
             end if;
             for I in B.Rows.First_Index .. B.Rows.Last_Index loop
-               if Left = 0 then
+               if Height (B.Rows (I)) > Left and then not Current.Is_Empty then
                   Next;
-                  Current.Append (B.Continued);
+                  Add (B.Continued);
                end if;
-               Current.Append (B.Rows (I));
+               Add (B.Rows (I));
             end loop;
          end if;
       end loop;
@@ -157,10 +189,11 @@ package body Ova_Fmt.Sheet_Map is
       Abilities  : Block_Vectors.Vector;
       Weaknesses : Block_Vectors.Vector;
       Combat     : Entities.Combat_Stats;
-      NPC_Type   : String)
+      NPC_Type   : String;
+      Lines      : Row_Lines)
    is
-      A_Columns : constant Column_Vectors.Vector := Place (Abilities, Ability_Slots);
-      W_Columns : constant Column_Vectors.Vector := Place (Weaknesses, Weakness_Slots);
+      A_Columns : constant Column_Vectors.Vector := Place (Abilities, Ability_Slots, Lines);
+      W_Columns : constant Column_Vectors.Vector := Place (Weaknesses, Weakness_Slots, Lines);
       Attacks   : constant Natural :=
         (if Combat.Has_Combat then Natural (Combat.Attacks.Length) else 0);
       Copies    : constant Positive :=
@@ -215,7 +248,9 @@ package body Ova_Fmt.Sheet_Map is
       end loop;
    end Add_Copies;
 
-   function Fill (E : Entities.Entity) return Page_1_Vectors.Vector is
+   function Fill (E : Entities.Entity; Lines : Row_Lines := null)
+     return Page_1_Vectors.Vector
+   is
       Pages      : Page_1_Vectors.Vector;
       Abilities  : Block_Vectors.Vector;
       Weaknesses : Block_Vectors.Vector;
@@ -225,13 +260,11 @@ package body Ova_Fmt.Sheet_Map is
       end loop;
       for W of E.Weaknesses loop
          Weaknesses.Append
-           (Single ((Kind   => Item,
-                     Level  => To_Unbounded_String (FC.Signed_Img (W.Level)),
-                     Text   => To_Unbounded_String (FC.Name_Detail (W.Name, W.Has_Detail, W.Detail)),
-                     others => <>)));
+           (Single (Make_Row (Item, FC.Signed_Img (W.Level),
+                              FC.Name_Detail (W.Name, W.Has_Detail, W.Detail), "")));
       end loop;
       Add_Copies (Pages, E.Name, To_String (E.Name), E.Has_Player, E.Player,
-                  Abilities, Weaknesses, E.Combat, FC.NPC_Type_Text (E));
+                  Abilities, Weaknesses, E.Combat, FC.NPC_Type_Text (E), Lines);
 
       for A of E.Abilities loop
          if A.Sub_Entity /= null then
@@ -252,7 +285,7 @@ package body Ova_Fmt.Sheet_Map is
                     (Pages, SE.Name,
                      To_String (SE.Name) & " (" & To_String (E.Name) & "'s " &
                      To_String (SE.Label) & ")",
-                     False, Null_Unbounded_String, S_Abl, S_Wk, SE.Combat, "");
+                     False, Null_Unbounded_String, S_Abl, S_Wk, SE.Combat, "", Lines);
                end if;
             end;
          end if;

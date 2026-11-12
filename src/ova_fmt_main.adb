@@ -3,7 +3,8 @@
 --  Dispatches to Ova_Fmt.Format_Rst (Terse, Html_In_Rst,
 --  Groff_In_Rst), Ova_Fmt.Format_Gemini (Gemtext),
 --  Ova_Fmt.Format_Markdown (Markdown), Ova_Fmt.Format_Hmm (Hmm),
---  Ova_Fmt.Format_Inline (Inline), or Ova_Fmt.Format_Form (Form) by
+--  Ova_Fmt.Format_Inline (Inline), Ova_Fmt.Format_Form (Form), or
+--  Ova_Fmt.Format_Sheet (Sheet) by
 --  Config.Format -- see
 --  Ova_Fmt.Format_Common's header comment for why those are split this
 --  way. Direct-to-Lout is still unimplemented (PLAN.md §9 step 7).
@@ -29,6 +30,7 @@ with Ova_Fmt.Format_Hmm;
 with Ova_Fmt.Format_Inline;
 with Ova_Fmt.Format_Markdown;
 with Ova_Fmt.Format_Rst;
+with Ova_Fmt.Format_Sheet;
 
 procedure Ova_Fmt_Main is
 
@@ -119,12 +121,25 @@ procedure Ova_Fmt_Main is
       Root.Iterate (Visit'Access);
    end Process_Entities;
 
+   --  Config.Source_Dir: Filename up to its last "/".
+   procedure Set_Source_Dir (Filename : String) is
+      Last : Natural := Filename'First - 1;
+   begin
+      for I in Filename'Range loop
+         if Filename (I) = '/' then
+            Last := I;
+         end if;
+      end loop;
+      Ova_Fmt.Config.Source_Dir := new String'(Filename (Filename'First .. Last));
+   end Set_Source_Dir;
+
    procedure Process_One (Filename : String; Use_Stdin : Boolean) is
       Source : constant String := (if Use_Stdin then "(stdin)" else Filename);
       Count  : Natural := 0;
       Loaded : Ova_Fmt.Entities.Entity_Vectors.Vector;
    begin
       Ova_Fmt.Entities.Reset_Errors;
+      Set_Source_Dir (if Use_Stdin then "" else Filename);
       declare
          Stream : Streams.Document_Stream :=
            (if Use_Stdin
@@ -152,6 +167,8 @@ procedure Ova_Fmt_Main is
                   Ova_Fmt.Format_Inline.Process_Entity (Loaded (I), I);
                when Ova_Fmt.Config.Form =>
                   Ova_Fmt.Format_Form.Process_Entity (Loaded (I));
+               when Ova_Fmt.Config.Sheet =>
+                  Ova_Fmt.Format_Sheet.Process_Entity (Loaded (I));
                when Ova_Fmt.Config.Terse | Ova_Fmt.Config.Html_In_Rst |
                     Ova_Fmt.Config.Groff_In_Rst =>
                   Ova_Fmt.Format_Rst.Process_Entity (Loaded (I), I);

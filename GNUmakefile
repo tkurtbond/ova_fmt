@@ -100,7 +100,14 @@ TEST_INLINEOUTPUT=$(foreach f,$(notdir $(TEST_DATA)),build/$(addsuffix .inline.m
 OVA_SHEET ?= $(HOME)/Reference/RPG/OVA/OVA-Blank-Character-Sheet-Form-Fillable.pdf
 TEST_FORMOUTPUT=$(foreach f,$(notdir $(TEST_DATA)),build/$(addsuffix .form.pdf,$(basename $(f))))
 
-.PHONY: all rst pdf gemtext markdown html groff hmm inline form install clean testclean
+# The same sheet with -S/--sheet's text typeset over it (ova_sheet.sh),
+# in the Noto Sans faces sheet_fonts.sh builds into SHEET_FONTS. Rerun
+# `make widths` only when the faces change: the widths -S measures with
+# are built into the program (src/ova_fmt-sheet_widths.ads).
+SHEET_FONTS ?= build/font
+TEST_SHEETOUTPUT=$(foreach f,$(notdir $(TEST_DATA)),build/$(addsuffix .sheet.pdf,$(basename $(f))))
+
+.PHONY: all rst pdf gemtext markdown html groff hmm inline form sheet fonts widths install clean testclean
 
 all: $(PROGRAM)
 
@@ -130,6 +137,17 @@ hmm: $(PROGRAM) $(TEST_HMMOUTPUT) $(TEST_HMM_COMPACT_OUTPUT) $(TEST_HMM_PLAIN_OU
 inline: $(PROGRAM) $(TEST_INLINEOUTPUT)
 
 form: $(PROGRAM) $(TEST_FORMOUTPUT)
+
+sheet: $(PROGRAM) fonts $(TEST_SHEETOUTPUT)
+
+fonts: $(SHEET_FONTS)/devpdf/download
+
+$(SHEET_FONTS)/devpdf/download: sheet_fonts.sh
+	./sheet_fonts.sh $(SHEET_FONTS)
+
+widths: fonts
+	./sheet_widths.sh $(SHEET_FONTS) >src/ova_fmt-sheet_widths.ads.new
+	mv src/ova_fmt-sheet_widths.ads.new src/ova_fmt-sheet_widths.ads
 
 build/%.gen.rst : %.yaml $(PROGRAM)
 	./$(PROGRAM) "$<" >$@
@@ -173,6 +191,12 @@ build/%.fields.json : %.yaml $(PROGRAM)
 build/%.form.pdf : build/%.fields.json ova_form.sh
 	./ova_form.sh -s "$(OVA_SHEET)" -o $@ $<
 
+build/%.sheet.tr : %.yaml $(PROGRAM)
+	./$(PROGRAM) -S "$<" >$@
+
+build/%.sheet.pdf : build/%.sheet.tr ova_sheet.sh $(SHEET_FONTS)/devpdf/download
+	./ova_sheet.sh -s "$(OVA_SHEET)" -F $(SHEET_FONTS) -o $@ $<
+
 #MS_COLUMNS=-V twocolumns
 build/%.rst.ms.pdf : build/%.gen.rst
 	pandoc -r rst -w ms --template=tkb $(MS_COLUMNS) -o $@ $<
@@ -184,8 +208,8 @@ clean:
 	-rm -f $(PROGRAM)
 
 testclean:
-	-rm -v build/*.gen.rst build/*.rst.ms.pdf build/*.gmi build/*.md build/*.md.ms.pdf build/*.html build/*.hmm build/*.groff.gen.rst build/*.groff.pdf build/*.inline.md build/*.fields.json build/*.form.pdf
+	-rm -v build/*.gen.rst build/*.rst.ms.pdf build/*.gmi build/*.md build/*.md.ms.pdf build/*.html build/*.hmm build/*.groff.gen.rst build/*.groff.pdf build/*.inline.md build/*.fields.json build/*.form.pdf build/*.sheet.tr build/*.sheet.pdf
 
-.PRECIOUS: build/%.gen.rst build/%.rst.ms.pdf build/%.gmi build/%.emp.gmi build/%.md build/%.md.ms.pdf build/%.html.gen.rst build/%.html build/%.hmm build/%.compact.hmm build/%.plain.hmm build/%.groff.gen.rst build/%.groff.pdf build/%.inline.md build/%.fields.json build/%.form.pdf
+.PRECIOUS: build/%.gen.rst build/%.rst.ms.pdf build/%.gmi build/%.emp.gmi build/%.md build/%.md.ms.pdf build/%.html.gen.rst build/%.html build/%.hmm build/%.compact.hmm build/%.plain.hmm build/%.groff.gen.rst build/%.groff.pdf build/%.inline.md build/%.fields.json build/%.form.pdf build/%.sheet.tr build/%.sheet.pdf
 
 print-%  : ; @echo '$* = $($*)'

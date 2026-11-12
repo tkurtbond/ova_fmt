@@ -54,6 +54,12 @@ package body Ova_Fmt.Cli is
       return True;
    end Do_Form;
 
+   function Do_Sheet return Boolean is
+   begin
+      Config.Format := Config.Sheet;
+      return True;
+   end Do_Sheet;
+
    --  The message follows Arg_Parser's "Invalid value for option ",
    --  as its own (-L's) do.
    function Do_Subunderliner (Arg : String) return Boolean is

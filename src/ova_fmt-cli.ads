@@ -33,6 +33,7 @@ private
    function Do_Hmm return Boolean;
    function Do_Inline return Boolean;
    function Do_Form return Boolean;
+   function Do_Sheet return Boolean;
    function Do_Subunderliner (Arg : String) return Boolean;
    function Do_Underliner (Arg : String) return Boolean;
    function Do_Argument (Start_With : Positive; Arg : String) return Boolean;
@@ -84,6 +85,21 @@ private
          Short_Name  => 'X',
          Long_Name   => "form",
          Handler     => Do_Form'Access),
+      Arg_Parser.Make_Option
+        (Description => "Output troff placing the values on the official " &
+                         "character sheet, for ova_sheet.sh, which " &
+                         "typesets it with groff and lays it over the " &
+                         "blank sheet.",
+         Short_Name  => 'S',
+         Long_Name   => "sheet",
+         Handler     => Do_Sheet'Access),
+      Arg_Parser.Make_Set_String_Option
+        (Description => "With -S/--sheet, the portrait image for every " &
+                         "main entity, in place of its own portrait: " &
+                         "path. ova_sheet.sh converts it to PDF.",
+         Short_Name  => 'P',
+         Long_Name   => "portrait",
+         Variable    => Ova_Fmt.Config.Portrait'Access),
       Arg_Parser.Make_Set_Boolean_True_Option
         (Description => "With -g/--gemtext, emit *italic*/**bold** markers " &
                          "anyway -- gemtext's spec has no inline emphasis " &
