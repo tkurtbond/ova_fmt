@@ -2712,5 +2712,10 @@ automatically.
   because lines are broken with the dash's own width, and the
   procedures that compare a break with the text's length and slice it
   must use the dashed text: dashing only in `Add` raised
-  Constraint_Error. Only `-S` changed; `-X` (the form fields) and the
-  other formats still give `--` as written.
+  Constraint_Error. `-X` does the same (the user, the same day), more
+  simply: `Format_Form` measures each `--` as an em dash (1000 wide in
+  both Helvetica faces) and turns it into one only as a value is
+  written, since a field is cut only at a space, never inside a `--`;
+  qpdf takes the UTF-8, and the filled PDF shows the dash. No field
+  of the fixtures was cut differently. The other formats still give
+  `--` as written.

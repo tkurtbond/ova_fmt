@@ -56,6 +56,20 @@ package body Ova_Fmt.Format_Form is
       elsif Character'Pos (C) > 16#BF# then 556
       else 0);
 
+   --  "--" is written as an em dash (Dashes), 1000 wide in both
+   --  faces. Width_At is the width of what starts at Text (I), and
+   --  Step how many bytes that is: 2 for "--", else 1.
+   Em_Dash_Width : constant := 1000;
+
+   function Is_Dash (Text : String; I : Positive) return Boolean is
+     (Text (I) = '-' and then I < Text'Last and then Text (I + 1) = '-');
+
+   function Width_At (Text : String; I : Positive; Bold : Boolean) return Natural is
+     (if Is_Dash (Text, I) then Em_Dash_Width else Char_Width (Text (I), Bold));
+
+   function Step (Text : String; I : Positive) return Positive is
+     (if Is_Dash (Text, I) then 2 else 1);
+
    --  Where a width stops counting, whether a text's (in thousandths
    --  of an em) or a word's times its size: wider than any field, by
    --  more lines than any field holds, and small enough that times a
@@ -65,9 +79,11 @@ package body Ova_Fmt.Format_Form is
 
    function Text_Width (S : String; Bold : Boolean) return Natural is
       W : Natural := 0;
+      I : Positive := S'First;
    begin
-      for C of S loop
-         W := Natural'Min (W + Char_Width (C, Bold), Too_Wide);
+      while I <= S'Last loop
+         W := Natural'Min (W + Width_At (S, I, Bold), Too_Wide);
+         I := I + Step (S, I);
       end loop;
       return W;
    end Text_Width;
@@ -110,8 +126,8 @@ package body Ova_Fmt.Format_Form is
             J := I;
             W := 0;
             while J <= Text'Last and then Text (J) /= ' ' and then Text (J) /= LF loop
-               W := Natural'Min (W + Char_Width (Text (J), Bold) * Size, Too_Wide);
-               J := J + 1;
+               W := Natural'Min (W + Width_At (Text, J, Bold) * Size, Too_Wide);
+               J := J + Step (Text, J);
             end loop;
             if not Fresh then
                if Cur + Space + W <= Limit then
@@ -190,6 +206,28 @@ package body Ova_Fmt.Format_Form is
    ---------------------------------------------------------------------
    --  Text.
    ---------------------------------------------------------------------
+
+   --  Text with each "--" an em dash, U+2014 in UTF-8, as the
+   --  rulebook sets one (and -S does); the YAML has only ASCII to type
+   --  it with. Done only as a value is written: the measuring above
+   --  counts "--" as the dash, and a field is cut only at a space, so
+   --  never inside one.
+   function Dashes (Text : String) return String is
+      Em     : constant String :=
+        Character'Val (16#E2#) & Character'Val (16#80#) & Character'Val (16#94#);
+      Result : Unbounded_String;
+      I      : Positive := Text'First;
+   begin
+      while I <= Text'Last loop
+         if Is_Dash (Text, I) then
+            Append (Result, Em);
+         else
+            Append (Result, Text (I));
+         end if;
+         I := I + Step (Text, I);
+      end loop;
+      return To_String (Result);
+   end Dashes;
 
    --  S as a JSON string's contents.
    function Escape (S : String) return String is
@@ -572,7 +610,7 @@ package body Ova_Fmt.Format_Form is
       IO.Put_Line ("      ""fields"": {");
       for I in F.Fields.First_Index .. F.Fields.Last_Index loop
          IO.Put ("        """ & Escape (To_String (F.Fields (I).Name)) & """: """ &
-                 Escape (To_String (F.Fields (I).Value)) & '"');
+                 Escape (Dashes (To_String (F.Fields (I).Value))) & '"');
          if I < F.Fields.Last_Index then
             IO.Put (",");
          end if;
