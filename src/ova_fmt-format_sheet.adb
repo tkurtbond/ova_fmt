@@ -194,8 +194,13 @@ package body Ova_Fmt.Format_Sheet is
       return S;
    end Plain;
 
+   --  Where Width stops counting: 20,000 points, far wider than any
+   --  line, and small enough that Break's sum of two such widths is
+   --  still a Natural.
+   Max_Width : constant := 200_000_000;
+
    --  The width of S's bytes First .. Last, in ten-thousandths of a
-   --  point: a run of one look at a time.
+   --  point, up to Max_Width: a run of one look at a time.
    function Width (S : Styled; First, Last : Natural) return Natural is
       T : constant String := To_String (S.Text);
       W : Natural := 0;
@@ -207,7 +212,9 @@ package body Ova_Fmt.Format_Sheet is
          while J < Last and then S.Looks (J + 1) = S.Looks (I) loop
             J := J + 1;
          end loop;
-         W := W + SF.Text_Width (T (I .. J), S.Looks (I).Face) * S.Looks (I).Size;
+         W := Natural'Min
+                (W + SF.Text_Width (T (I .. J), S.Looks (I).Face) * S.Looks (I).Size,
+                 Max_Width);
          I := J + 1;
       end loop;
       return W;
@@ -464,8 +471,12 @@ package body Ova_Fmt.Format_Sheet is
 
    --  An owner's parts of the continuation pages, gathered over its
    --  copies of page 1.
+   --  What an owner's copies of page 1 send to the continuation pages:
+   --  the Character Name and Player Name fields in full when cut (the
+   --  first cut copy's), and the notes, attacks and combat notes that
+   --  don't fit.
    type Owner_Parts is record
-      Ability_Notes, Attacks, Combat_Notes : Unbounded_String;
+      Name, Player, Ability_Notes, Attacks, Combat_Notes : Unbounded_String;
    end record;
 
    --  Line added to Lines, LF-separated.
@@ -606,11 +617,18 @@ package body Ova_Fmt.Format_Sheet is
       Stat : constant SF.Face := SW.Condensed_Semibold;
    begin
       IO.Put_Line (".SP p1");
-      Put_Line_In (To_String (P.Title), SW.Regular, 120, 80,
-                   Character_Name, Centred => False);
-      if P.Has_Player then
-         Put_Line_In (To_String (P.Player), SW.Regular, 120, 80,
-                      Player_Name, Centred => False);
+      if not Put_Line_In (To_String (P.Title), SW.Regular, 120, 80,
+                          Character_Name, Centred => False)
+        and then Length (Parts.Name) = 0
+      then
+         Parts.Name := P.Title;
+      end if;
+      if P.Has_Player
+        and then not Put_Line_In (To_String (P.Player), SW.Regular, 120, 80,
+                                  Player_Name, Centred => False)
+        and then Length (Parts.Player) = 0
+      then
+         Parts.Player := P.Player;
       end if;
       Put_Rows (Parts, P.Abilities, Ability_Dice_X, Ability_Name_X);
       Put_Rows (Parts, P.Weaknesses, Weakness_Dice_X, Weakness_Name_X);
@@ -662,6 +680,8 @@ package body Ova_Fmt.Format_Sheet is
    procedure Add_Owner_Sections (Sections : in out Section_Vectors.Vector;
                                  Owner : String; Parts : Owner_Parts) is
    begin
+      Add_Section (Sections, Owner & ": Name", To_String (Parts.Name));
+      Add_Section (Sections, Owner & ": Player Name", To_String (Parts.Player));
       Add_Section (Sections, Owner & ": Ability Notes", To_String (Parts.Ability_Notes));
       Add_Section (Sections, Owner & ": Attacks", To_String (Parts.Attacks));
       Add_Section (Sections, Owner & ": Combat Notes (continued)",

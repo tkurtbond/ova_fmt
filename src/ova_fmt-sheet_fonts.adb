@@ -67,7 +67,7 @@ package body Ova_Fmt.Sheet_Fonts is
          if Code < 32 then
             null;  --  control characters set nothing
          else
-            W := W + Char_Width (Code, F);
+            W := Natural'Min (W + Char_Width (Code, F), Max_Text_Width);
          end if;
       end loop;
       return W;

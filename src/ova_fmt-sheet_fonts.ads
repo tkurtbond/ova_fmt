@@ -20,10 +20,16 @@ package Ova_Fmt.Sheet_Fonts is
    --  Code's width in F, in thousandths of an em; 1000, wider than any
    --  measured character, for one that wasn't measured.
 
+   Max_Text_Width : constant := 1_000_000;
+   --  Where Text_Width stops counting: 1,000 ems, wider than any line
+   --  on the sheet, and small enough that times a size in tenths of a
+   --  point (180 at most) it is still a Natural. A word of a million
+   --  characters would otherwise overflow it.
+
    function Text_Width (S : String; F : Face) return Natural;
-   --  The width of S, UTF-8, in F, in thousandths of an em. A byte
-   --  that doesn't start or continue a valid sequence counts as an
-   --  unmeasured character.
+   --  The width of S, UTF-8, in F, in thousandths of an em, up to
+   --  Max_Text_Width. A byte that doesn't start or continue a valid
+   --  sequence counts as an unmeasured character.
 
    function Upper (S : String) return String;
    --  S with ASCII letters in upper case, the faked small caps. Only

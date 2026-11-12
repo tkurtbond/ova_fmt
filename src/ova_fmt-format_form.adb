@@ -56,11 +56,18 @@ package body Ova_Fmt.Format_Form is
       elsif Character'Pos (C) > 16#BF# then 556
       else 0);
 
+   --  Where a width stops counting, whether a text's (in thousandths
+   --  of an em) or a word's times its size: wider than any field, by
+   --  more lines than any field holds, and small enough that times a
+   --  size, or added to a line's width, it is still a Natural. A word
+   --  of a million characters would otherwise overflow it.
+   Too_Wide : constant := 100_000_000;
+
    function Text_Width (S : String; Bold : Boolean) return Natural is
       W : Natural := 0;
    begin
       for C of S loop
-         W := W + Char_Width (C, Bold);
+         W := Natural'Min (W + Char_Width (C, Bold), Too_Wide);
       end loop;
       return W;
    end Text_Width;
@@ -103,7 +110,7 @@ package body Ova_Fmt.Format_Form is
             J := I;
             W := 0;
             while J <= Text'Last and then Text (J) /= ' ' and then Text (J) /= LF loop
-               W := W + Char_Width (Text (J), Bold) * Size;
+               W := Natural'Min (W + Char_Width (Text (J), Bold) * Size, Too_Wide);
                J := J + 1;
             end loop;
             if not Fresh then
