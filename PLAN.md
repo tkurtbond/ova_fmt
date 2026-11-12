@@ -2729,5 +2729,7 @@ automatically.
   (`NSXCB`, now built by `sheet_fonts.sh`), each scaled to its width on
   the sheet. The logo, page 2's spiral binding and the vertical
   "Character Record" are left out. `ova_sheet.sh` then needs no sheet
-  and lays none under the pages. The poc port's PLAN.md, "Redrawing
-  the sheet", has the details.
+  and lays none under the pages. `make redraw` builds
+  `build/*.redraw.pdf` (from `build/*.redraw.tr`) for every fixture,
+  without `OVA_SHEET`. The poc port's PLAN.md, "Redrawing the sheet",
+  has the details.

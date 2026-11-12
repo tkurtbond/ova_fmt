@@ -107,7 +107,11 @@ TEST_FORMOUTPUT=$(foreach f,$(notdir $(TEST_DATA)),build/$(addsuffix .form.pdf,$
 SHEET_FONTS ?= build/font
 TEST_SHEETOUTPUT=$(foreach f,$(notdir $(TEST_DATA)),build/$(addsuffix .sheet.pdf,$(basename $(f))))
 
-.PHONY: all rst pdf gemtext markdown html groff hmm inline form sheet fonts widths install clean testclean
+# The same with groff drawing the sheet's frames itself (-S -R/--redraw;
+# PLAN.md): no Dyskami artwork, so no OVA_SHEET and no qpdf needed.
+TEST_REDRAWOUTPUT=$(foreach f,$(notdir $(TEST_DATA)),build/$(addsuffix .redraw.pdf,$(basename $(f))))
+
+.PHONY: all rst pdf gemtext markdown html groff hmm inline form sheet redraw fonts widths install clean testclean
 
 all: $(PROGRAM)
 
@@ -139,6 +143,8 @@ inline: $(PROGRAM) $(TEST_INLINEOUTPUT)
 form: $(PROGRAM) $(TEST_FORMOUTPUT)
 
 sheet: $(PROGRAM) fonts $(TEST_SHEETOUTPUT)
+
+redraw: $(PROGRAM) fonts $(TEST_REDRAWOUTPUT)
 
 fonts: $(SHEET_FONTS)/devpdf/download
 
@@ -197,6 +203,12 @@ build/%.sheet.tr : %.yaml $(PROGRAM)
 build/%.sheet.pdf : build/%.sheet.tr ova_sheet.sh $(SHEET_FONTS)/devpdf/download
 	./ova_sheet.sh -s "$(OVA_SHEET)" -F $(SHEET_FONTS) -o $@ $<
 
+build/%.redraw.tr : %.yaml $(PROGRAM)
+	./$(PROGRAM) -S -R "$<" >$@
+
+build/%.redraw.pdf : build/%.redraw.tr ova_sheet.sh $(SHEET_FONTS)/devpdf/download
+	./ova_sheet.sh -F $(SHEET_FONTS) -o $@ $<
+
 #MS_COLUMNS=-V twocolumns
 build/%.rst.ms.pdf : build/%.gen.rst
 	pandoc -r rst -w ms --template=tkb $(MS_COLUMNS) -o $@ $<
@@ -208,8 +220,8 @@ clean:
 	-rm -f $(PROGRAM)
 
 testclean:
-	-rm -v build/*.gen.rst build/*.rst.ms.pdf build/*.gmi build/*.md build/*.md.ms.pdf build/*.html build/*.hmm build/*.groff.gen.rst build/*.groff.pdf build/*.inline.md build/*.fields.json build/*.form.pdf build/*.sheet.tr build/*.sheet.pdf
+	-rm -v build/*.gen.rst build/*.rst.ms.pdf build/*.gmi build/*.md build/*.md.ms.pdf build/*.html build/*.hmm build/*.groff.gen.rst build/*.groff.pdf build/*.inline.md build/*.fields.json build/*.form.pdf build/*.sheet.tr build/*.sheet.pdf build/*.redraw.tr build/*.redraw.pdf
 
-.PRECIOUS: build/%.gen.rst build/%.rst.ms.pdf build/%.gmi build/%.emp.gmi build/%.md build/%.md.ms.pdf build/%.html.gen.rst build/%.html build/%.hmm build/%.compact.hmm build/%.plain.hmm build/%.groff.gen.rst build/%.groff.pdf build/%.inline.md build/%.fields.json build/%.form.pdf build/%.sheet.tr build/%.sheet.pdf
+.PRECIOUS: build/%.gen.rst build/%.rst.ms.pdf build/%.gmi build/%.emp.gmi build/%.md build/%.md.ms.pdf build/%.html.gen.rst build/%.html build/%.hmm build/%.compact.hmm build/%.plain.hmm build/%.groff.gen.rst build/%.groff.pdf build/%.inline.md build/%.fields.json build/%.form.pdf build/%.sheet.tr build/%.sheet.pdf build/%.redraw.tr build/%.redraw.pdf
 
 print-%  : ; @echo '$* = $($*)'
