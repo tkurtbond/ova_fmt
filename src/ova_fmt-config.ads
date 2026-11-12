@@ -123,6 +123,10 @@ package Ova_Fmt.Config is
    --  its own `portrait:` (the poc port's PLAN.md, "The portrait").
    Portrait : aliased Arg_Parser.String_Reference;  -- -P/--portrait; null = unset
 
+   --  With -S/--sheet, draw the sheet's frames and labels in the troff,
+   --  so that no blank sheet goes under it (Ova_Fmt.Sheet_Draw).
+   Redraw : aliased Boolean := False;  -- -R/--redraw
+
    --  The directory of the file being read, with its final "/", or ""
    --  for one in the current directory or standard input: a relative
    --  `portrait:` path is relative to the YAML file.

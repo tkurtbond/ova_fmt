@@ -2719,3 +2719,15 @@ automatically.
   qpdf takes the UTF-8, and the filled PDF shows the dash. No field
   of the fixtures was cut differently. The other formats still give
   `--` as written.
+- **`-R`/`--redraw` draws the sheet** (the user, 2026-11-12: output
+  without Dyskami's artwork, that can be shared). With `-S`,
+  `Sheet_Draw` adds the colours and drawing macros to the preamble,
+  after a `.\" ova-sheet-redrawn` line, and each page 1 and page 2
+  draws its frames and labels (`.FR-p1`, `.FR-p2`) right after its
+  `.SP`, under the text; nothing else changes. The geometry is the
+  blank sheet's own, and the labels are Noto Sans ExtraCondensed Bold
+  (`NSXCB`, now built by `sheet_fonts.sh`), each scaled to its width on
+  the sheet. The logo, page 2's spiral binding and the vertical
+  "Character Record" are left out. `ova_sheet.sh` then needs no sheet
+  and lays none under the pages. The poc port's PLAN.md, "Redrawing
+  the sheet", has the details.

@@ -4,6 +4,7 @@ with Ada.Text_IO;
 with Arg_Parser;
 with Ova_Fmt.Config;
 with Ova_Fmt.Format_Common;
+with Ova_Fmt.Sheet_Draw;
 with Ova_Fmt.Sheet_Fonts;
 with Ova_Fmt.Sheet_Map;
 with Ova_Fmt.Sheet_Widths;
@@ -645,6 +646,9 @@ package body Ova_Fmt.Format_Sheet is
       Stat : constant SF.Face := SW.Condensed_Semibold;
    begin
       IO.Put_Line (".SP p1");
+      if Config.Redraw then
+         IO.Put_Line (Sheet_Draw.Page_1);
+      end if;
       if not Put_Line_In (To_String (P.Title), SW.Regular, 120, 80,
                           Character_Name, Centred => False)
         and then Length (Parts.Name) = 0
@@ -869,6 +873,9 @@ package body Ova_Fmt.Format_Sheet is
          for Line of Preamble loop
             IO.Put_Line (Line.all);
          end loop;
+         if Config.Redraw then
+            Sheet_Draw.Put_Preamble;
+         end if;
          First_Entity := False;
       end if;
 
@@ -894,6 +901,9 @@ package body Ova_Fmt.Format_Sheet is
       end if;
 
       IO.Put_Line (".SP p2");
+      if Config.Redraw then
+         IO.Put_Line (Sheet_Draw.Page_2);
+      end if;
       for P in Prose_Field loop
          Put_Block (To_String (Fitted (P)), Prose_Look, Prose_Rect (P), Prose_Leading);
       end loop;

@@ -101,6 +101,13 @@ private
          Long_Name   => "portrait",
          Variable    => Ova_Fmt.Config.Portrait'Access),
       Arg_Parser.Make_Set_Boolean_True_Option
+        (Description => "With -S/--sheet, draw the sheet's frames and " &
+                         "labels too, so that ova_sheet.sh needs no " &
+                         "blank sheet and lays none under the pages.",
+         Short_Name  => 'R',
+         Long_Name   => "redraw",
+         Variable    => Ova_Fmt.Config.Redraw'Access),
+      Arg_Parser.Make_Set_Boolean_True_Option
         (Description => "With -g/--gemtext, emit *italic*/**bold** markers " &
                          "anyway -- gemtext's spec has no inline emphasis " &
                          "at all, but many authors use them as an " &
