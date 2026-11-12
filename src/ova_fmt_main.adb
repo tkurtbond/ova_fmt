@@ -159,10 +159,53 @@ procedure Ova_Fmt_Main is
          end loop;
       end if;
    exception
-      --  Name_Error/Use_Error: an input file that can't be opened.
       --  None of these ends the run: the next file is still processed.
-      when E : Libfyaml.Parse_Error | Libfyaml.Missing_Key | Libfyaml.Data_Error |
-               Program_Error | Ova_Fmt.Entities.Shape_Error |
+      --
+      --  A value of the wrong kind: alibfyaml's message is
+      --  "[LINE:COLUMN: ]PATH: TEXT", put as a required field's error
+      --  is (Report_Errors), gcc style:
+      --  "FILE:3:13: error: /0/fragment: not a valid boolean: ...".
+      when E : Libfyaml.Missing_Key | Libfyaml.Data_Error =>
+         declare
+            Message : constant String := Ada.Exceptions.Exception_Message (E);
+            Rest    : constant String := Libfyaml.Without_Location (Message);
+            --  "LINE:COLUMN: ", or "".
+            Where   : constant String :=
+              Message (Message'First .. Message'Last - Rest'Length);
+         begin
+            Ada.Text_IO.Put_Line
+              (Ada.Text_IO.Standard_Error,
+               Source & (if Where = "" then ": " else ":" & Where) & "error: " & Rest);
+         end;
+         Had_Errors := True;
+      --  libfyaml's own diagnostics are gcc style already, a line for
+      --  each: "FILE:4:1: error: TEXT".  The last ends in two line
+      --  feeds (libfyaml's and alibfyaml's), and one is enough.
+      --  Anything else (a parser that couldn't be made) has no file
+      --  name in it.
+      when E : Libfyaml.Parse_Error =>
+         declare
+            Message : constant String := Ada.Exceptions.Exception_Message (E);
+            Prefix  : constant String := Source & ":";
+            Last    : Natural := Message'Last;
+         begin
+            if Message'Length > Prefix'Length
+              and then Message (Message'First .. Message'First + Prefix'Length - 1) = Prefix
+            then
+               while Last >= Message'First and then Message (Last) = ASCII.LF loop
+                  Last := Last - 1;
+               end loop;
+               Ada.Text_IO.Put_Line
+                 (Ada.Text_IO.Standard_Error, Message (Message'First .. Last));
+            else
+               Ada.Text_IO.Put_Line
+                 (Ada.Text_IO.Standard_Error,
+                  "ova_fmt: error processing " & Source & ": " & Message);
+            end if;
+         end;
+         Had_Errors := True;
+      --  Name_Error/Use_Error: an input file that can't be opened.
+      when E : Program_Error | Ova_Fmt.Entities.Shape_Error |
                Ada.IO_Exceptions.Name_Error | Ada.IO_Exceptions.Use_Error =>
          Ada.Text_IO.Put_Line
            (Ada.Text_IO.Standard_Error,

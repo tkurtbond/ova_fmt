@@ -2692,3 +2692,14 @@ automatically.
   `TV 1 each.` (`TV 1\* each.` overridden). A linked Companion's TV has
   no "each". Counts are words up to twelve, then digits; the plural is
   an `s`, except `Secondaries`. Synthetic fixture: `Group.yaml`.
+- **Error lines are gcc style, the file named once** (the user,
+  2026-11-12). alibfyaml `717b71e` put `LINE:COLUMN: PATH: ` at the
+  front of a Missing_Key/Data_Error message, which a value of the
+  wrong kind in an optional field raises through to `Process_One`;
+  that location is kept, and the error is put as a recorded one is,
+  `FILE:3:13: error: /0/fragment: not a valid boolean: "maybe"`, with
+  no `ova_fmt: error processing FILE: ` before it. A Parse_Error that
+  names the file (a YAML syntax error) is put the same way, as it
+  comes, `FILE:4:1: error: flow sequence without a closing bracket`,
+  without the blank line its two final line feeds made. Other errors
+  keep `ova_fmt: error processing FILE: `. ova_fmt_po does the same.
