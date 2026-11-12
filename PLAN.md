@@ -2703,3 +2703,14 @@ automatically.
   comes, `FILE:4:1: error: flow sequence without a closing bracket`,
   without the blank line its two final line feeds made. Other errors
   keep `ova_fmt: error processing FILE: `. ova_fmt_po does the same.
+- **`-S` sets `--` as an em dash** (the user, 2026-11-12: the YAML's
+  `--` printed as two hyphens). `Format_Sheet.Dashes` turns each `--`
+  into U+2014 in UTF-8, which groff reads through `preconv`
+  (`ova_sheet.sh`'s `-k`) and the widths tables already measure. It is
+  done where text comes in (`Add`, `Put_Text`, and `Put_Line_In`,
+  `Fit_Block`, `Put_Block` and `Put_Clause` before they measure),
+  because lines are broken with the dash's own width, and the
+  procedures that compare a break with the text's length and slice it
+  must use the dashed text: dashing only in `Add` raised
+  Constraint_Error. Only `-S` changed; `-X` (the form fields) and the
+  other formats still give `--` as written.

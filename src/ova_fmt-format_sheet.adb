@@ -179,10 +179,35 @@ package body Ova_Fmt.Format_Sheet is
       Looks : Look_Vectors.Vector;
    end record;
 
-   procedure Add (S : in out Styled; Text : String; L : Look) is
+   --  Text with each "--" an em dash, U+2014 in UTF-8, as the
+   --  rulebook sets one; the YAML has only ASCII to type it with.
+   --  Done where text comes in (Add, and the procedures that cut a
+   --  text by its length, before they measure it), so that lines are
+   --  broken with the dash's own width and cut on the dashed text.
+   --  groff reads it through preconv (ova_sheet.sh's -k).
+   function Dashes (Text : String) return String is
+      Em     : constant String :=
+        Character'Val (16#E2#) & Character'Val (16#80#) & Character'Val (16#94#);
+      Result : Unbounded_String;
+      I      : Natural := Text'First;
    begin
-      Append (S.Text, Text);
-      for I in Text'Range loop
+      while I <= Text'Last loop
+         if Text (I) = '-' and then I < Text'Last and then Text (I + 1) = '-' then
+            Append (Result, Em);
+            I := I + 2;
+         else
+            Append (Result, Text (I));
+            I := I + 1;
+         end if;
+      end loop;
+      return To_String (Result);
+   end Dashes;
+
+   procedure Add (S : in out Styled; Text : String; L : Look) is
+      T : constant String := Dashes (Text);
+   begin
+      Append (S.Text, T);
+      for I in T'Range loop
          S.Looks.Append (L);
       end loop;
    end Add;
@@ -349,10 +374,11 @@ package body Ova_Fmt.Format_Sheet is
    --  Text in R's one line, centred or at its left, in F at Size,
    --  stepping down half a point at a time to Floor until it fits; if
    --  not even then, the words that fit. False if not all of it fit.
-   function Put_Line_In (Text : String; F : SF.Face; Size, Floor : Positive;
+   function Put_Line_In (Line : String; F : SF.Face; Size, Floor : Positive;
                          R : Rect; Centred : Boolean; Red : Boolean := False)
      return Boolean
    is
+      Text  : constant String := Dashes (Line);
       Inner : constant Natural := R.W - 2 * Pad;
       S     : Positive := Size;
    begin
@@ -398,9 +424,10 @@ package body Ova_Fmt.Format_Sheet is
 
    --  Text split into what fits R at L and Leading and the rest, R
    --  taking at least one word.
-   procedure Fit_Block (Text : String; L : Look; R : Rect; Leading : Positive;
+   procedure Fit_Block (Block : String; L : Look; R : Rect; Leading : Positive;
                         Fitted, Rest : out Unbounded_String)
    is
+      Text  : constant String := Dashes (Block);
       Lines : Span_Vectors.Vector;
       Cut   : Natural;
    begin
@@ -414,7 +441,8 @@ package body Ova_Fmt.Format_Sheet is
    end Fit_Block;
 
    --  Text in R, top-aligned, a line at a time.
-   procedure Put_Block (Text : String; L : Look; R : Rect; Leading : Positive) is
+   procedure Put_Block (Block : String; L : Look; R : Rect; Leading : Positive) is
+      Text  : constant String := Dashes (Block);
       St    : constant Styled := Plain (Text, L);
       Lines : Span_Vectors.Vector;
       Cut   : Natural;
@@ -531,7 +559,7 @@ package body Ova_Fmt.Format_Sheet is
    --  Attacks section).
    function Put_Clause (Clause : String; R : Rect) return Boolean is
       Inner : constant Natural := R.W - 2 * Pad;
-      Text  : constant String := SF.Upper (Clause);
+      Text  : constant String := SF.Upper (Dashes (Clause));
       Size  : Positive := 65;
       Lines : Span_Vectors.Vector;
       Cut   : Natural;
@@ -692,7 +720,7 @@ package body Ova_Fmt.Format_Sheet is
    --  read as a request.
    procedure Put_Text (Text : String) is
    begin
-      IO.Put_Line ("\&" & Escape (Text));
+      IO.Put_Line ("\&" & Escape (Dashes (Text)));
    end Put_Text;
 
    procedure Put_Sections (Sections : Section_Vectors.Vector) is
