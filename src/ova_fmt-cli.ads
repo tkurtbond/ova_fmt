@@ -32,6 +32,7 @@ private
    function Do_Groff return Boolean;
    function Do_Hmm return Boolean;
    function Do_Inline return Boolean;
+   function Do_Form return Boolean;
    function Do_Subunderliner (Arg : String) return Boolean;
    function Do_Underliner (Arg : String) return Boolean;
    function Do_Argument (Start_With : Positive; Arg : String) return Boolean;
@@ -75,6 +76,14 @@ private
          Short_Name  => 'i',
          Long_Name   => "inline",
          Handler     => Do_Inline'Access),
+      Arg_Parser.Make_Option
+        (Description => "Output the official character sheet's form " &
+                         "fields as JSON fills for ova_form.sh, which " &
+                         "fills the sheet's PDF with qpdf. Implies " &
+                         "-n/--no-unicode-minus.",
+         Short_Name  => 'X',
+         Long_Name   => "form",
+         Handler     => Do_Form'Access),
       Arg_Parser.Make_Set_Boolean_True_Option
         (Description => "With -g/--gemtext, emit *italic*/**bold** markers " &
                          "anyway -- gemtext's spec has no inline emphasis " &

@@ -2,8 +2,9 @@
 --  Markdown/HTML-in-reST/groff-in-reST/h-m-m/inline Markdown.
 --  Dispatches to Ova_Fmt.Format_Rst (Terse, Html_In_Rst,
 --  Groff_In_Rst), Ova_Fmt.Format_Gemini (Gemtext),
---  Ova_Fmt.Format_Markdown (Markdown), Ova_Fmt.Format_Hmm (Hmm), or
---  Ova_Fmt.Format_Inline (Inline) by Config.Format -- see
+--  Ova_Fmt.Format_Markdown (Markdown), Ova_Fmt.Format_Hmm (Hmm),
+--  Ova_Fmt.Format_Inline (Inline), or Ova_Fmt.Format_Form (Form) by
+--  Config.Format -- see
 --  Ova_Fmt.Format_Common's header comment for why those are split this
 --  way. Direct-to-Lout is still unimplemented (PLAN.md §9 step 7).
 --  Structure mirrors besm2_fmt_main.adb.
@@ -22,6 +23,7 @@ with Libfyaml.Nodes;
 with Ova_Fmt.Cli;
 with Ova_Fmt.Config;
 with Ova_Fmt.Entities;
+with Ova_Fmt.Format_Form;
 with Ova_Fmt.Format_Gemini;
 with Ova_Fmt.Format_Hmm;
 with Ova_Fmt.Format_Inline;
@@ -148,6 +150,8 @@ procedure Ova_Fmt_Main is
                   Ova_Fmt.Format_Hmm.Process_Entity (Loaded (I), I);
                when Ova_Fmt.Config.Inline =>
                   Ova_Fmt.Format_Inline.Process_Entity (Loaded (I), I);
+               when Ova_Fmt.Config.Form =>
+                  Ova_Fmt.Format_Form.Process_Entity (Loaded (I));
                when Ova_Fmt.Config.Terse | Ova_Fmt.Config.Html_In_Rst |
                     Ova_Fmt.Config.Groff_In_Rst =>
                   Ova_Fmt.Format_Rst.Process_Entity (Loaded (I), I);
@@ -175,6 +179,10 @@ procedure Ova_Fmt_Main is
          for F of Ova_Fmt.Cli.Filenames loop
             Process_One (To_String (F), False);
          end loop;
+      end if;
+      --  -X's output is one JSON array across every file.
+      if Ova_Fmt.Config.Format = Ova_Fmt.Config.Form then
+         Ova_Fmt.Format_Form.Finish;
       end if;
    end Process_All;
 

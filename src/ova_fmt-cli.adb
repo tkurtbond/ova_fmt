@@ -45,6 +45,15 @@ package body Ova_Fmt.Cli is
       return True;
    end Do_Inline;
 
+   --  The sheet's fields are in Helvetica, measured by its widths for
+   --  ASCII: an ASCII minus.
+   function Do_Form return Boolean is
+   begin
+      Config.Format := Config.Form;
+      Config.Unicode_Minus := False;
+      return True;
+   end Do_Form;
+
    --  The message follows Arg_Parser's "Invalid value for option ",
    --  as its own (-L's) do.
    function Do_Subunderliner (Arg : String) return Boolean is

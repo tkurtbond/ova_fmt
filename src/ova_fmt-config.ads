@@ -71,7 +71,7 @@ package Ova_Fmt.Config is
    --  Inline: each entity as one Markdown paragraph, a stat block for
    --  an adventure's cast list, per the user (2026-10-23) --
    --  Ova_Fmt.Format_Inline, its own package like Format_Hmm.
-   type Output_Format is (Terse, Gemtext, Markdown, Html_In_Rst, Groff_In_Rst, Hmm, Inline);
+   type Output_Format is (Terse, Gemtext, Markdown, Html_In_Rst, Groff_In_Rst, Hmm, Inline, Form);
 
    Format : aliased Output_Format := Terse;
    --  -g/--gemtext, -M/--markdown, -H/--html, -G/--groff, -m/--hmm, or

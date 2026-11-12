@@ -116,6 +116,12 @@ package Ova_Fmt.Format_Common is
    function Format_Fragment_Sub_Item_Line (S : Entities.Sub_Item) return String;
    function Format_Spell_Line (S : Entities.Spell) return String;
 
+   function Format_Short_Spell_Line (S : Entities.Spell; Raw : Boolean := False) return String;
+   --  The character sheet's shorter "Name (Ability +L, N END)", from
+   --  the rulebook's Acacia (p. 134): "Break (Frail -2, 10 END)". It
+   --  saves width in the sheet's narrow Abilities column, and is used
+   --  there for every spell, per the user. Raw is Override_Mark's.
+
    function Format_Attack_Line (A : Entities.Attack) return String;
    --  "**Name:** Roll **N dice** | **DX d** | **Endurance Cost: c** " &
    --  "(clause). *Description*" -- the content of one Attack, with no

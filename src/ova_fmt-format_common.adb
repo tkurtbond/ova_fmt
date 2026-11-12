@@ -362,6 +362,11 @@ package body Ova_Fmt.Format_Common is
       Signed_Img (S.Level) & "; " & To_String (S.Endurance) &
       Override_Mark (S.Overrides (Entities.Endurance)) & " Endurance)");
 
+   function Format_Short_Spell_Line (S : Entities.Spell; Raw : Boolean := False) return String is
+     (To_String (S.Name) & " (" & To_String (S.Ability) & " " &
+      Signed_Img (S.Level) & ", " & To_String (S.Endurance) &
+      Override_Mark (S.Overrides (Entities.Endurance), Raw) & " END)");
+
    function Join_Abilities (Vec : Entities.Ability_Vectors.Vector) return String is
       Result : Unbounded_String;
    begin

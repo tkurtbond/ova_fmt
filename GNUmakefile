@@ -94,7 +94,13 @@ TEST_HMM_PLAIN_OUTPUT=$(foreach f,$(notdir $(TEST_DATA)),build/$(addsuffix .plai
 # Markdown paragraph, a stat block for an adventure's cast list.
 TEST_INLINEOUTPUT=$(foreach f,$(notdir $(TEST_DATA)),build/$(addsuffix .inline.md,$(basename $(f))))
 
-.PHONY: all rst pdf gemtext markdown html groff hmm inline install clean testclean
+# The official character sheet's form, filled (-X/--form and
+# ova_form.sh; the poc port's PLAN.md, "The official character sheet
+# as PDF"). The blank sheet is Dyskami's and isn't in the repo.
+OVA_SHEET ?= $(HOME)/Reference/RPG/OVA/OVA-Blank-Character-Sheet-Form-Fillable.pdf
+TEST_FORMOUTPUT=$(foreach f,$(notdir $(TEST_DATA)),build/$(addsuffix .form.pdf,$(basename $(f))))
+
+.PHONY: all rst pdf gemtext markdown html groff hmm inline form install clean testclean
 
 all: $(PROGRAM)
 
@@ -122,6 +128,8 @@ groff: $(PROGRAM) $(TEST_GROFFOUTPUT) $(TEST_GROFFRENDEROUTPUT)
 hmm: $(PROGRAM) $(TEST_HMMOUTPUT) $(TEST_HMM_COMPACT_OUTPUT) $(TEST_HMM_PLAIN_OUTPUT)
 
 inline: $(PROGRAM) $(TEST_INLINEOUTPUT)
+
+form: $(PROGRAM) $(TEST_FORMOUTPUT)
 
 build/%.gen.rst : %.yaml $(PROGRAM)
 	./$(PROGRAM) "$<" >$@
@@ -159,6 +167,12 @@ build/%.plain.hmm : %.yaml $(PROGRAM)
 build/%.inline.md : %.yaml $(PROGRAM)
 	./$(PROGRAM) -i "$<" >$@
 
+build/%.fields.json : %.yaml $(PROGRAM)
+	./$(PROGRAM) -X "$<" >$@
+
+build/%.form.pdf : build/%.fields.json ova_form.sh
+	./ova_form.sh -s "$(OVA_SHEET)" -o $@ $<
+
 #MS_COLUMNS=-V twocolumns
 build/%.rst.ms.pdf : build/%.gen.rst
 	pandoc -r rst -w ms --template=tkb $(MS_COLUMNS) -o $@ $<
@@ -170,8 +184,8 @@ clean:
 	-rm -f $(PROGRAM)
 
 testclean:
-	-rm -v build/*.gen.rst build/*.rst.ms.pdf build/*.gmi build/*.md build/*.md.ms.pdf build/*.html build/*.hmm build/*.groff.gen.rst build/*.groff.pdf
+	-rm -v build/*.gen.rst build/*.rst.ms.pdf build/*.gmi build/*.md build/*.md.ms.pdf build/*.html build/*.hmm build/*.groff.gen.rst build/*.groff.pdf build/*.inline.md build/*.fields.json build/*.form.pdf
 
-.PRECIOUS: build/%.gen.rst build/%.rst.ms.pdf build/%.gmi build/%.emp.gmi build/%.md build/%.md.ms.pdf build/%.html.gen.rst build/%.html build/%.hmm build/%.compact.hmm build/%.plain.hmm build/%.groff.gen.rst build/%.groff.pdf build/%.inline.md
+.PRECIOUS: build/%.gen.rst build/%.rst.ms.pdf build/%.gmi build/%.emp.gmi build/%.md build/%.md.ms.pdf build/%.html.gen.rst build/%.html build/%.hmm build/%.compact.hmm build/%.plain.hmm build/%.groff.gen.rst build/%.groff.pdf build/%.inline.md build/%.fields.json build/%.form.pdf
 
 print-%  : ; @echo '$* = $($*)'
