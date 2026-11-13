@@ -2754,3 +2754,20 @@ automatically.
   rulebook may add. The port's golden cases are `sheet-C`, `sheet-C-all`,
   `sheet-C-noR` and `terse-C`; the port's `edge-sheet-one-column`
   fixture has Abilities overflowing a copy, which no fixture here has.
+- **`-R`'s continuation pages match the sheet's** (the user,
+  2026-11-12: plain black on white looked stark beside the drawn
+  pages). `FR-cp` draws page 2's grey ground and a white panel framed
+  in red under a red "Continued" title bar, as the Combat Stats box
+  is; the headings (`SH`) are red, in Noto Sans Condensed SemiBold,
+  12 pt, as page 2's are; and the text runs from 44 to 371 pt, inside
+  the panel. Only the `-R` preamble changes: it redefines `HD`, the
+  top-of-page trap, to draw the page in an environment of its own (so
+  that the text's fill, indent, font and colour are left alone) and
+  then space down to 64 pt; and it amends `CP`, `SH` and `PP`. Every
+  continuation page is drawn, those groff breaks to as well. `FT`
+  does nothing while a page is drawn, since the drawing passes the
+  footer trap: unguarded, a footer trap sprang mid-drawing, and the
+  frame came out on one page and the rest on the next. Inside `.de`,
+  `\\n[cont]` is read when the macro runs; `\n[cont]` was read when it
+  was defined, as 0, and the page was never drawn. `-S` without `-R`
+  is unchanged.

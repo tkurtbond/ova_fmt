@@ -19,6 +19,17 @@ package body Ova_Fmt.Sheet_Draw is
    --  label's width on the sheet, whose faces are narrower than Noto's.
    --  Sizes are in u, a thousandth of a point under -Tpdf: \s'Nz' would
    --  be N points.
+   --
+   --  Continuation pages harmonize with the sheet's: FR-cp is a grey
+   --  ground and a white panel framed in red under a red "Continued"
+   --  title bar, as the Combat Stats box is, and SH's headings are red
+   --  as page 2's are. HD, the top-of-page trap, draws it on every
+   --  continuation page, those groff breaks to as well, in its own
+   --  environment, so that the text's fill, indent, font and colour
+   --  are left alone. FT does nothing while a page is drawn: the
+   --  drawing passes the footer trap, which would break the page.
+   --  Inside .de, \\n is read when the macro runs, \n when it is
+   --  defined.
    Macros : constant array (Positive range <>) of access constant String :=
      (new String'(".\"" ova-sheet-redrawn"),
       new String'(".\"" -R: the sheet's frames and labels drawn here, not taken from the"),
@@ -135,6 +146,43 @@ package body Ova_Fmt.Sheet_Draw is
       new String'(".TX 219.76 356.996 NSXCB 16 58 ovasheetred Personality"),
       new String'(".TX 36 534 NSXCB 16 60.59 ovasheetred Other Notes"),
       new String'(".TX 285.02 14.996 NSXCB 12 73.74 ovasheetgrey CHARACTER PORTRAIT"),
+      new String'(".."),
+      new String'(".\"" -R: continuation pages drawn to match the sheet's; HD draws each one."),
+      new String'(".de FR-cp"),
+      new String'(".RF 0 0 419.528 595.276 0 ovasheetgrey"),
+      new String'(".RF 31.78 37 351.58 540 15 ovasheetred"),
+      new String'(".RF 33.78 39 347.58 536 13 white"),
+      new String'(".RF 31.78 24 351.58 27.62 12 ovasheetred"),
+      new String'(".RF 31.78 42 351.58 9.62 0 ovasheetred"),
+      new String'(".TX 37.39 47.65 NSXCB 24 73.83 white Continued"),
+      new String'(".."),
+      new String'(".nr drawing 0"),
+      new String'(".de FT"),
+      new String'(".if !\\n[drawing] 'bp"),
+      new String'(".."),
+      new String'(".de HD"),
+      new String'(".if \\n[cont] \{\"),
+      new String'(".nr drawing 1"),
+      new String'(".ev ova-draw"),
+      new String'(".nf"),
+      new String'(".vs 1p"),
+      new String'(".FR-cp"),
+      new String'(".ev"),
+      new String'(".nr drawing 0"),
+      new String'("'sp |64p"),
+      new String'(".\}"),
+      new String'(".."),
+      new String'(".am CP"),
+      new String'(".in 44p"),
+      new String'(".ll 371p"),
+      new String'(".."),
+      new String'(".am SH"),
+      new String'(".ft NSCSB"),
+      new String'(".ps 12"),
+      new String'(".gcolor ovasheetred"),
+      new String'(".."),
+      new String'(".am PP"),
+      new String'(".gcolor default"),
       new String'(".."));
 
 
