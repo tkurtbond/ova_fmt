@@ -2789,3 +2789,10 @@ automatically.
   would spend a line and a gap on each short value. A character whose
   only overflow is its fluff now gets a continuation page. `-X` still
   leaves it out: its page-2 copies have no field for it.
+- **`-R`'s name boxes have rounded corners** (the user, 2026-11-12:
+  the square white Character Name and Player Name boxes looked out of
+  place among the rounded frames). Both page 1 layouts (`FR-p1`,
+  `FR-p1c`) draw them with the Abilities boxes' 5.76 pt radius; the
+  blank sheet's are square, so this is the drawing's one departure
+  from it. The text stays clear: it starts about 3 pt inside the box,
+  and at the capitals' height a corner takes less than half a point.
