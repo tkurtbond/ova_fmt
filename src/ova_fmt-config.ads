@@ -127,6 +127,12 @@ package Ova_Fmt.Config is
    --  so that no blank sheet goes under it (Ova_Fmt.Sheet_Draw).
    Redraw : aliased Boolean := False;  -- -R/--redraw
 
+   --  With -S/--sheet and -R/--redraw, page 1 as Acacia's block in the
+   --  rulebook: one column of Abilities and Weaknesses beside an
+   --  Attacks & Combat Stats box. Only with both, since the blank
+   --  sheet has two columns; Ova_Fmt_Main refuses it otherwise.
+   One_Column : aliased Boolean := False;  -- -C/--one-column
+
    --  The directory of the file being read, with its final "/", or ""
    --  for one in the current directory or standard input: a relative
    --  `portrait:` path is relative to the YAML file.

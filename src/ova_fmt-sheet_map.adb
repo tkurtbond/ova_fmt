@@ -85,26 +85,34 @@ package body Ova_Fmt.Sheet_Map is
       return B;
    end Ability_Block;
 
+   function Height (R : Row; Lines : Row_Lines) return Positive is
+     (if Lines = null then 1 else Lines (R));
+
+   function Height (Rows : Row_Vectors.Vector; Lines : Row_Lines) return Natural is
+      H : Natural := 0;
+   begin
+      for R of Rows loop
+         H := H + Height (R, Lines);
+      end loop;
+      return H;
+   end Height;
+
    --  Blocks into columns of Slots lines, one column per copy of page
-   --  1, keeping each block together when it can.
+   --  1, keeping each block together when it can. The first column
+   --  has its first First_Used lines taken already (-C's Weaknesses,
+   --  under the Abilities); if its first block doesn't fit what is
+   --  left, that column is empty.
    function Place (Blocks : Block_Vectors.Vector; Slots : Positive;
-                   Lines : Row_Lines) return Column_Vectors.Vector
+                   Lines : Row_Lines; First_Used : Natural := 0)
+     return Column_Vectors.Vector
    is
       Columns : Column_Vectors.Vector;
       Current : Row_Vectors.Vector;
-      Used    : Natural := 0;  --  Current's lines
+      Used    : Natural := First_Used;  --  Current's lines
 
-      function Height (R : Row) return Positive is
-        (if Lines = null then 1 else Lines (R));
+      function Height (R : Row) return Positive is (Height (R, Lines));
 
-      function Height (Rows : Row_Vectors.Vector) return Natural is
-         H : Natural := 0;
-      begin
-         for R of Rows loop
-            H := H + Height (R);
-         end loop;
-         return H;
-      end Height;
+      function Height (Rows : Row_Vectors.Vector) return Natural is (Height (Rows, Lines));
 
       --  What is left of the column, never negative: a row taller
       --  than the column overfills one.
@@ -138,7 +146,7 @@ package body Ova_Fmt.Sheet_Map is
             --  there isn't room for the parent and one row under it.
             if Left < Height (B.Rows (1)) +
                        (if Natural (B.Rows.Length) > 1 then Height (B.Rows (2)) else 0)
-              and then not Current.Is_Empty
+              and then Used > 0
             then
                Next;
             end if;
@@ -190,17 +198,32 @@ package body Ova_Fmt.Sheet_Map is
       Weaknesses : Block_Vectors.Vector;
       Combat     : Entities.Combat_Stats;
       NPC_Type   : String;
-      Lines      : Row_Lines)
+      Lines      : Row_Lines;
+      One_Column : Boolean)
    is
-      A_Columns : constant Column_Vectors.Vector := Place (Abilities, Ability_Slots, Lines);
-      W_Columns : constant Column_Vectors.Vector := Place (Weaknesses, Weakness_Slots, Lines);
+      A_Columns : constant Column_Vectors.Vector :=
+        Place (Abilities, (if One_Column then One_Column_Slots else Ability_Slots), Lines);
+      --  With One_Column, the Weaknesses go on from the last copy with
+      --  Abilities, a line below them.
+      W_First   : constant Natural :=
+        (if One_Column and then not A_Columns.Is_Empty then Natural (A_Columns.Length) - 1
+         else 0);
+      W_Columns : constant Column_Vectors.Vector :=
+        (if One_Column
+         then Place (Weaknesses, One_Column_Slots, Lines,
+                     (if A_Columns.Is_Empty then 0
+                      else Height (A_Columns.Last_Element, Lines) + 1))
+         else Place (Weaknesses, Weakness_Slots, Lines));
+      Slots     : constant Positive :=
+        (if One_Column then One_Column_Attack_Slots else Attack_Slots);
       Attacks   : constant Natural :=
         (if Combat.Has_Combat then Natural (Combat.Attacks.Length) else 0);
       Copies    : constant Positive :=
         Positive'Max
           (1, Natural'Max
-                (Natural'Max (Natural (A_Columns.Length), Natural (W_Columns.Length)),
-                 (Attacks + Attack_Slots - 1) / Attack_Slots));
+                (Natural'Max (Natural (A_Columns.Length),
+                              W_First + Natural (W_Columns.Length)),
+                 (Attacks + Slots - 1) / Slots));
    begin
       for N in 1 .. Copies loop
          declare
@@ -217,10 +240,10 @@ package body Ova_Fmt.Sheet_Map is
             if N <= Natural (A_Columns.Length) then
                P.Abilities := A_Columns (N);
             end if;
-            if N <= Natural (W_Columns.Length) then
-               P.Weaknesses := W_Columns (N);
+            if N > W_First and then N - W_First <= Natural (W_Columns.Length) then
+               P.Weaknesses := W_Columns (N - W_First);
             end if;
-            for I in (N - 1) * Attack_Slots + 1 .. Natural'Min (N * Attack_Slots, Attacks) loop
+            for I in (N - 1) * Slots + 1 .. Natural'Min (N * Slots, Attacks) loop
                P.Attacks.Append (Attack_Of (Combat.Attacks (I)));
             end loop;
             if N = 1 and then Combat.Has_Combat then
@@ -248,7 +271,8 @@ package body Ova_Fmt.Sheet_Map is
       end loop;
    end Add_Copies;
 
-   function Fill (E : Entities.Entity; Lines : Row_Lines := null)
+   function Fill (E : Entities.Entity; Lines : Row_Lines := null;
+                  One_Column : Boolean := False)
      return Page_1_Vectors.Vector
    is
       Pages      : Page_1_Vectors.Vector;
@@ -264,7 +288,8 @@ package body Ova_Fmt.Sheet_Map is
                               FC.Name_Detail (W.Name, W.Has_Detail, W.Detail), "")));
       end loop;
       Add_Copies (Pages, E.Name, To_String (E.Name), E.Has_Player, E.Player,
-                  Abilities, Weaknesses, E.Combat, FC.NPC_Type_Text (E), Lines);
+                  Abilities, Weaknesses, E.Combat, FC.NPC_Type_Text (E), Lines,
+                  One_Column);
 
       for A of E.Abilities loop
          if A.Sub_Entity /= null then
@@ -285,7 +310,8 @@ package body Ova_Fmt.Sheet_Map is
                     (Pages, SE.Name,
                      To_String (SE.Name) & " (" & To_String (E.Name) & "'s " &
                      To_String (SE.Label) & ")",
-                     False, Null_Unbounded_String, S_Abl, S_Wk, SE.Combat, "", Lines);
+                     False, Null_Unbounded_String, S_Abl, S_Wk, SE.Combat, "", Lines,
+                     One_Column);
                end if;
             end;
          end if;

@@ -137,11 +137,76 @@ package body Ova_Fmt.Sheet_Draw is
       new String'(".TX 285.02 14.996 NSXCB 12 73.74 ovasheetgrey CHARACTER PORTRAIT"),
       new String'(".."));
 
-   procedure Put_Preamble is
+
+   --  -C's page 1, in the same terms: the sheet's header, a column of
+   --  lines for the Abilities and Weaknesses (no Dice boxes and no dots,
+   --  as in the rulebook), and an Attacks & Combat Stats box built as
+   --  the sheet's Combat Stats box is, with five attack slots 39.5 pt
+   --  apart, a Combat Notes space and the four stats along its bottom.
+   --  New labels are scaled as the sheet's own are, by their measured
+   --  width in Noto Sans times its ratio for the sheet's labels. CR is
+   --  the faint rule between the Abilities and the Weaknesses.
+   One_Column_Macros : constant array (Positive range <>) of access constant String :=
+     (new String'(".\"" -C: page 1 as one column beside an Attacks & Combat Stats box."),
+      new String'(".defcolor ovasheetrule gray 0.75"),
+      new String'(".de CR"),
+      new String'(".RF 40.47 \\$1 124 0.6 0 ovasheetrule"),
+      new String'(".."),
+      new String'(".de FR-p1c"),
+      new String'(".RF -8.64 85.866 404.64 490 8 ovasheetgrey"),
+      new String'(".RF 100.47 31.306 336 34.7 12.3 ovasheetred"),
+      new String'(".RF 146.47 36 129.778 18 0 white"),
+      new String'(".RF 282.334 36 127.666 18 0 white"),
+      new String'(".RF 34.47 103.996 136 462 5.76 white"),
+      new String'(".RF 176.47 116.996 215.29 449 15 ovasheetred"),
+      new String'(".RF 178.47 118.996 211.29 445 13 white"),
+      new String'(".RF 176.47 103.996 215.29 27.62 12 ovasheetred"),
+      new String'(".RF 176.47 121.996 215.29 9.62 0 ovasheetred"),
+      new String'(".HR 181.08 170.996 206.1"),
+      new String'(".HR 181.08 210.496 206.1"),
+      new String'(".HR 181.08 249.996 206.1"),
+      new String'(".HR 181.08 289.496 206.1"),
+      new String'(".HR 181.08 328.996 206.1"),
+      new String'(".HR 181.08 517.376 206.1"),
+      new String'(".VR 285.15 134.366 194.63"),
+      new String'(".VR 320.15 134.366 194.63"),
+      new String'(".VR 352.15 134.366 194.63"),
+      new String'(".TX 147.37 61.496 NSXCB 8 36.9 white CHARACTER NAME"),
+      new String'(".TX 282.3 61.496 NSXCB 8 30.57 white PLAYER NAME"),
+      new String'(".TX 37.35 99.416 NSXCB 14 87.31 black ABILITIES & WEAKNESSES"),
+      new String'(".TX 182.08 124.95 NSXCB 20 137.2 white Attacks & Combat Stats"),
+      new String'(".TX 288.01 143.516 NSR 11 28.14 ovasheetred ROLL"),
+      new String'(".TX 328.01 143.516 NSR 11 15.16 ovasheetred DX"),
+      new String'(".TX 358.01 143.516 NSR 11 23.23 ovasheetred END"),
+      new String'(".TX 288.01 183.016 NSR 11 28.14 ovasheetred ROLL"),
+      new String'(".TX 328.01 183.016 NSR 11 15.16 ovasheetred DX"),
+      new String'(".TX 358.01 183.016 NSR 11 23.23 ovasheetred END"),
+      new String'(".TX 288.01 222.516 NSR 11 28.14 ovasheetred ROLL"),
+      new String'(".TX 328.01 222.516 NSR 11 15.16 ovasheetred DX"),
+      new String'(".TX 358.01 222.516 NSR 11 23.23 ovasheetred END"),
+      new String'(".TX 288.01 262.016 NSR 11 28.14 ovasheetred ROLL"),
+      new String'(".TX 328.01 262.016 NSR 11 15.16 ovasheetred DX"),
+      new String'(".TX 358.01 262.016 NSR 11 23.23 ovasheetred END"),
+      new String'(".TX 288.01 301.516 NSR 11 28.14 ovasheetred ROLL"),
+      new String'(".TX 328.01 301.516 NSR 11 15.16 ovasheetred DX"),
+      new String'(".TX 358.01 301.516 NSR 11 23.23 ovasheetred END"),
+      new String'(".TX 184.47 341.496 NSR 11 85.63 ovasheetred COMBAT NOTES"),
+      new String'(".TX 182.47 528.126 NSR 11 48.01 ovasheetred DEFENSE"),
+      new String'(".TX 236 528.126 NSR 11 43.05 ovasheetred HEALTH"),
+      new String'(".TX 285.85 528.126 NSR 11 68.31 ovasheetred ENDURANCE"),
+      new String'(".TX 366.2 528.126 NSR 11 13.61 ovasheetred TV"),
+      new String'(".."));
+
+   procedure Put_Preamble (One_Column : Boolean) is
    begin
       for Line of Macros loop
          Ada.Text_IO.Put_Line (Line.all);
       end loop;
+      if One_Column then
+         for Line of One_Column_Macros loop
+            Ada.Text_IO.Put_Line (Line.all);
+         end loop;
+      end if;
    end Put_Preamble;
 
 end Ova_Fmt.Sheet_Draw;

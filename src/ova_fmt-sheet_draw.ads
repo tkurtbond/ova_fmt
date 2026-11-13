@@ -11,14 +11,24 @@
 
 package Ova_Fmt.Sheet_Draw is
 
-   procedure Put_Preamble;
-   --  The colours and macros, for the end of Format_Sheet's preamble.
-   --  Its first line, `.\" ova-sheet-redrawn`, tells ova_sheet.sh not
-   --  to lay the blank sheet under the pages.
+   procedure Put_Preamble (One_Column : Boolean);
+   --  The colours and macros, for the end of Format_Sheet's preamble,
+   --  and with One_Column (-C/--one-column) Page_1_One_Column's and
+   --  Rule's. Its first line, `.\" ova-sheet-redrawn`, tells
+   --  ova_sheet.sh not to lay the blank sheet under the pages.
 
    Page_1 : constant String := ".FR-p1";
    Page_2 : constant String := ".FR-p2";
    --  Draw page 1's or page 2's frames, under its text: right after
    --  the page's .SP.
+
+   Page_1_One_Column : constant String := ".FR-p1c";
+   --  -C's page 1 in place of Page_1: the sheet's header, then one
+   --  column for the Abilities and Weaknesses beside an Attacks &
+   --  Combat Stats box (Acacia's block in the rulebook).
+
+   Rule : constant String := ".CR";
+   --  Rule & " Y": -C's faint rule across the column between the
+   --  Abilities and the Weaknesses, its top Y points from the top.
 
 end Ova_Fmt.Sheet_Draw;

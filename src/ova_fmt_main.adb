@@ -249,6 +249,19 @@ procedure Ova_Fmt_Main is
 begin
    Ova_Fmt.Cli.Parse;
 
+   --  -C lays out a page the blank sheet doesn't have, so it is only
+   --  for the sheet drawn by -R. A command-line mistake: status 2.
+   if Ova_Fmt.Config.One_Column
+     and then not (Ova_Fmt.Config.Format = Ova_Fmt.Config.Sheet
+                   and then Ova_Fmt.Config.Redraw)
+   then
+      Ada.Text_IO.Put_Line
+        (Ada.Text_IO.Standard_Error,
+         "ova_fmt: -C/--one-column needs -S/--sheet and -R/--redraw");
+      Ada.Command_Line.Set_Exit_Status (2);
+      return;
+   end if;
+
    if Ova_Fmt.Config.Output_File /= null then
       declare
          Output_File : Ada.Text_IO.File_Type;

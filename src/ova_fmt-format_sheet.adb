@@ -80,21 +80,21 @@ package body Ova_Fmt.Format_Sheet is
    Character_Name : constant Rect := (14650, 54130, 12980, 1790);
    Player_Name    : constant Rect := (28210, 54130, 12780, 1790);
 
-   type Attack_Rects is array (1 .. SM.Attack_Slots) of Rect;
+   type Attack_Rects is array (Positive range <>) of Rect;
 
-   Attack_Name : constant Attack_Rects :=
+   Attack_Name : constant Attack_Rects (1 .. SM.Attack_Slots) :=
      ((14330, 20930, 13710, 1240), (14330, 16970, 13710, 1240),
       (14330, 13010, 13710, 1230), (14330, 9100, 13710, 1230));
-   Attack_Clause : constant Attack_Rects :=
+   Attack_Clause : constant Attack_Rects (1 .. SM.Attack_Slots) :=
      ((14330, 18290, 13710, 2640), (14330, 14330, 13710, 2640),
       (14330, 10370, 13710, 2640), (14330, 6460, 13710, 2640));
-   Roll_Box : constant Attack_Rects :=
+   Roll_Box : constant Attack_Rects (1 .. SM.Attack_Slots) :=
      ((28270, 18250, 3260, 2690), (28270, 14280, 3260, 2880),
       (28270, 10380, 3260, 2760), (28270, 6480, 3260, 2760));
-   Dx_Box : constant Attack_Rects :=
+   Dx_Box : constant Attack_Rects (1 .. SM.Attack_Slots) :=
      ((31760, 18250, 2980, 2690), (31760, 14280, 2980, 2880),
       (31760, 10380, 2980, 2760), (31760, 6480, 2980, 2760));
-   End_Box : constant Attack_Rects :=
+   End_Box : constant Attack_Rects (1 .. SM.Attack_Slots) :=
      ((34970, 18250, 3310, 2690), (34970, 14280, 3310, 2880),
       (34970, 10380, 3310, 2760), (34970, 6480, 3310, 2760));
 
@@ -107,6 +107,47 @@ package body Ova_Fmt.Format_Sheet is
    Health_Box   : constant Rect := (21080, 2250, 4660, 2850);
    Endurance_Box : constant Rect := (28030, 2250, 4660, 2850);
    TV_Box       : constant Rect := (34590, 2250, 3370, 2850);
+
+   --  -C's page 1 (Sheet_Draw.Page_1_One_Column): one column, its
+   --  rows on the Abilities column's lines and at its Dice and name
+   --  positions, but a narrower name; and the Attacks & Combat Stats
+   --  box beside it, whose attack slots are the sheet's, 39.5 pt
+   --  apart from 131.616 pt down, narrowed to the box.
+   One_Column_Name_Width : constant := 11330;
+
+   --  The rule between the Abilities and the Weaknesses: its top this
+   --  far above the baseline of the line it takes.
+   Rule_Raise : constant := 330;
+
+   One_Attack_Name : constant Attack_Rects (1 .. SM.One_Column_Attack_Slots) :=
+     ((17891, 45126, 10517, 1240), (17891, 41176, 10517, 1240),
+      (17891, 37226, 10517, 1240), (17891, 33276, 10517, 1240),
+      (17891, 29326, 10517, 1240));
+   One_Attack_Clause : constant Attack_Rects (1 .. SM.One_Column_Attack_Slots) :=
+     ((17891, 42486, 10517, 2640), (17891, 38536, 10517, 2640),
+      (17891, 34586, 10517, 2640), (17891, 30636, 10517, 2640),
+      (17891, 26686, 10517, 2640));
+   One_Roll_Box : constant Attack_Rects (1 .. SM.One_Column_Attack_Slots) :=
+     ((28638, 42446, 3260, 2690), (28638, 38496, 3260, 2690),
+      (28638, 34546, 3260, 2690), (28638, 30596, 3260, 2690),
+      (28638, 26646, 3260, 2690));
+   One_Dx_Box : constant Attack_Rects (1 .. SM.One_Column_Attack_Slots) :=
+     ((32128, 42446, 2980, 2690), (32128, 38496, 2980, 2690),
+      (32128, 34546, 2980, 2690), (32128, 30596, 2980, 2690),
+      (32128, 26646, 2980, 2690));
+   One_End_Box : constant Attack_Rects (1 .. SM.One_Column_Attack_Slots) :=
+     ((35338, 42446, 3310, 2690), (35338, 38496, 3310, 2690),
+      (35338, 34546, 3310, 2690), (35338, 30596, 3310, 2690),
+      (35338, 26646, 3310, 2690));
+
+   --  The NPC type, after the box's title, as "(HEROIC)" is after
+   --  Acacia's; its baseline near the title's.
+   One_NPC_Type  : constant Rect := (32330, 46461, 6646, 2000);
+   One_Combat_Notes : constant Rect := Inset ((17847, 8028, 21129, 17100));
+   One_Defense_Box  : constant Rect := (18047, 3588, 5200, 2850);
+   One_Health_Box   : constant Rect := (23400, 3588, 4900, 2850);
+   One_Endurance_Box : constant Rect := (28400, 3588, 7200, 2850);
+   One_TV_Box       : constant Rect := (35800, 3588, 3000, 2850);
 
    --  The fields of page 2, in the order sections are laid into them.
    type Prose_Field is (Background, Appearance, Personality, Other_Notes);
@@ -365,18 +406,24 @@ package body Ova_Fmt.Format_Sheet is
       return To_String (Result);
    end Troff;
 
-   --  A line of S with its baseline Y from the top and its left at X.
-   procedure Place (Y, X : Natural; S : Styled; L : Span) is
+   --  A line of S with its baseline Y from the top and its left at X;
+   --  White sets it in white (S has no red), as on -C's box title.
+   procedure Place (Y, X : Natural; S : Styled; L : Span; White : Boolean := False) is
    begin
       IO.Put_Line (".L " & Pt (Y) & " " & Pt (X));
-      IO.Put_Line (Troff (S, L.First, L.Last));
+      if White then
+         IO.Put_Line ("\m[white]" & Troff (S, L.First, L.Last) & "\m[default]");
+      else
+         IO.Put_Line (Troff (S, L.First, L.Last));
+      end if;
    end Place;
 
    --  Text in R's one line, centred or at its left, in F at Size,
    --  stepping down half a point at a time to Floor until it fits; if
    --  not even then, the words that fit. False if not all of it fit.
    function Put_Line_In (Line : String; F : SF.Face; Size, Floor : Positive;
-                         R : Rect; Centred : Boolean; Red : Boolean := False)
+                         R : Rect; Centred : Boolean; Red : Boolean := False;
+                         White : Boolean := False)
      return Boolean
    is
       Text  : constant String := Dashes (Line);
@@ -405,7 +452,7 @@ package body Ova_Fmt.Format_Sheet is
               (if Centred and then W <= R.W * 100 then R.X + (R.W * 100 - W) / 200
                else R.X + Pad);
          begin
-            Place (Top (R) + (R.H + Cap (S)) / 2, X, St, L);
+            Place (Top (R) + (R.H + Cap (S)) / 2, X, St, L, White);
          end;
          return Cut = Text'Length;
       end;
@@ -484,7 +531,9 @@ package body Ova_Fmt.Format_Sheet is
    end Row_Text;
 
    procedure Row_Break (R : SM.Row; Lines : out Span_Vectors.Vector) is
-      First : constant Natural := Name_Width - 2 * Pad - Indent (R);
+      Width : constant Natural :=
+        (if Config.One_Column then One_Column_Name_Width else Name_Width);
+      First : constant Natural := Width - 2 * Pad - Indent (R);
       Cut   : Natural;
    begin
       Break (Row_Text (R), First, First - Hang, 0, Lines, Cut);
@@ -517,9 +566,12 @@ package body Ova_Fmt.Format_Sheet is
       Append (Lines, Line);
    end Add_Line;
 
+   --  Rows on the ruled lines from line First down; Next is the line
+   --  after them.
    procedure Put_Rows (Parts : in out Owner_Parts; Rows : SM.Row_Vectors.Vector;
-                       Dice_X, Name_X : Natural) is
-      K : Positive := 1;
+                       Dice_X, Name_X : Natural; First : Positive;
+                       Next : out Positive) is
+      K : Positive := First;
    begin
       for R of Rows loop
          declare
@@ -547,6 +599,7 @@ package body Ova_Fmt.Format_Sheet is
             end if;
          end;
       end loop;
+      Next := K;
    end Put_Rows;
 
    ---------------------------------------------------------------------
@@ -604,8 +657,10 @@ package body Ova_Fmt.Format_Sheet is
       return Cut = Text'Length;
    end Put_Clause;
 
+   --  The attacks in the slots Names, Clauses, Rolls, Dxs and Ends.
    procedure Put_Attacks (Parts : in out Owner_Parts;
-                          Attacks : SM.Attack_Slot_Vectors.Vector) is
+                          Attacks : SM.Attack_Slot_Vectors.Vector;
+                          Names, Clauses, Rolls, Dxs, Ends : Attack_Rects) is
    begin
       for N in Attacks.First_Index .. Attacks.Last_Index loop
          declare
@@ -613,17 +668,17 @@ package body Ova_Fmt.Format_Sheet is
             Clause    : constant String := To_String (A.Clause);
             Name_Fits : constant Boolean :=
               Put_Line_In (To_String (A.Name), SW.Bold, 80, 65,
-                           Attack_Name (N), Centred => False, Red => True);
+                           Names (N), Centred => False, Red => True);
             Clipped   : constant Boolean :=
-              Clause /= "" and then not Put_Clause (Clause, Attack_Clause (N));
+              Clause /= "" and then not Put_Clause (Clause, Clauses (N));
             Entry_Text : Unbounded_String;
          begin
             Put_Line_In (To_String (A.Roll), SW.Condensed_Semibold, 160, 80,
-                         Roll_Box (N), Centred => True);
+                         Rolls (N), Centred => True);
             Put_Line_In (To_String (A.Dx), SW.Condensed_Semibold, 160, 80,
-                         Dx_Box (N), Centred => True);
+                         Dxs (N), Centred => True);
             Put_Line_In (To_String (A.Endurance), SW.Condensed_Semibold, 160, 80,
-                         End_Box (N), Centred => True);
+                         Ends (N), Centred => True);
             if A.Has_Description or else Clipped or else not Name_Fits then
                Entry_Text := A.Name;
                if Clipped then
@@ -642,12 +697,18 @@ package body Ova_Fmt.Format_Sheet is
    --  Pages.
    ---------------------------------------------------------------------
 
+   --  With -C, the Abilities and Weaknesses are one column, a faint
+   --  rule between them when this copy has both, and the NPC type is
+   --  in the box's title instead of the Combat Notes, if it fits.
    procedure Put_Page_1 (P : SM.Page_1; Parts : in out Owner_Parts) is
       Stat : constant SF.Face := SW.Condensed_Semibold;
+      One  : constant Boolean := Config.One_Column;
+      K    : Positive;
+      Type_Placed : Boolean := False;
    begin
       IO.Put_Line (".SP p1");
       if Config.Redraw then
-         IO.Put_Line (Sheet_Draw.Page_1);
+         IO.Put_Line (if One then Sheet_Draw.Page_1_One_Column else Sheet_Draw.Page_1);
       end if;
       if not Put_Line_In (To_String (P.Title), SW.Regular, 120, 80,
                           Character_Name, Centred => False)
@@ -662,13 +723,30 @@ package body Ova_Fmt.Format_Sheet is
       then
          Parts.Player := P.Player;
       end if;
-      Put_Rows (Parts, P.Abilities, Ability_Dice_X, Ability_Name_X);
-      Put_Rows (Parts, P.Weaknesses, Weakness_Dice_X, Weakness_Name_X);
-      Put_Attacks (Parts, P.Attacks);
+      Put_Rows (Parts, P.Abilities, Ability_Dice_X, Ability_Name_X, 1, K);
+      if not One then
+         Put_Rows (Parts, P.Weaknesses, Weakness_Dice_X, Weakness_Name_X, 1, K);
+         Put_Attacks (Parts, P.Attacks, Attack_Name, Attack_Clause, Roll_Box, Dx_Box, End_Box);
+      else
+         if not P.Abilities.Is_Empty and then not P.Weaknesses.Is_Empty then
+            IO.Put_Line (Sheet_Draw.Rule & " " & Pt (Row_Baseline (K) - Rule_Raise));
+            K := K + 1;
+         end if;
+         Put_Rows (Parts, P.Weaknesses, Ability_Dice_X, Ability_Name_X, K, K);
+         Put_Attacks (Parts, P.Attacks, One_Attack_Name, One_Attack_Clause,
+                      One_Roll_Box, One_Dx_Box, One_End_Box);
+         if Length (P.NPC_Type) > 0 then
+            Type_Placed :=
+              Put_Line_In ("(" & SF.Upper (To_String (P.NPC_Type)) & ")",
+                           SW.Condensed_Semibold, 120, 80, One_NPC_Type,
+                           Centred => False, White => True);
+         end if;
+      end if;
       declare
          Notes : Unbounded_String;
+         Notes_Rect : constant Rect := (if One then One_Combat_Notes else Combat_Notes);
       begin
-         if Length (P.NPC_Type) > 0 then
+         if Length (P.NPC_Type) > 0 and then not Type_Placed then
             Notes := "NPC Type: " & P.NPC_Type;
          end if;
          if P.Has_Combat_Notes then
@@ -678,17 +756,21 @@ package body Ova_Fmt.Format_Sheet is
             declare
                Fitted : Unbounded_String;
             begin
-               Fit_Block (To_String (Notes), Notes_Look, Combat_Notes, Notes_Leading,
+               Fit_Block (To_String (Notes), Notes_Look, Notes_Rect, Notes_Leading,
                           Fitted, Parts.Combat_Notes);
-               Put_Block (To_String (Fitted), Notes_Look, Combat_Notes, Notes_Leading);
+               Put_Block (To_String (Fitted), Notes_Look, Notes_Rect, Notes_Leading);
             end;
          end if;
       end;
       if P.Has_Stats then
-         Put_Line_In (To_String (P.Defense), Stat, 180, 80, Defense_Box, Centred => True);
-         Put_Line_In (To_String (P.Health), Stat, 180, 80, Health_Box, Centred => True);
-         Put_Line_In (To_String (P.Endurance), Stat, 180, 80, Endurance_Box, Centred => True);
-         Put_Line_In (To_String (P.Threat_Value), Stat, 180, 80, TV_Box, Centred => True);
+         Put_Line_In (To_String (P.Defense), Stat, 180, 80,
+                      (if One then One_Defense_Box else Defense_Box), Centred => True);
+         Put_Line_In (To_String (P.Health), Stat, 180, 80,
+                      (if One then One_Health_Box else Health_Box), Centred => True);
+         Put_Line_In (To_String (P.Endurance), Stat, 180, 80,
+                      (if One then One_Endurance_Box else Endurance_Box), Centred => True);
+         Put_Line_In (To_String (P.Threat_Value), Stat, 180, 80,
+                      (if One then One_TV_Box else TV_Box), Centred => True);
       end if;
    end Put_Page_1;
 
@@ -852,7 +934,7 @@ package body Ova_Fmt.Format_Sheet is
    end Put_Portrait;
 
    procedure Process_Entity (E : Entities.Entity) is
-      Pages    : constant SM.Page_1_Vectors.Vector := SM.Fill (E, Row_Lines'Access);
+      Pages    : constant SM.Page_1_Vectors.Vector := SM.Fill (E, Row_Lines'Access, Config.One_Column);
       Name     : constant String := To_String (E.Name);
       Sections : Section_Vectors.Vector;
       Fitted   : array (Prose_Field) of Unbounded_String;
@@ -874,7 +956,7 @@ package body Ova_Fmt.Format_Sheet is
             IO.Put_Line (Line.all);
          end loop;
          if Config.Redraw then
-            Sheet_Draw.Put_Preamble;
+            Sheet_Draw.Put_Preamble (Config.One_Column);
          end if;
          First_Entity := False;
       end if;

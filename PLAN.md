@@ -2733,3 +2733,24 @@ automatically.
   `build/*.redraw.pdf` (from `build/*.redraw.tr`) for every fixture,
   without `OVA_SHEET`. The poc port's PLAN.md, "Redrawing the sheet",
   has the details.
+- **`-C`/`--one-column` sets page 1 as the rulebook's NPCs are** (the
+  user, 2026-11-12, choosing "rulebook proportions" after Acacia's
+  block, rulebook p. 134). Only with `-S -R`, since it draws frames the
+  blank sheet doesn't have; otherwise `ova_fmt: -C/--one-column needs
+  -S/--sheet and -R/--redraw`, exit 2. Page 1 (`.FR-p1c`, in
+  `Sheet_Draw`'s `One_Column_Macros`) has one narrow column, Abilities
+  then a faint rule (`.CR`) and a blank line then Weaknesses, 35 lines,
+  beside a wide "Attacks & Combat Stats" box: 5 attack slots in the
+  sheet's own layout (name and clause, ROLL/DX/END), the NPC type in
+  the box's title as "(HEROIC)", white, 12 pt down to 8 (in the notes,
+  as "NPC Type: ...", when it can't fit), Combat Notes under the
+  attacks, and Defense/Health/Endurance/TV along the bottom. Page 2 and
+  the continuation pages are `-S -R`'s. `Sheet_Map.Fill` takes
+  `One_Column`: the Weaknesses start on the copy where the Abilities
+  end, one line after them (`Place`'s `First_Used`), and a copy holds
+  5 attacks instead of 4. `make onecol` builds `build/*.onecol.pdf`.
+  All four NPC types fit in the title, the longest, "(SECONDARY)",
+  too, so the notes fallback is there only for a longer type the
+  rulebook may add. The port's golden cases are `sheet-C`, `sheet-C-all`,
+  `sheet-C-noR` and `terse-C`; the port's `edge-sheet-one-column`
+  fixture has Abilities overflowing a copy, which no fixture here has.

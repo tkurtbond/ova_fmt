@@ -35,6 +35,14 @@ package Ova_Fmt.Sheet_Map is
    Weakness_Slots : constant := 17;
    Attack_Slots   : constant := 4;
 
+   --  -C/--one-column's page 1, drawn by -R: one column of lines,
+   --  the Abilities, a line for a faint rule, then the Weaknesses, and
+   --  an Attacks & Combat Stats box beside it with more attack slots
+   --  (Acacia's block in the rulebook; the poc port's PLAN.md, "One
+   --  column").
+   One_Column_Slots        : constant := 35;
+   One_Column_Attack_Slots : constant := 5;
+
    --  Item: an Ability or Weakness of the sheet's owner, its Level in
    --  the Dice column. Sub: an Ability or Weakness granted by the
    --  Item above it (a Transformation's), its Level in the name
@@ -95,13 +103,18 @@ package Ova_Fmt.Sheet_Map is
    --  How many ruled lines a row takes.
    type Row_Lines is access function (R : Row) return Positive;
 
-   function Fill (E : Entities.Entity; Lines : Row_Lines := null)
+   function Fill (E : Entities.Entity; Lines : Row_Lines := null;
+                  One_Column : Boolean := False)
      return Page_1_Vectors.Vector;
    --  E's copies of page 1: its own first (at least one, titled with
    --  its name; any more "Name (continued)"), then each Companion's
    --  or Vehicle's, in the order of the Abilities granting them. The
    --  numbers are as in Raw tables: ASCII `*` for an override. A
    --  column holds Ability_Slots lines, each row taking Lines (Row)
-   --  of them, or one if Lines is null.
+   --  of them, or one if Lines is null. With One_Column, a copy's
+   --  Abilities and Weaknesses share One_Column_Slots lines: the
+   --  Weaknesses start on the copy where the Abilities end, a line
+   --  below them (for the rule), and a copy holds
+   --  One_Column_Attack_Slots attacks.
 
 end Ova_Fmt.Sheet_Map;

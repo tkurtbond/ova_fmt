@@ -108,6 +108,14 @@ private
          Long_Name   => "redraw",
          Variable    => Ova_Fmt.Config.Redraw'Access),
       Arg_Parser.Make_Set_Boolean_True_Option
+        (Description => "With -S/--sheet and -R/--redraw, set page 1 " &
+                         "as the rulebook's NPCs are: one column of " &
+                         "Abilities and Weaknesses beside an Attacks & " &
+                         "Combat Stats box.",
+         Short_Name  => 'C',
+         Long_Name   => "one-column",
+         Variable    => Ova_Fmt.Config.One_Column'Access),
+      Arg_Parser.Make_Set_Boolean_True_Option
         (Description => "With -g/--gemtext, emit *italic*/**bold** markers " &
                          "anyway -- gemtext's spec has no inline emphasis " &
                          "at all, but many authors use them as an " &
