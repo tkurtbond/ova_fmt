@@ -791,6 +791,41 @@ package body Ova_Fmt.Format_Sheet is
       end if;
    end Add_Section;
 
+   --  The fluff: block as one paragraph, the comma-joined line every
+   --  other format prints (Format_Common.Print_Tail), without its
+   --  bold labels. Each value is reflowed onto one line, since a line
+   --  break in a section's content starts a new paragraph.
+   function Fluff_Line (F : Entities.Fluff_Block) return String is
+      Line : Unbounded_String;
+
+      procedure Add (Label : String; Has : Boolean; Value : Unbounded_String) is
+      begin
+         if Has then
+            if Line /= Null_Unbounded_String then
+               Append (Line, ", ");
+            end if;
+            Append (Line, Label & ": " & FC.All_One_Line (FC.Reflow (Value)));
+         end if;
+      end Add;
+   begin
+      Add ("Concept", F.Has_Concept, F.Concept);
+      Add ("Birthday", F.Has_Birthday, F.Birthday);
+      Add ("Age", F.Has_Age, F.Age);
+      Add ("Gender", F.Has_Gender, F.Gender);
+      Add ("Height", F.Has_Height, F.Height);
+      Add ("Weight", F.Has_Weight, F.Weight);
+      Add ("Hair", F.Has_Hair, F.Hair);
+      Add ("Eyes", F.Has_Eyes, F.Eyes);
+      Add ("Association", F.Has_Association, F.Association);
+      Add ("Hobbies", F.Has_Hobbies, F.Hobbies);
+      Add ("Favorite Food", F.Has_Favorite_Food, F.Favorite_Food);
+      Add ("Allies", F.Has_Allies, F.Allies);
+      Add ("Enemies", F.Has_Enemies, F.Enemies);
+      Add ("Love Interests", F.Has_Love_Interests, F.Love_Interests);
+      return (if Line = Null_Unbounded_String then ""
+              else FC.End_With_Period (To_String (Line)));
+   end Fluff_Line;
+
    procedure Add_Owner_Sections (Sections : in out Section_Vectors.Vector;
                                  Owner : String; Parts : Owner_Parts) is
    begin
@@ -980,6 +1015,9 @@ package body Ova_Fmt.Format_Sheet is
       end loop;
       if E.Has_Character_Hooks then
          Add_Section (Sections, Name & ": Character Hooks", FC.Reflow (E.Character_Hooks));
+      end if;
+      if E.Has_Fluff then
+         Add_Section (Sections, Name & ": Fluff", Fluff_Line (E.Fluff));
       end if;
 
       IO.Put_Line (".SP p2");

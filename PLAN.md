@@ -2771,3 +2771,16 @@ automatically.
   `\\n[cont]` is read when the macro runs; `\n[cont]` was read when it
   was defined, as 0, and the page was never drawn. `-S` without `-R`
   is unchanged.
+- **`-S` puts the fluff on a continuation page** (the user,
+  2026-11-12, asking whether the fluff items could go on the overflow
+  pages; it had been left out, as for `-X`, since the sheet has no
+  place for it). `Format_Sheet.Fluff_Line` makes it one paragraph,
+  "Name: Fluff", the last section, after "Character Hooks": the
+  comma-joined line the other formats print (`Format_Common`'s
+  `Print_Tail`), without their bold labels, ending in a period. Each
+  value is reflowed onto one line (`Reflow`, then `All_One_Line`),
+  since a line break in a section's content starts a new paragraph.
+  One paragraph rather than one per field, because a `.PP` per field
+  would spend a line and a gap on each short value. A character whose
+  only overflow is its fluff now gets a continuation page. `-X` still
+  leaves it out: its page-2 copies have no field for it.
