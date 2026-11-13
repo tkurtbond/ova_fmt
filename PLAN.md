@@ -2777,9 +2777,14 @@ automatically.
   place for it). `Format_Sheet.Fluff_Line` makes it one paragraph,
   "Name: Fluff", the last section, after "Character Hooks": the
   comma-joined line the other formats print (`Format_Common`'s
-  `Print_Tail`), without their bold labels, ending in a period. Each
-  value is reflowed onto one line (`Reflow`, then `All_One_Line`),
-  since a line break in a section's content starts a new paragraph.
+  `Print_Tail`), ending in a period. Each label is Bold (`\f[NSB]`,
+  back to `\f[NSR]` for its value), as theirs are (the user, the same
+  day, asking for bold labels after first seeing them plain). Since
+  `Put_Text` escapes every `\`, the section is `Raw`: its content is
+  one line of troff, escaped and dashed by `Fluff_Line` itself, and
+  `Put_Sections` writes it as it is. Each value is reflowed onto one
+  line (`Reflow`, then `All_One_Line`), since the paragraph is one
+  line.
   One paragraph rather than one per field, because a `.PP` per field
   would spend a line and a gap on each short value. A character whose
   only overflow is its fluff now gets a continuation page. `-X` still

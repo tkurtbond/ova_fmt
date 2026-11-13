@@ -775,26 +775,31 @@ package body Ova_Fmt.Format_Sheet is
    end Put_Page_1;
 
    --  A part of the continuation pages: a heading, then each line of
-   --  Content a paragraph.
+   --  Content a paragraph. A Raw section's Content is one line of
+   --  troff, escaped already, so that it can change font.
    type Section is record
       Label, Content : Unbounded_String;
+      Raw            : Boolean := False;
    end record;
 
    package Section_Vectors is new Ada.Containers.Vectors
      (Index_Type => Positive, Element_Type => Section);
 
    procedure Add_Section (Sections : in out Section_Vectors.Vector;
-                          Label : String; Content : String) is
+                          Label : String; Content : String;
+                          Raw : Boolean := False) is
    begin
       if Content /= "" then
-         Sections.Append ((To_Unbounded_String (Label), To_Unbounded_String (Content)));
+         Sections.Append ((To_Unbounded_String (Label), To_Unbounded_String (Content), Raw));
       end if;
    end Add_Section;
 
-   --  The fluff: block as one paragraph, the comma-joined line every
-   --  other format prints (Format_Common.Print_Tail), without its
-   --  bold labels. Each value is reflowed onto one line, since a line
-   --  break in a section's content starts a new paragraph.
+   --  The fluff: block as one paragraph of troff (a Raw section), the
+   --  comma-joined line every other format prints
+   --  (Format_Common.Print_Tail), each label in Bold, as theirs are.
+   --  Each value is reflowed onto one line, since the paragraph is
+   --  one line. Escape leaves a final `.` alone, so End_With_Period
+   --  still sees the last value's.
    function Fluff_Line (F : Entities.Fluff_Block) return String is
       Line : Unbounded_String;
 
@@ -804,7 +809,8 @@ package body Ova_Fmt.Format_Sheet is
             if Line /= Null_Unbounded_String then
                Append (Line, ", ");
             end if;
-            Append (Line, Label & ": " & FC.All_One_Line (FC.Reflow (Value)));
+            Append (Line, "\f[NSB]" & Escape (Dashes (Label & ":")) & "\f[NSR] "
+                    & Escape (Dashes (FC.All_One_Line (FC.Reflow (Value)))));
          end if;
       end Add;
    begin
@@ -853,23 +859,28 @@ package body Ova_Fmt.Format_Sheet is
       for S of Sections loop
          IO.Put_Line (".SH");
          Put_Text (To_String (S.Label));
-         declare
-            C    : constant String := To_String (S.Content);
-            From : Positive := C'First;
-            To   : Natural;
-         begin
-            while From <= C'Last loop
-               To := From;
-               while To <= C'Last and then C (To) /= LF loop
-                  To := To + 1;
+         if S.Raw then
+            IO.Put_Line (".PP");
+            IO.Put_Line ("\&" & To_String (S.Content));
+         else
+            declare
+               C    : constant String := To_String (S.Content);
+               From : Positive := C'First;
+               To   : Natural;
+            begin
+               while From <= C'Last loop
+                  To := From;
+                  while To <= C'Last and then C (To) /= LF loop
+                     To := To + 1;
+                  end loop;
+                  if To > From then
+                     IO.Put_Line (".PP");
+                     Put_Text (C (From .. To - 1));
+                  end if;
+                  From := To + 1;
                end loop;
-               if To > From then
-                  IO.Put_Line (".PP");
-                  Put_Text (C (From .. To - 1));
-               end if;
-               From := To + 1;
-            end loop;
-         end;
+            end;
+         end if;
       end loop;
    end Put_Sections;
 
@@ -1017,7 +1028,7 @@ package body Ova_Fmt.Format_Sheet is
          Add_Section (Sections, Name & ": Character Hooks", FC.Reflow (E.Character_Hooks));
       end if;
       if E.Has_Fluff then
-         Add_Section (Sections, Name & ": Fluff", Fluff_Line (E.Fluff));
+         Add_Section (Sections, Name & ": Fluff", Fluff_Line (E.Fluff), Raw => True);
       end if;
 
       IO.Put_Line (".SP p2");
