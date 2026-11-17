@@ -1,0 +1,25 @@
+--  Ova_Fmt's packages but its command line, as a library: what reads a
+--  character (Ova_Fmt.Entities) and what formats it, for ova_fmt.gpr's
+--  program and for other programs (ova_cg_ada) to with.  Ova_Fmt.Cli
+--  and the main procedure are the program's alone: Cli parses ova_fmt's
+--  own command line when it is elaborated.
+
+with "arg_parser.gpr";
+with "libfyaml_ada.gpr";
+
+library project Ova_Fmt_Lib is
+
+   for Languages use ("Ada");
+   for Source_Dirs use ("src");
+   for Excluded_Source_Files use
+     ("ova_fmt_main.adb", "ova_fmt-cli.ads", "ova_fmt-cli.adb");
+   for Object_Dir use "obj/lib";
+   for Library_Dir use "lib";
+   for Library_Name use "ova_fmt";
+   for Library_Kind use "static";
+
+   package Compiler is
+      for Default_Switches ("Ada") use ("-gnat2012", "-gnatwa", "-g");
+   end Compiler;
+
+end Ova_Fmt_Lib;

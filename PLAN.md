@@ -2795,3 +2795,11 @@ automatically.
   blank sheet's are square, so this is the drawing's one departure
   from it. The text stays clear: it starts about 3 pt inside the box,
   and at the capitals' height a corner takes less than half a point.
+- **ova_fmt's packages are a library project, `ova_fmt_lib.gpr`**
+  (2026-11-17), for other programs to with: everything in `src/` but
+  `ova_fmt_main.adb` and `Ova_Fmt.Cli`, which parses ova_fmt's own
+  command line when it is elaborated. `ova_fmt.gpr` withs it and
+  builds only those three files. ova_cg_ada uses it, from a git
+  submodule, in place of compiling `src/` itself with its own list of
+  exclusions. The binary's output was compared with the one built
+  before the split over all of `test-data/` in every format: the same.

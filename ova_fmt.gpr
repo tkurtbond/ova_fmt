@@ -1,10 +1,14 @@
 with "arg_parser.gpr";
-with "libfyaml_ada.gpr";
+--  Every package but Ova_Fmt.Cli, which other programs use too.
+with "ova_fmt_lib.gpr";
 
 project Ova_Fmt is
 
    for Languages use ("Ada");
    for Source_Dirs use ("src");
+   --  The rest of src/ is Ova_Fmt_Lib's.
+   for Source_Files use
+     ("ova_fmt_main.adb", "ova_fmt-cli.ads", "ova_fmt-cli.adb");
    for Object_Dir use "obj";
    for Exec_Dir use ".";
    for Main use ("ova_fmt_main.adb");

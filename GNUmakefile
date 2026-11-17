@@ -118,7 +118,7 @@ TEST_ONECOLOUTPUT=$(foreach f,$(notdir $(TEST_DATA)),build/$(addsuffix .onecol.p
 
 all: $(PROGRAM)
 
-$(PROGRAM): $(wildcard src/*.ads src/*.adb) ova_fmt.gpr
+$(PROGRAM): $(wildcard src/*.ads src/*.adb) ova_fmt.gpr ova_fmt_lib.gpr
 	gprbuild -p -P ova_fmt.gpr
 
 # Installs $(PROGRAM) under $HOME/local (ova_fmt.gpr's Install package
@@ -229,6 +229,7 @@ build/%.md.ms.pdf : build/%.md
 
 clean:
 	-rm -f $(PROGRAM)
+	-rm -rf obj lib
 
 testclean:
 	-rm -v build/*.gen.rst build/*.rst.ms.pdf build/*.gmi build/*.md build/*.md.ms.pdf build/*.html build/*.hmm build/*.groff.gen.rst build/*.groff.pdf build/*.inline.md build/*.fields.json build/*.form.pdf build/*.sheet.tr build/*.sheet.pdf build/*.redraw.tr build/*.redraw.pdf build/*.onecol.tr build/*.onecol.pdf

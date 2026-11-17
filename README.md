@@ -17,6 +17,10 @@ groff/`hd`, and direct-to-Lout backends (needed for OVA's nested-table
 character sheets) are planned next. See `PLAN.md` for the full design
 history and open questions.
 
+`ova_fmt_lib.gpr` is ova_fmt's packages without its command line, as a
+library project, for other programs that read or format characters,
+such as [ova_cg_ada](https://github.com/tkurtbond/ova_cg_ada).
+
 ## OVA and the rulebook
 
 OVA, *OVA: The Anime Role-Playing Game*, is © 2015 Wise Turtle. This
