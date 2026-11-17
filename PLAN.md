@@ -589,14 +589,12 @@ differences from `besm2_fmt`'s BESM model:
   a recursive attribute list).
 - **Perks and Flaws customize *any* Ability, not just attacks —
   corrected from an earlier draft of this plan.** The rulebook is
-  explicit (`ova-rulebook-not-layout.txt` ~5792–5824): *"Ability Perks
-  and Flaws ... provide additional ways to customize your Abilities
-  and are listed as a subset of them. It's sort of like applying
-  Abilities and Weaknesses to the Ability itself... For any Ability
-  you feel can be further individualized through Perks and Flaws,
-  simply go through the list and assign those that fit your mental
-  image. Some Abilities mention the use of Perks and Flaws right in
-  their text, but they can be applied to others as well."* So this is
+  explicit (`ova-rulebook-not-layout.txt` ~5792–5824; paraphrased
+  here): Perks and Flaws are a subset of the Abilities, used to tailor
+  an Ability the way Abilities and Weaknesses tailor a character. Any
+  Ability a player wants to make more particular can take whichever
+  Perks and Flaws suit it, and while some Abilities name Perks and
+  Flaws in their own descriptions, the others can take them too. So this is
   a **general Ability-modifier mechanic** — structurally exactly like
   BESM's enhancements/limiters (a name plus a signed Endurance-cost
   effect, `besm2_fmt`'s `format-customizers` dispatch shape is a
@@ -2278,8 +2276,9 @@ automatically.
   rulebook's own minor-NPC format (p. 142, "NPC Fragments"), distinct
   from the full-character write-up every sample character and
   `Ova_Fmt.Entities`/`Format_Terse` were otherwise modeled on: the
-  NPC's name bolded inline within `background`'s own prose ("The
-  **Shady Teacher** is new to the school...") rather than a separate
+  NPC's name bolded inline within `background`'s own prose
+  (`test-data/Fragment.yaml`'s paraphrase: "The **Shady Teacher** just
+  joined the faculty...") rather than a separate
   title/header; then a single compact `Attributes:` line — Abilities
   then Weaknesses, each list independently alphabetized (confirming,
   from a second source, the alphabetization already implemented per

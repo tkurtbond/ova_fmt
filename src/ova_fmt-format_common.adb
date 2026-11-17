@@ -696,10 +696,10 @@ package body Ova_Fmt.Format_Common is
    --  NPC Fragment (rulebook p. 142): the name has no separate title/
    --  header of its own -- it's expected to appear (bolded by the
    --  author, per rulebook convention) inside Background's own prose,
-   --  same as the rulebook's "The **Shady Teacher** is new to the
-   --  school..." -- so this only falls back to printing a bare bolded
-   --  Name when there's no Background prose to carry it, rather than
-   --  leaving the character unidentified.
+   --  as in test-data/Fragment.yaml's "The **Shady Teacher** just
+   --  joined the faculty..." -- so this only falls back to printing a
+   --  bare bolded Name when there's no Background prose to carry it,
+   --  rather than leaving the character unidentified.
    procedure Print_Fragment_Header (E : Entities.Entity) is
    begin
       if E.Has_Background then
